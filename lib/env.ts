@@ -15,7 +15,10 @@ export function serverEnv() {
       .map((p) => p.trim())
       .filter(Boolean),
     geminiKey: (process.env.GEMINI_API_KEY ?? "").trim(),
-    geminiModel: (process.env.GEMINI_MODEL || "gemini-flash-latest").trim(),
+    geminiModels: (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash,gemini-3.5-flash-lite")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     geminiEmbedModel: process.env.GEMINI_EMBED_MODEL || "gemini-embedding-001",
     groqKey: (process.env.GROQ_API_KEY ?? "").trim(),
     groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",

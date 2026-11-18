@@ -28,31 +28,41 @@ function parseJSON(text: string): unknown {
   return JSON.parse(t);
 }
 
-async function callGemini(o: GenOpts): Promise<string> {
-  const env = serverEnv();
-  if (!env.geminiKey) throw new Error("GEMINI_API_KEY missing");
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${env.geminiModel}:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.geminiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: o.system }] },
-        contents: [{ role: "user", parts: [{ text: o.user }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: o.temperature ?? 0.6,
-          maxOutputTokens: o.maxTokens ?? 8192,
-        },
-      }),
-    }
-  );
-  if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+async function callGeminiModel(model: string, key: string, o: GenOpts): Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: o.system }] },
+      contents: [{ role: "user", parts: [{ text: o.user }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: o.temperature ?? 0.6,
+        maxOutputTokens: o.maxTokens ?? 8192,
+      },
+    }),
+  });
+  if (!res.ok) throw new Error(`gemini ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
   const parts = data?.candidates?.[0]?.content?.parts ?? [];
   const text = parts.map((p: { text?: string }) => p.text ?? "").join("");
-  if (!text) throw new Error("gemini: empty response");
+  if (!text) throw new Error(`gemini ${model}: empty response`);
   return text;
+}
+
+/** Tries each configured Gemini model in turn (busy / rate-limited / unavailable → next one). */
+async function callGemini(o: GenOpts): Promise<string> {
+  const env = serverEnv();
+  if (!env.geminiKey) throw new Error("GEMINI_API_KEY missing");
+  const errs: string[] = [];
+  for (const m of env.geminiModels) {
+    try {
+      return await callGeminiModel(m, env.geminiKey, o);
+    } catch (e) {
+      errs.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  throw new Error(errs.join(" | "));
 }
 
 async function callOpenAICompatible(url: string, key: string, model: string, o: GenOpts): Promise<string> {
@@ -104,7 +114,7 @@ export async function generateJSON<T = unknown>(o: GenOpts): Promise<{ data: T; 
   const order = o.providers ?? serverEnv().providers;
   const attempts: string[] = [];
   for (const p of order) {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < (p === "gemini" ? 2 : 2); i++) {
       try {
         const text = await callProvider(p, o);
         return { data: parseJSON(text) as T, provider: p };
