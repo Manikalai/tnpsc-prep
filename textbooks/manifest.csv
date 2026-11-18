@@ -1,0 +1,6 @@
+std,subject,term,title,source
+# One line per book. subject = science | social | tamil | maths
+# source = a direct PDF link (https://...) OR a path to a PDF you uploaded into this repo (textbooks/xyz.pdf).
+# Use Tamil-medium books. Lines starting with # are ignored. Example lines (replace with real links):
+# 10,social,,10ஆம் வகுப்பு சமூக அறிவியல்,https://example.org/10th-social-science-tamil.pdf
+# 10,tamil,,10ஆம் வகுப்பு தமிழ்,textbooks/10-tamil.pdf

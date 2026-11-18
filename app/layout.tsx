@@ -1,0 +1,36 @@
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import Nav from "@/components/Nav";
+
+export const metadata: Metadata = {
+  title: "TNPSC தயாரிப்பு",
+  description: "தொகுதி 1, 2, 4 தேர்வுகளுக்கான தமிழ்வழிப் பயிற்சி",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  appleWebApp: { capable: true, title: "TNPSC", statusBarStyle: "default" },
+};
+export const viewport: Viewport = { themeColor: "#1f7a5c", width: "device-width", initialScale: 1 };
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ta">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;600;700&display=swap"
+        />
+      </head>
+      <body className="min-h-screen font-sans antialiased">
+        <Nav />
+        <main className="mx-auto max-w-3xl px-4 pb-28 pt-4 md:pb-10">{children}</main>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
+          }}
+        />
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,16 @@
+import { route, ok, fail } from "@/lib/api";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { generateForUnit, type Unit } from "@/lib/questions";
+import { maxStdFor } from "@/lib/exam";
+
+export const maxDuration = 60;
+
+// Adds ~10 questions to one unit's bank (the nightly job does this for every unit automatically).
+export const POST = route<{ unitId: string }>(async (_ctx, b) => {
+  const admin = supabaseAdmin();
+  const { data: unit } = await admin.from("units").select("*").eq("id", b.unitId).single();
+  if (!unit) return fail("அலகு கிடைக்கவில்லை");
+  const { data: topics } = await admin.from("topics").select("id,name_ta").eq("unit_id", unit.id);
+  const r = await generateForUnit(admin, unit as Unit, { n: 10, topics: topics ?? [], maxStd: maxStdFor(unit.exam_code) });
+  return ok({ notice: `${r.ids.length} புதிய வினாக்கள் சேர்க்கப்பட்டன${r.grounded ? "" : " (பாடநூல் ஆதாரம் இல்லை)"}` });
+});

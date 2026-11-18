@@ -1,0 +1,27 @@
+name: Nightly question bank
+on:
+  schedule:
+    - cron: "47 20 * * *"   # 02:17 IST every night
+  workflow_dispatch:
+    inputs:
+      max_calls: { description: "Max AI calls this run", default: "120" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/build_bank.ts ${{ github.event.inputs.max_calls || '120' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+          AI_PROVIDERS: ${{ vars.AI_PROVIDERS }}
+          BANK_EXAMS: ${{ vars.BANK_EXAMS }}

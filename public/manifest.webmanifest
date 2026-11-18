@@ -1,0 +1,13 @@
+{
+  "name": "TNPSC தயாரிப்பு",
+  "short_name": "TNPSC",
+  "description": "தொகுதி 1, 2, 4 – தமிழ்வழிப் பயிற்சி",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf8f2",
+  "theme_color": "#1f7a5c",
+  "lang": "ta",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
