@@ -56,7 +56,13 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
     if (submitted.current) return;
     if (!auto) {
       const left = questions.length - answered;
-      if (!window.confirm(left ? `${left} வினாக்களுக்கு விடையளிக்கவில்லை. சமர்ப்பிக்கவா?` : "தேர்வைச் சமர்ப்பிக்கவா?")) return;
+      if (left) {
+        const first = questions.findIndex((q) => answers[q.id] == null);
+        const proceed = window.confirm(
+          `${left} வினாக்களில் எந்த விடையும் குறிக்கவில்லை.\n\nஉண்மைத் தேர்வில் ஒரு வினாவை விட்டாலும் விடைத்தாள் செல்லாது. தெரியாத வினாவுக்கு (E) விடை தெரியவில்லை என்பதைக் குறிக்கவும்.\n\n"சரி" = இப்போதே சமர்ப்பி · "ரத்து" = வினா ${first + 1}-க்குச் செல்`
+        );
+        if (!proceed) { go(first); return; }
+      } else if (!window.confirm("தேர்வைச் சமர்ப்பிக்கவா?")) return;
     }
     submitted.current = true;
     setBusy(true);
@@ -114,6 +120,13 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
               <span className="whitespace-pre-line">{o}</span>
             </button>
           ))}
+          <button
+            onClick={() => setAnswers({ ...answers, [q.id]: chosen === 4 ? null : 4 })}
+            className={`flex w-full items-start gap-3 rounded-xl border border-dashed px-3 py-2.5 text-left text-sm transition ${chosen === 4 ? "border-stone-500 bg-stone-100" : "border-stone-300 bg-white text-stone-500 hover:bg-stone-50"}`}
+          >
+            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${chosen === 4 ? "bg-stone-500 text-white" : "bg-stone-100"}`}>உ</span>
+            <span>(E) விடை தெரியவில்லை</span>
+          </button>
         </div>
       </div>
 
@@ -128,14 +141,15 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
           <div className="mb-2 flex flex-wrap gap-3 text-xs text-stone-500">
             <span><span className="inline-block h-3 w-3 rounded bg-brand-500" /> விடையளித்தது</span>
             <span><span className="inline-block h-3 w-3 rounded bg-turmeric-500" /> மீண்டும் பார்க்க</span>
-            <span><span className="inline-block h-3 w-3 rounded border border-stone-300" /> விடையில்லை</span>
+            <span><span className="inline-block h-3 w-3 rounded bg-stone-400" /> (E) தெரியவில்லை</span>
+            <span><span className="inline-block h-3 w-3 rounded border border-kumkum-500" /> குறிக்கவில்லை</span>
           </div>
           <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-10">
             {questions.map((qq, n) => (
               <button
                 key={qq.id}
                 onClick={() => go(n)}
-                className={`h-9 rounded-lg text-sm font-semibold ${n === i ? "ring-2 ring-ink" : ""} ${flags[qq.id] ? "bg-turmeric-500 text-white" : answers[qq.id] != null ? "bg-brand-500 text-white" : "border border-stone-300 bg-white"}`}
+                className={`h-9 rounded-lg text-sm font-semibold ${n === i ? "ring-2 ring-ink" : ""} ${flags[qq.id] ? "bg-turmeric-500 text-white" : answers[qq.id] === 4 ? "bg-stone-400 text-white" : answers[qq.id] != null ? "bg-brand-500 text-white" : "border border-kumkum-500 bg-white"}`}
               >
                 {n + 1}
               </button>

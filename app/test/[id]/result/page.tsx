@@ -13,7 +13,7 @@ export default async function Result({ params, searchParams }: { params: Promise
   const { sb, user } = await requireUser();
   const { data: test } = await sb.from("tests").select("*").eq("id", id).eq("user_id", user.id).single();
   if (!test || !test.submitted_at) notFound();
-  const r = test.result as { correct: number; attempted: number; total: number; parts: Row[]; units: Row[]; gatePassed: boolean | null; elapsedSec?: number };
+  const r = test.result as { correct: number; attempted: number; total: number; notKnown?: number; blank?: number; parts: Row[]; units: Row[]; gatePassed: boolean | null; elapsedSec?: number };
   const [{ data: qs }, { data: ans }] = await Promise.all([
     sb.from("questions").select("*").in("id", test.question_ids),
     sb.from("answers").select("question_id,chosen,correct").eq("test_id", id),
@@ -31,9 +31,14 @@ export default async function Result({ params, searchParams }: { params: Promise
           <p className="text-4xl font-bold text-brand-700">
             {Number(test.score)}<span className="text-xl text-stone-400">/{Number(test.max_score)}</span>
           </p>
-          <p className="text-stone-600">சரி {r.correct} · தவறு {r.attempted - r.correct} · விடையில்லை {r.total - r.attempted}</p>
+          <p className="text-stone-600">சரி {r.correct} · தவறு {r.attempted - r.correct} · (E) தெரியவில்லை {r.notKnown ?? 0} · குறிக்கவில்லை {r.blank ?? r.total - r.attempted}</p>
           {r.elapsedSec ? <p className="muted">நேரம் {Math.round(r.elapsedSec / 60)} நிமிடம்</p> : null}
         </div>
+        {(r.blank ?? 0) > 0 && test.kind === "mock" && (
+          <p className="mt-3 rounded-xl bg-kumkum-50 p-3 text-sm text-kumkum-500">
+            {r.blank} வினாக்களில் எதுவும் குறிக்கவில்லை. உண்மைத் தேர்வில் இதனால் விடைத்தாள் செல்லாததாகும் — தெரியாதவற்றுக்கு (E) குறிக்கப் பழகுங்கள்.
+          </p>
+        )}
         {r.gatePassed === false && (
           <p className="mt-3 rounded-xl bg-kumkum-50 p-3 text-sm text-kumkum-500">
             தமிழ்ப் பகுதியில் தகுதி மதிப்பெண் (60/150) கிடைக்கவில்லை. உண்மைத் தேர்வில் மற்ற பகுதிகள் மதிப்பீடு செய்யப்படாது — தமிழுக்கு முன்னுரிமை கொடுங்கள்.
@@ -92,7 +97,8 @@ export default async function Result({ params, searchParams }: { params: Promise
                 );
               })}
             </div>
-            {a?.chosen == null && <p className="mt-1 text-xs text-stone-500">விடையளிக்கவில்லை</p>}
+            {a?.chosen == null && <p className="mt-1 text-xs text-kumkum-500">எதுவும் குறிக்கவில்லை</p>}
+            {a?.chosen === 4 && <p className="mt-1 text-xs text-stone-500">(E) விடை தெரியவில்லை எனக் குறித்தீர்கள்</p>}
             {q!.explanation && <p className="mt-2 rounded-lg bg-stone-50 p-2 text-sm">{q!.explanation}</p>}
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
               <span>{q!.source_ref ? `📖 ${q!.source_ref}` : q!.origin === "ai" ? "⚠ பாடநூல் ஆதாரம் இல்லை (பழைய வினா – விரைவில் நீக்கப்படும்)" : ""}</span>

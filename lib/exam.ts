@@ -86,18 +86,19 @@ export async function scoreTest(
     const q = byId.get(id);
     const c = chosen[id];
     const ok = q != null && c != null && c === q.answer_index;
-    if (c != null) attempted++;
+    const tried = c != null && c !== 4; // 4 = (E) answer not known
+    if (tried) attempted++;
     if (ok) correct++;
     const uKey = q?.unit_id ?? "ca";
     const u = perUnit.get(uKey) ?? { correct: 0, total: 0, attempted: 0 };
     u.total++;
-    if (c != null) u.attempted++;
+    if (tried) u.attempted++;
     if (ok) u.correct++;
     perUnit.set(uKey, u);
     const pKey = (q?.unit_id && unitMap.get(q.unit_id)?.part_id) || "other";
     const p = perPart.get(pKey) ?? { correct: 0, total: 0, attempted: 0 };
     p.total++;
-    if (c != null) p.attempted++;
+    if (tried) p.attempted++;
     if (ok) p.correct++;
     perPart.set(pKey, p);
     return { question_id: id, chosen: c ?? null, correct: ok };
@@ -116,11 +117,13 @@ export async function scoreTest(
     ...s,
   }));
 
+  const notKnown = test.question_ids.filter((id) => chosen[id] === 4).length;
+  const blank = test.question_ids.filter((id) => chosen[id] == null).length;
   return {
     answers,
     score: correct * markPerQ,
     maxScore: test.question_ids.length * markPerQ,
-    result: { correct, attempted, total: test.question_ids.length, markPerQ, parts: partRows, units: unitRows, gatePassed },
+    result: { correct, attempted, notKnown, blank, total: test.question_ids.length, markPerQ, parts: partRows, units: unitRows, gatePassed },
   };
 }
 
@@ -140,7 +143,7 @@ export async function updateReview(
   const removes: string[] = [];
   for (const r of results) {
     const ex = existing.get(r.question_id);
-    if (!r.correct && r.chosen != null) {
+    if (!r.correct && r.chosen != null) { // wrong, or (E) not known → revise it
       upserts.push({ user_id: userId, question_id: r.question_id, due_date: addDays(1), interval_days: 1, streak: 0, lapses: (ex?.lapses ?? 0) + 1 });
     } else if (r.correct && ex) {
       const streak = ex.streak + 1;
