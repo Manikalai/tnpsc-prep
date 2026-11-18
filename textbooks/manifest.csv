@@ -2,7 +2,8 @@ std,subject,term,title,source
 # subject: tamil | social | science | sciso (combined Science & Social Science term books) | maths
 # Group 4 books (Std 6–10) first, then Std 11–12 for Groups 1 and 2. Lines starting with # are skipped.
 # Std 6 and 7 come in three terms. Term 1 links were listed on tnkalvi.online; Terms 2 and 3 follow the same SCERT naming
-# and are checked by the "check only" run — if one fails, find its link on tnkalvi.online/textbooks/class/6 and fix the line.
+# and are checked by the "check only" run. If one fails, use the Google Drive copy from tntextbooks.net instead
+# (e.g. 6th Term 2 Science & Social: https://drive.google.com/file/d/1FIy-z3AIHNXLnFLeByjlVgMrV834HMxt/view).
 6,tamil,1,6ஆம் வகுப்பு தமிழ் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%201_Text.pdf
 6,tamil,2,6ஆம் வகுப்பு தமிழ் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%202_Text.pdf
 6,tamil,3,6ஆம் வகுப்பு தமிழ் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%203_Text.pdf

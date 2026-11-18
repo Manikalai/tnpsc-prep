@@ -107,6 +107,12 @@ def get_pdf(source: str) -> pathlib.Path:
         return pathlib.Path(source)
     CACHE.mkdir(parents=True, exist_ok=True)
     p = CACHE / (hashlib.sha1(source.encode()).hexdigest()[:16] + ".pdf")
+    if not p.exists() and "drive.google.com" in source:
+        import gdown  # handles Google Drive's "large file" confirmation page
+        print(f"  downloading from Google Drive {source}")
+        gdown.download(url=source, output=str(p), quiet=True, fuzzy=True)
+        if not p.exists() or p.stat().st_size < 10000:
+            raise RuntimeError("Google Drive download failed (file not shared publicly?)")
     if not p.exists():
         print(f"  downloading {source}")
         with requests.get(source, stream=True, timeout=300, headers={"User-Agent": "Mozilla/5.0"}) as r:
