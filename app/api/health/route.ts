@@ -30,5 +30,31 @@ export async function GET() {
   } catch (e) {
     out.server_db_read = `ERROR: ${e instanceof Error ? e.message : e}`;
   }
+  // Gemini: which models this key can use, and whether the configured one answers
+  const gkey = process.env.GEMINI_API_KEY ?? "";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+  out.gemini_model_configured = model;
+  out.gemini_key_has_spaces = /\s/.test(gkey);
+  if (gkey) {
+    try {
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gkey.trim() } });
+      const j = await r.json();
+      if (!r.ok) out.gemini_models = `ERROR ${r.status}: ${JSON.stringify(j).slice(0, 300)}`;
+      else
+        out.gemini_models = (j.models ?? [])
+          .filter((m: { supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes("generateContent"))
+          .map((m: { name: string }) => m.name.replace("models/", ""))
+          .filter((n: string) => /flash|gemma/.test(n));
+      const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": gkey.trim() },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with the single Tamil word: வணக்கம்" }] }] }),
+      });
+      const gj = await g.json();
+      out.gemini_test = g.ok ? `ok: ${gj?.candidates?.[0]?.content?.parts?.[0]?.text ?? ""}`.slice(0, 80) : `ERROR ${g.status}: ${JSON.stringify(gj?.error ?? gj).slice(0, 400)}`;
+    } catch (e) {
+      out.gemini_test = `ERROR: ${e instanceof Error ? e.message : e}`;
+    }
+  }
   return NextResponse.json(out, { headers: { "Cache-Control": "no-store" } });
 }

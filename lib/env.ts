@@ -14,12 +14,12 @@ export function serverEnv() {
       .split(",")
       .map((p) => p.trim())
       .filter(Boolean),
-    geminiKey: process.env.GEMINI_API_KEY ?? "",
-    geminiModel: process.env.GEMINI_MODEL || "gemini-flash-latest",
+    geminiKey: (process.env.GEMINI_API_KEY ?? "").trim(),
+    geminiModel: (process.env.GEMINI_MODEL || "gemini-flash-latest").trim(),
     geminiEmbedModel: process.env.GEMINI_EMBED_MODEL || "gemini-embedding-001",
-    groqKey: process.env.GROQ_API_KEY ?? "",
+    groqKey: (process.env.GROQ_API_KEY ?? "").trim(),
     groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
-    openrouterKey: process.env.OPENROUTER_API_KEY ?? "",
+    openrouterKey: (process.env.OPENROUTER_API_KEY ?? "").trim(),
     openrouterModels: (process.env.OPENROUTER_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     cronSecret: process.env.CRON_SECRET ?? "",
   };

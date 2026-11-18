@@ -125,7 +125,8 @@ ${grounded ? `\nபாடநூல் பகுதிகள்:\n${passages}` : 
     provider = r.provider;
     raw = Array.isArray(r.data?.questions) ? r.data.questions : [];
   } catch (e) {
-    errors.push(e instanceof Error ? e.message : String(e));
+    const detail = e && typeof e === "object" && "attempts" in e ? ` — ${(e as { attempts: string[] }).attempts.slice(0, 2).join(" | ").slice(0, 300)}` : "";
+    errors.push((e instanceof Error ? e.message : String(e)) + detail);
     return { ids: [], grounded, errors };
   }
 
