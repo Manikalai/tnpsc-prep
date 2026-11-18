@@ -8,8 +8,8 @@ export const maxDuration = 60;
 export const POST = route<{ unitId: string; topicId?: string; count?: number }>(async ({ sb, user }, b) => {
   const admin = supabaseAdmin();
   const count = Math.min(Math.max(b.count ?? 15, 5), 30);
-  const { data: unit } = await admin.from("units").select("*").eq("id", b.unitId).single();
-  if (!unit) return fail("அலகு கிடைக்கவில்லை");
+  const { data: unit, error: unitErr } = await admin.from("units").select("*").eq("id", b.unitId).single();
+  if (!unit) return fail(unitErr ? `தரவுத்தளப் பிழை (SUPABASE_SERVICE_ROLE_KEY சரியா?): ${unitErr.message}` : "அலகு கிடைக்கவில்லை");
   const { data: topics } = await admin.from("topics").select("id,name_ta").eq("unit_id", unit.id).order("sort");
   const topic = b.topicId ? topics?.find((t) => t.id === b.topicId) : undefined;
 

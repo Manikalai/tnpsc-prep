@@ -24,8 +24,8 @@ export const POST = route<{ action: "generate" | "pin" | "delete"; unitId?: stri
       return ok();
     }
     const admin = supabaseAdmin();
-    const { data: unit } = await admin.from("units").select("*").eq("id", b.unitId!).single();
-    if (!unit) return fail("அலகு கிடைக்கவில்லை");
+    const { data: unit, error: unitErr } = await admin.from("units").select("*").eq("id", b.unitId!).single();
+    if (!unit) return fail(unitErr ? `தரவுத்தளப் பிழை (SUPABASE_SERVICE_ROLE_KEY சரியா?): ${unitErr.message}` : "அலகு கிடைக்கவில்லை");
     const { data: topic } = b.topicId ? await admin.from("topics").select("id,name_ta").eq("id", b.topicId).single() : { data: null };
     const focus = topic?.name_ta ?? unit.name_ta;
     const chunks = await retrieveForUnit(admin, unit as Unit, focus, maxStdFor(unit.exam_code), 8);
