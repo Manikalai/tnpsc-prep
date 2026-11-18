@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { OPT, pct } from "@/lib/format";
 import ReportButton from "@/components/ReportButton";
+import ExplainButton from "@/components/ExplainButton";
 
 type Row = { id: string; name: string; correct: number; total: number; attempted: number; marks?: number; max?: number; gate?: number | null };
 
@@ -93,6 +94,7 @@ export default async function Result({ params, searchParams }: { params: Promise
               <span>{q!.source_ref ? `ஆதாரம்: ${q!.source_ref}` : q!.origin === "ai" ? "⚠ பாடநூல் ஆதாரம் இல்லை – சரிபார்க்கவும்" : ""}</span>
               <ReportButton questionId={q!.id} />
             </div>
+            <div className="mt-1"><ExplainButton questionId={q!.id} /></div>
           </div>
         ))}
       </div>

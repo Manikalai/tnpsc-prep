@@ -7,6 +7,7 @@ import { OPT, pct, taDate } from "@/lib/format";
 import TestRunner from "@/components/TestRunner";
 import CaList, { type CA } from "@/components/CaList";
 import Md from "@/components/Md";
+import ExplainButton from "@/components/ExplainButton";
 
 type Q = { id: string; unit_id: string | null; stem: string; options: string[]; answer_index: number; explanation: string | null; source_ref: string | null; origin: string; ca_date: string | null };
 type Unit = { id: string; part_id: string; name_ta: string; questions: number; subject: string };
@@ -258,6 +259,7 @@ export default function Offline() {
                   <p key={k} className={k === q.answer_index ? "font-semibold text-brand-700" : chosen === k ? "text-kumkum-500 line-through" : ""}>{OPT[k]}) {o}</p>
                 ))}
                 {q.explanation && <p className="mt-1 rounded bg-stone-50 p-2">{q.explanation}</p>}
+                {online && <ExplainButton questionId={q.id} />}
               </div>
             ))}
           </details>
