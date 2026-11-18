@@ -21,18 +21,26 @@ export const POST = route<{ unitId: string; topicId?: string; count?: number }>(
   ]);
   const seenSet = new Set((seen ?? []).map((r) => r.question_id));
   let ids = shuffle((bank ?? []).map((r) => r.id).filter((id) => !seenSet.has(id))).slice(0, count);
+  if (ids.length < count && topic) {
+    const { data: unitBank } = await admin.from("questions").select("id").eq("unit_id", unit.id).eq("status", "active").limit(800);
+    const extra = shuffle((unitBank ?? []).map((r) => r.id).filter((id) => !seenSet.has(id) && !ids.includes(id)));
+    ids = [...ids, ...extra].slice(0, count);
+  }
 
   let notice: string | undefined;
   if (ids.length < count) {
     const gen = await generateForUnit(admin, unit as Unit, {
-      n: Math.min(count - ids.length + 2, 12),
+      n: Math.min(count - ids.length, 6), // small batch so the request finishes inside Vercel's 60 s
+      timeoutMs: 45000,
       topic,
       topics: topics ?? [],
       maxStd: maxStdFor(unit.exam_code),
     });
     ids = [...ids, ...gen.ids].slice(0, count);
     if (!gen.grounded) notice = "பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — இந்த வினாக்கள் பாடநூல் ஆதாரமின்றி உருவாக்கப்பட்டவை; விடைகளைச் சரிபார்க்கவும்.";
-    if (ids.length === 0) return fail(gen.errors[0] ?? "வினாக்களை உருவாக்க முடியவில்லை");
+    if (ids.length === 0)
+      return fail("AI இப்போது மெதுவாக உள்ளது, வினா வங்கியிலும் இந்த அலகுக்கு வினாக்கள் இல்லை. சிறிது நேரம் கழித்து முயலவும் — இரவுப் பணி வங்கியை நிரப்பும்.");
+    if (ids.length < count) notice = (notice ? notice + " " : "") + `இப்போது ${ids.length} வினாக்கள் மட்டும் தயார்; இரவுப் பணி வங்கியை நிரப்பிய பின் முழு எண்ணிக்கை கிடைக்கும்.`;
   }
   // still short? reuse already-answered questions
   if (ids.length < count) {

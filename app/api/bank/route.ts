@@ -11,6 +11,6 @@ export const POST = route<{ unitId: string }>(async (_ctx, b) => {
   const { data: unit, error: unitErr } = await admin.from("units").select("*").eq("id", b.unitId).single();
   if (!unit) return fail(unitErr ? `தரவுத்தளப் பிழை (SUPABASE_SERVICE_ROLE_KEY சரியா?): ${unitErr.message}` : "அலகு கிடைக்கவில்லை");
   const { data: topics } = await admin.from("topics").select("id,name_ta").eq("unit_id", unit.id);
-  const r = await generateForUnit(admin, unit as Unit, { n: 10, topics: topics ?? [], maxStd: maxStdFor(unit.exam_code) });
+  const r = await generateForUnit(admin, unit as Unit, { n: 6, topics: topics ?? [], maxStd: maxStdFor(unit.exam_code), timeoutMs: 45000 });
   return ok({ notice: `${r.ids.length} புதிய வினாக்கள் சேர்க்கப்பட்டன${r.grounded ? "" : " (பாடநூல் ஆதாரம் இல்லை)"}` });
 });

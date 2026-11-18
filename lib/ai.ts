@@ -3,6 +3,8 @@
 import { serverEnv } from "./env";
 
 export type GenOpts = {
+  /** give up on a single provider call after this many ms (keeps web requests under Vercel's limit) */
+  timeoutMs?: number;
   system: string;
   user: string;
   temperature?: number;
@@ -31,6 +33,7 @@ function parseJSON(text: string): unknown {
 async function callGeminiModel(model: string, key: string, o: GenOpts): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
+    signal: o.timeoutMs ? AbortSignal.timeout(o.timeoutMs) : undefined,
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: o.system }] },
@@ -68,6 +71,7 @@ async function callGemini(o: GenOpts): Promise<string> {
 async function callOpenAICompatible(url: string, key: string, model: string, o: GenOpts): Promise<string> {
   const res = await fetch(url, {
     method: "POST",
+    signal: o.timeoutMs ? AbortSignal.timeout(o.timeoutMs) : undefined,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model,
@@ -113,8 +117,10 @@ async function callProvider(name: string, o: GenOpts): Promise<string> {
 export async function generateJSON<T = unknown>(o: GenOpts): Promise<{ data: T; provider: string }> {
   const order = o.providers ?? serverEnv().providers;
   const attempts: string[] = [];
+  const deadline = o.timeoutMs ? Date.now() + o.timeoutMs : Infinity;
   for (const p of order) {
-    for (let i = 0; i < (p === "gemini" ? 2 : 2); i++) {
+    for (let i = 0; i < 2; i++) {
+      if (Date.now() > deadline - 5000) break;
       try {
         const text = await callProvider(p, o);
         return { data: parseJSON(text) as T, provider: p };

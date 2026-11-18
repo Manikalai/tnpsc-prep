@@ -14,6 +14,7 @@ export const POST = route<{ action: "question" | "evaluate"; paper?: number; uni
         system: `You set TNPSC Group 1 Mains descriptive questions in Tamil. Give one question typical of the exam for the unit, with marks (10 or 15) and expected word count (150 or 250). Return JSON {"question":"","marks":10,"words":150}`,
         user: `${p.paper} — ${u}`,
         temperature: 0.9,
+        timeoutMs: 50000,
       });
       return ok(data);
     }
@@ -24,6 +25,7 @@ export const POST = route<{ action: "question" | "evaluate"; paper?: number; uni
 Return JSON {"score":0,"strengths":[""],"improve":[""],"missing_points":[""],"model_outline":"markdown outline in Tamil"} where score is out of the given marks. Write all feedback in Tamil.`,
       user: `மதிப்பெண்: ${b.marks ?? 10}\nவினா: ${b.question}\n\nவிடை:\n${answer.slice(0, 6000)}`,
       temperature: 0.2,
+      timeoutMs: 50000,
     });
     return ok(data);
   }

@@ -25,6 +25,7 @@ ${chunks.length ? "Answer ONLY from the numbered Samacheer textbook passages and
 Use short paragraphs or bullet points (markdown). Return JSON: {"answer":"","used":[1]}`,
     user: `வினா: ${question}\n\n${passages}`,
     temperature: 0.3,
+    timeoutMs: 50000,
   });
   const sources = (data.used ?? []).map((n) => chunks[n - 1]).filter(Boolean).map((c) => ({ book: c.book, page: c.page_from }));
   return ok({ answer: data.answer, sources, grounded: chunks.length > 0 });

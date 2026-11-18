@@ -86,7 +86,7 @@ export async function loadGlossary(admin: SupabaseClient) {
 export async function generateForUnit(
   admin: SupabaseClient,
   unit: Unit,
-  opts: { n: number; topic?: { id: string; name_ta: string }; maxStd: number; topics?: { id: string; name_ta: string }[] }
+  opts: { n: number; topic?: { id: string; name_ta: string }; maxStd: number; topics?: { id: string; name_ta: string }[]; timeoutMs?: number }
 ): Promise<{ ids: string[]; provider?: string; grounded: boolean; errors: string[] }> {
   const pool = opts.topics ?? [];
   const topic = opts.topic ?? (pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined);
@@ -121,7 +121,7 @@ ${grounded ? `\nபாடநூல் பகுதிகள்:\n${passages}` : 
   let provider: string | undefined;
   let raw: unknown[] = [];
   try {
-    const r = await generateJSON<{ questions: unknown[] }>({ system, user, temperature: 0.7 });
+    const r = await generateJSON<{ questions: unknown[] }>({ system, user, temperature: 0.7, timeoutMs: opts.timeoutMs, maxTokens: opts.timeoutMs ? 4096 : 8192 });
     provider = r.provider;
     raw = Array.isArray(r.data?.questions) ? r.data.questions : [];
   } catch (e) {

@@ -42,6 +42,7 @@ Produce:
 Return JSON: {"mnemonic":{"title":"","content":""},"summary":{"title":"","content":""},"table":{"title":"","content":""},"facts":[{"q":"","a":""}]}`,
       user: `அலகு: ${unit.name_ta}\nதலைப்பு: ${focus}\n\n${passages}`,
       temperature: 0.5,
+      timeoutMs: 50000,
     });
     const source_ref = chunks.length ? [...new Set(chunks.map((c) => c.book))].join("; ") : "பாடநூல் ஆதாரம் இல்லை – சரிபார்க்கவும்";
     const rows = (["mnemonic", "summary", "table"] as const)
