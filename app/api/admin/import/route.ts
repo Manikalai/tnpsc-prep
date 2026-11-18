@@ -20,6 +20,7 @@ export const POST = route<{ items: Item[] }>(async (_ctx, b) => {
       unit_id: it.unit_id ?? null,
       exam_code: it.exam_code ?? (it.unit_id ? it.unit_id.split("-")[0] : null),
       origin: "pyq",
+      difficulty: "medium",
       pyq_year: it.year ?? null,
       source_ref: it.year ? `TNPSC ${it.exam_code ?? ""} ${it.year}` : "TNPSC முந்தைய ஆண்டு வினா",
       hash: qHash(v.stem, v.options),

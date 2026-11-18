@@ -17,11 +17,12 @@ export const POST = route<{ question: string }>(async (_ctx, b) => {
   } catch {
     /* no textbooks yet */
   }
+  if (!chunks.length) return fail("பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — விடைகள் பாடநூல் உரையிலிருந்து மட்டுமே தரப்படும்.");
   const glossary = await loadGlossary(admin);
   const passages = chunks.map((c, i) => `[${i + 1}] (${c.book}${c.page_from ? `, பக். ${c.page_from}` : ""})\n${c.content}`).join("\n\n");
   const { data } = await generateJSON<{ answer: string; used: number[] }>({
     system: `Answer the TNPSC candidate's doubt in clear Tamil (Tamil medium). Official terms: ${glossaryText(glossary)}.
-${chunks.length ? "Answer ONLY from the numbered Samacheer textbook passages and cite them like [1]. If the passages don't contain the answer, say so in Tamil and give what they do contain." : "No textbook passages are loaded yet. Answer from well-established textbook knowledge and say at the end that it is not checked against the textbook."}
+Answer ONLY from the numbered Samacheer textbook passages and cite them like [1]. If the passages don't contain the answer, say so in Tamil and give what they do contain. Never add your own knowledge.
 Use short paragraphs or bullet points (markdown). Return JSON: {"answer":"","used":[1]}`,
     user: `வினா: ${question}\n\n${passages}`,
     temperature: 0.3,

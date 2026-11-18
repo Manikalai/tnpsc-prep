@@ -5,7 +5,7 @@ import { supabaseAdmin } from "../lib/supabase/admin";
 import { generateForUnit, qHash, type Unit } from "../lib/questions";
 import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
-import { generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter } from "../lib/chapters";
+import { classifyChapters, generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter } from "../lib/chapters";
 
 const admin = supabaseAdmin();
 const maxCalls = Number(process.argv[2] || process.env.BANK_MAX_CALLS || 120);
@@ -22,6 +22,15 @@ let failStreak = 0;
 let added = 0;
 const log: string[] = [];
 
+// 0) rule: every AI question must come from the textbook. Once books are loaded, retire the old ones without a source.
+{
+  const { count: chunks } = await admin.from("textbook_chunks").select("*", { count: "exact", head: true });
+  if ((chunks ?? 0) >= 3000) {
+    const { data: gone } = await admin.from("questions").update({ status: "retired" }).eq("origin", "ai").is("chunk_id", null).eq("status", "active").select("id");
+    if (gone?.length) log.push(`retired ${gone.length} AI questions without a textbook source`);
+  }
+}
+
 // 1) aptitude & reasoning: computed questions (always correct)
 for (const u of (units ?? []).filter((x) => x.subject === "aptitude" || x.subject === "reasoning")) {
   const need = u.questions * 4 - (have.get(u.id) ?? 0);
@@ -29,7 +38,7 @@ for (const u of (units ?? []).filter((x) => x.subject === "aptitude" || x.subjec
   const keys = APT_TYPES.filter((t) => t.unit === u.subject).map((t) => t.key);
   const rows = drill(keys, need).map((q) => ({
     exam_code: u.exam_code, unit_id: u.id, stem: q.stem, options: q.options, answer_index: q.answer_index,
-    explanation: q.explanation, origin: "aptitude", source_ref: "கணக்கிடப்பட்ட வினா", hash: qHash(q.stem, q.options),
+    explanation: q.explanation, origin: "aptitude", difficulty: "medium", source_ref: "கணக்கிடப்பட்ட வினா (திறனறிவு)", hash: qHash(q.stem, q.options),
   }));
   const { data } = await admin.from("questions").upsert(rows, { onConflict: "hash", ignoreDuplicates: true }).select("id");
   added += data?.length ?? 0;
@@ -57,7 +66,8 @@ outer: while (calls < maxCalls) {
     t.gap -= r.ids.length;
     added += r.ids.length;
     if (r.ids.length) progressed = true;
-    log.push(`${t.u.id}: +${r.ids.length} via ${r.provider ?? "-"}${r.grounded ? "" : " (no textbook)"}${r.errors.length ? " ! " + r.errors[0].slice(0, 120) : ""}`);
+    if (!r.grounded) { log.push(`${t.u.id}: skipped — no textbook text for this unit yet`); console.log(log.at(-1)); continue; }
+    log.push(`${t.u.id}: +${r.ids.length} via ${r.provider ?? "-"}${r.errors.length ? " ! " + r.errors[0].slice(0, 120) : ""}`);
     console.log(log.at(-1));
     if (r.errors.some((e) => /all AI providers failed|எல்லா AI/.test(e))) {
       failStreak++;
@@ -69,6 +79,14 @@ outer: while (calls < maxCalls) {
     await sleep(Number(process.env.BANK_SLEEP_MS || 7000)); // stay under free-tier per-minute limits
   }
   if (!progressed) break;
+}
+
+// 3a) label chapter sections (History / Geography / …) for the quiz builder
+try {
+  const labelled = await classifyChapters(admin);
+  if (labelled) log.push(`chapter sections labelled: ${labelled}`);
+} catch {
+  /* column missing until migration 0005 is run */
 }
 
 // 3) chapters: summary, facts, revision questions and 10 MCQs per chapter (Group 4 classes first)

@@ -31,6 +31,34 @@ export const norm = (s: string) => s.replace(/\s+/g, " ").replace(/[.?!,:;"'()\-
 export const qHash = (stem: string, options: string[]) =>
   createHash("sha1").update(norm(stem) + "|" + options.map(norm).sort().join("|")).digest("hex");
 
+export const DIFFICULTIES = ["easy", "medium", "hard"] as const;
+
+/** AI questions must have every part: 4 choices, answer, explanation, a textbook passage, a difficulty. */
+export function validateStrict(raw: unknown, passageCount: number): (GenQuestion & { source: number; difficulty: string }) | null {
+  const q = validate(raw);
+  if (!q) return null;
+  if (!q.explanation || q.explanation.trim().length < 10) return null;
+  if (typeof q.source !== "number" || q.source < 0 || q.source >= passageCount) return null;
+  const difficulty = (q.difficulty ?? "").toLowerCase();
+  return { ...q, source: q.source, difficulty: (DIFFICULTIES as readonly string[]).includes(difficulty) ? difficulty : "medium" };
+}
+
+/** "10ஆம் வகுப்பு சமூக அறிவியல், பாடம் 5: இந்திய அரசியலமைப்பு, பக். 145" */
+export function textbookRef(c: { book: string; page_from: number | null }, ch?: { chapter_no: number; title_ta: string } | null) {
+  return `${c.book}${ch ? `, பாடம் ${ch.chapter_no}: ${ch.title_ta}` : ""}${c.page_from ? `, பக். ${c.page_from}` : ""}`;
+}
+
+/** Chapter (number, title) for each passage id, so references can name the chapter. */
+export async function chaptersForChunks(admin: SupabaseClient, chunkIds: number[]) {
+  const out = new Map<number, { id: number; chapter_no: number; title_ta: string }>();
+  if (!chunkIds.length) return out;
+  const { data } = await admin.from("textbook_chunks").select("id,chapter_id,chapters(id,chapter_no,title_ta)").in("id", chunkIds);
+  for (const r of (data ?? []) as unknown as { id: number; chapters: { id: number; chapter_no: number; title_ta: string } | null }[]) {
+    if (r.chapters) out.set(r.id, r.chapters);
+  }
+  return out;
+}
+
 export function validate(raw: unknown, opts: { requireTamil?: boolean } = {}): GenQuestion | null {
   const r = QuestionZ.safeParse(raw);
   if (!r.success) return null;
@@ -94,8 +122,10 @@ export async function generateForUnit(
   const topic = opts.topic ?? (pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined);
   const focus = topic?.name_ta ?? unit.name_ta;
   const chunks = await retrieveForUnit(admin, unit, focus, opts.maxStd);
-  const glossary = await loadGlossary(admin);
   const grounded = chunks.length > 0;
+  // Rule: questions come only from textbook text. No passages → no AI questions.
+  if (!grounded) return { ids: [], grounded, errors: ["பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — பாடநூல் உரை இல்லாமல் வினாக்கள் உருவாக்கப்படாது."] };
+  const glossary = await loadGlossary(admin);
   const level = unit.standard === "SSLC" ? "SSLC (10th standard)" : "degree standard";
 
   const passages = chunks
@@ -106,18 +136,19 @@ export async function generateForUnit(
 Write EVERYTHING in correct, formal Tamil exactly as Samacheer Kalvi textbooks and TNPSC question papers do.
 Use these official Tamil terms when they apply: ${glossaryText(glossary)}.
 Rules:
-- ${grounded ? "Every fact must come from the numbered passages. Do not use facts that are not in the passages. Put the passage number in \"source\"." : "No textbook passages are available, so only ask well-established textbook facts you are certain about."}
+- Every fact must come from the numbered textbook passages. Never use your own knowledge. Every question MUST have "source" = the passage number it comes from.
 - Exactly 4 options, one correct, all plausible, no "மேற்கண்ட அனைத்தும்" unless the passage supports it.
 - Do not invent grammar rules, verse lines or quotations. Quote Thirukkural / literature only if the exact text is in a passage.
 - Level: ${level}.
-- explanation: 1–3 Tamil sentences saying why the answer is right.
+- explanation (required): 1–3 Tamil sentences saying why the answer is right, from the passage.
+- difficulty (required): easy (direct one-fact), medium, or hard (statement / assertion–reason / match on finer details).
 ${STYLE_GUIDE}
 Return JSON: {"questions":[{"stem":"","options":["","","",""],"answer_index":0,"explanation":"","source":0,"style":"direct","difficulty":"easy|medium|hard"}]}`;
 
   const user = `அலகு: ${unit.name_ta}
 தலைப்பு: ${focus}
 ${opts.n} வினாக்கள் உருவாக்கவும் (பல்வேறு வடிவங்கள் கலந்து).
-${grounded ? `\nபாடநூல் பகுதிகள்:\n${passages}` : ""}`;
+\nபாடநூல் பகுதிகள்:\n${passages}`;
 
   const errors: string[] = [];
   let provider: string | undefined;
@@ -133,13 +164,15 @@ ${grounded ? `\nபாடநூல் பகுதிகள்:\n${passages}` : 
   }
 
   const rows = [];
+  const chMap = await chaptersForChunks(admin, chunks.map((c) => c.id));
   for (const item of raw) {
-    const q = validate(item);
+    const q = validateStrict(item, chunks.length);
     if (!q) {
-      errors.push("invalid question skipped");
+      errors.push("question without all parts (4 choices, answer, explanation, textbook source, difficulty) skipped");
       continue;
     }
-    const c = typeof q.source === "number" ? chunks[q.source] : undefined;
+    const c = chunks[q.source];
+    const ch = chMap.get(c.id);
     rows.push({
       exam_code: unit.exam_code,
       unit_id: unit.id,
@@ -148,11 +181,12 @@ ${grounded ? `\nபாடநூல் பகுதிகள்:\n${passages}` : 
       options: q.options.map((o) => o.trim()),
       answer_index: q.answer_index,
       explanation: q.explanation,
-      source_ref: c ? `${c.book}${c.page_from ? `, பக். ${c.page_from}` : ""}` : null,
-      chunk_id: c?.id ?? null,
+      source_ref: textbookRef(c, ch),
+      chunk_id: c.id,
+      chapter_id: ch?.id ?? null,
       origin: "ai",
       style: q.style ?? null,
-      difficulty: q.difficulty ?? "medium",
+      difficulty: q.difficulty,
       hash: qHash(q.stem, q.options),
     });
   }

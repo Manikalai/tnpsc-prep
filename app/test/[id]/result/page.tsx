@@ -76,7 +76,10 @@ export default async function Result({ params, searchParams }: { params: Promise
       <div className="space-y-3">
         {shown.map(({ n, q, a }) => (
           <div key={q!.id} className="card">
-            <p className="text-xs text-stone-400">வினா {n} {q!.origin === "pyq" && <span className="chip ml-1">முந்தைய ஆண்டு {q!.pyq_year ?? ""}</span>}</p>
+            <p className="text-xs text-stone-400">
+              வினா {n} {q!.origin === "pyq" && <span className="chip ml-1">முந்தைய ஆண்டு {q!.pyq_year ?? ""}</span>}
+              {q!.difficulty && <span className="chip ml-1">{({ easy: "எளிது", medium: "நடுத்தரம்", hard: "கடினம்" } as Record<string, string>)[q!.difficulty] ?? q!.difficulty}</span>}
+            </p>
             <p className="mt-1 whitespace-pre-line font-medium">{q!.stem}</p>
             <div className="mt-2 space-y-1">
               {(q!.options as string[]).map((o, k) => {
@@ -91,7 +94,7 @@ export default async function Result({ params, searchParams }: { params: Promise
             {a?.chosen == null && <p className="mt-1 text-xs text-stone-500">விடையளிக்கவில்லை</p>}
             {q!.explanation && <p className="mt-2 rounded-lg bg-stone-50 p-2 text-sm">{q!.explanation}</p>}
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
-              <span>{q!.source_ref ? `ஆதாரம்: ${q!.source_ref}` : q!.origin === "ai" ? "⚠ பாடநூல் ஆதாரம் இல்லை – சரிபார்க்கவும்" : ""}</span>
+              <span>{q!.source_ref ? `📖 ${q!.source_ref}` : q!.origin === "ai" ? "⚠ பாடநூல் ஆதாரம் இல்லை (பழைய வினா – விரைவில் நீக்கப்படும்)" : ""}</span>
               <ReportButton questionId={q!.id} />
             </div>
             <div className="mt-1"><ExplainButton questionId={q!.id} /></div>

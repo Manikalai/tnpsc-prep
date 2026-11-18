@@ -38,11 +38,12 @@ export const POST = route<{ questionId: string }>(async (_ctx, b) => {
       /* no textbooks loaded yet */
     }
   }
+  if (!passages.length) return fail("பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — விளக்கம் பாடநூல் உரையிலிருந்து மட்டுமே எழுதப்படும்.");
   const glossary = await loadGlossary(admin);
   const opts = q.options as string[];
   const { data } = await generateJSON<Explanation>({
     system: `You are a patient TNPSC teacher explaining an exam question to a Tamil-medium candidate, in clear formal Tamil. Official terms: ${glossaryText(glossary)}.
-The correct answer is given — do not change it. ${passages.length ? "Base the explanation on the textbook passages; do not add facts that contradict them." : "No textbook passage is available; use only well-established facts and keep it brief."}
+The correct answer is given — do not change it. Explain ONLY from the textbook passages; never add your own knowledge.
 Return JSON:
 {"why_right":"2–4 sentences on why the correct answer is right",
  "options":[{"option":"<each WRONG option text>","why":"one sentence on why it is wrong / what it actually refers to"}],

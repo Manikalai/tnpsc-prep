@@ -29,11 +29,12 @@ export const POST = route<{ action: "generate" | "pin" | "delete"; unitId?: stri
     const { data: topic } = b.topicId ? await admin.from("topics").select("id,name_ta").eq("id", b.topicId).single() : { data: null };
     const focus = topic?.name_ta ?? unit.name_ta;
     const chunks = await retrieveForUnit(admin, unit as Unit, focus, maxStdFor(unit.exam_code), 8);
+    if (!chunks.length) return fail("பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — குறிப்புகள் பாடநூல் உரையிலிருந்து மட்டுமே உருவாக்கப்படும்.");
     const glossary = await loadGlossary(admin);
     const passages = chunks.map((c, i) => `[${i}] (${c.book}${c.page_from ? `, பக். ${c.page_from}` : ""})\n${c.content}`).join("\n\n");
     const { data } = await generateJSON<Gen>({
       system: `You make revision material in Tamil for TNPSC candidates who study in Tamil medium. Official terms: ${glossaryText(glossary)}.
-${chunks.length ? "Use only facts from the numbered textbook passages." : "No passages are available: use only well-established textbook facts."}
+Use only facts from the numbered textbook passages — never your own knowledge.
 Produce:
 1. mnemonic: a short Tamil memory trick (first-letter word, rhyme or story) for a list in this topic, with what each letter stands for.
 2. summary: a one-page Tamil summary in markdown bullet points (most-asked facts first).
@@ -44,7 +45,7 @@ Return JSON: {"mnemonic":{"title":"","content":""},"summary":{"title":"","conten
       temperature: 0.5,
       timeoutMs: 50000,
     });
-    const source_ref = chunks.length ? [...new Set(chunks.map((c) => c.book))].join("; ") : "பாடநூல் ஆதாரம் இல்லை – சரிபார்க்கவும்";
+    const source_ref = [...new Set(chunks.map((c) => c.book))].join("; ");
     const rows = (["mnemonic", "summary", "table"] as const)
       .filter((k) => data[k]?.content)
       .map((k) => ({ user_id: user.id, unit_id: unit.id, topic_id: topic?.id ?? null, kind: k, title: data[k]!.title || focus, content: data[k]!.content, source_ref }));

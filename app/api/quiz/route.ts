@@ -37,9 +37,8 @@ export const POST = route<{ unitId: string; topicId?: string; count?: number }>(
       maxStd: maxStdFor(unit.exam_code),
     });
     ids = [...ids, ...gen.ids].slice(0, count);
-    if (!gen.grounded) notice = "பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை — இந்த வினாக்கள் பாடநூல் ஆதாரமின்றி உருவாக்கப்பட்டவை; விடைகளைச் சரிபார்க்கவும்.";
     if (ids.length === 0)
-      return fail("AI இப்போது மெதுவாக உள்ளது, வினா வங்கியிலும் இந்த அலகுக்கு வினாக்கள் இல்லை. சிறிது நேரம் கழித்து முயலவும் — இரவுப் பணி வங்கியை நிரப்பும்.");
+      return fail(gen.grounded ? "AI இப்போது மெதுவாக உள்ளது, வினா வங்கியிலும் இந்த அலகுக்கு வினாக்கள் இல்லை. சிறிது நேரம் கழித்து முயலவும்." : gen.errors[0]);
     if (ids.length < count) notice = (notice ? notice + " " : "") + `இப்போது ${ids.length} வினாக்கள் மட்டும் தயார்; இரவுப் பணி வங்கியை நிரப்பிய பின் முழு எண்ணிக்கை கிடைக்கும்.`;
   }
   // still short? reuse already-answered questions

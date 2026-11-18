@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 const MAIN = [
   { href: "/", label: "முகப்பு", icon: "⌂" },
-  { href: "/syllabus", label: "பாடத்திட்டம்", icon: "☰" },
+  { href: "/quiz/new", label: "வினாத்தாள்", icon: "✚" },
   { href: "/mock", label: "மாதிரித் தேர்வு", icon: "✎" },
   { href: "/ca", label: "நடப்பு நிகழ்வுகள்", icon: "◉" },
   { href: "/more", label: "மேலும்", icon: "⋯" },
