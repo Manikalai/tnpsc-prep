@@ -1,6 +1,7 @@
 import { route, ok, fail } from "@/lib/api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { embed, generateJSON } from "@/lib/ai";
+import { generateJSON } from "@/lib/ai";
+import { findPassages } from "@/lib/retrieve";
 import { glossaryText, loadGlossary, type Chunk } from "@/lib/questions";
 
 export const maxDuration = 60;
@@ -11,9 +12,7 @@ export const POST = route<{ question: string }>(async (_ctx, b) => {
   const admin = supabaseAdmin();
   let chunks: Chunk[] = [];
   try {
-    const [vec] = await embed([question], "RETRIEVAL_QUERY");
-    const { data } = await admin.rpc("match_chunks", { query_embedding: vec as unknown as string, match_count: 6, subjects: null, max_std: 12 });
-    chunks = (data ?? []) as Chunk[];
+    chunks = (await findPassages(admin, { text: question, count: 6 })) as Chunk[];
   } catch {
     /* no textbooks yet */
   }

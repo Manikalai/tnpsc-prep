@@ -2,7 +2,8 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { embed, generateJSON, tamilRatio } from "./ai";
+import { generateJSON, tamilRatio } from "./ai";
+import { findPassages } from "./retrieve";
 
 export type Unit = {
   id: string;
@@ -89,19 +90,7 @@ export async function retrieveForUnit(
   count = 6
 ): Promise<Chunk[]> {
   try {
-    const [vec] = await embed([`${unit.name_ta} – ${focus}`], "RETRIEVAL_QUERY");
-    const { data, error } = await admin.rpc("match_chunks", {
-      query_embedding: vec as unknown as string,
-      match_count: count * 3,
-      subjects: unit.source_subjects.length
-        ? [...unit.source_subjects, ...(unit.source_subjects.some((x) => x === "science" || x === "social") ? ["sciso"] : [])]
-        : null,
-      max_std: maxStd,
-    });
-    if (error) throw error;
-    const rows = (data ?? []) as Chunk[];
-    // keep variety: shuffle the top results and take `count`
-    return rows.sort(() => Math.random() - 0.5).slice(0, count);
+    return (await findPassages(admin, { text: `${unit.name_ta} – ${focus}`, subjects: unit.source_subjects, unitSubject: unit.subject, maxStd, count })) as Chunk[];
   } catch {
     return [];
   }

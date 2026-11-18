@@ -1,6 +1,7 @@
 import { route, ok, fail } from "@/lib/api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { embed, generateJSON } from "@/lib/ai";
+import { generateJSON } from "@/lib/ai";
+import { findPassages } from "@/lib/retrieve";
 import { glossaryText, loadGlossary } from "@/lib/questions";
 
 export const maxDuration = 60;
@@ -31,9 +32,7 @@ export const POST = route<{ questionId: string }>(async (_ctx, b) => {
   }
   if (!passages.length) {
     try {
-      const [vec] = await embed([`${q.stem} ${(q.options as string[])[q.answer_index]}`], "RETRIEVAL_QUERY");
-      const { data } = await admin.rpc("match_chunks", { query_embedding: vec as unknown as string, match_count: 3, subjects: null, max_std: 12 });
-      passages = (data ?? []) as typeof passages;
+      passages = await findPassages(admin, { text: `${q.stem} ${(q.options as string[])[q.answer_index]}`, count: 3 });
     } catch {
       /* no textbooks loaded yet */
     }

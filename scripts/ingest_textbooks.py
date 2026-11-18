@@ -62,6 +62,7 @@ def clean(t: str) -> str:
     t = FOOTER.sub("", t)
     t = REPEAT_SIGN.sub(r"\1", t)
     t = t.replace("�", "").replace("­", "")
+    t = re.sub("[\u200c\u200d]", "", t)
     t = re.sub(r"[ \t]+", " ", t)
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip()
@@ -86,7 +87,25 @@ def chunks_of(pages, size=1200, overlap=0):
         out.append((start, pages[-1][0] if pages else start, buf.strip()))
     return [c for c in out if len(c[2]) > 120]
 
-GEN_MODELS = [m.strip() for m in (os.environ.get("GEMINI_MODELS") or "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash").split(",") if m.strip()]
+GEN_MODELS = [m.strip() for m in (os.environ.get("GEMINI_MODELS") or "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-3.5-flash-lite,gemini-flash-lite-latest").split(",") if m.strip()]
+
+TAMIL_NUM = {"ஒன்று": 1, "இரண்டு": 2, "மூன்று": 3, "நான்கு": 4, "ஐந்து": 5, "ஆறு": 6, "ஏழு": 7, "எட்டு": 8, "ஒன்பது": 9, "பத்து": 10}
+HEADING = re.compile(r"^\s*(இயல்|அலகு|பாடம்|Unit|UNIT|Lesson)\s*[-–:.]?\s*(\d{1,2}|" + "|".join(TAMIL_NUM) + r")(?![஀-௿\w])\s*[-–:.]?\s*(.{0,80})", re.M)
+
+def heading_chapters(pages, subject):
+    """Fallback without AI: pages whose top lines start with இயல் / அலகு / பாடம் N."""
+    found, seen = [], set()
+    for no, t in pages:
+        m = HEADING.search(t[:300])
+        if not m:
+            continue
+        num = TAMIL_NUM.get(m.group(2)) or int(m.group(2)) if m.group(2).isdigit() or m.group(2) in TAMIL_NUM else None
+        if not num or num in seen:
+            continue
+        seen.add(num)
+        title = re.sub(r"\s+", " ", m.group(3)).strip(" -–:.") or f"{m.group(1)} {num}"
+        found.append({"no": num, "title": title, "start_page": no, "subject": "social" if subject == "sciso" else subject})
+    return found if len(found) >= 2 else []
 
 def gemini_json(prompt: str):
     last = None
@@ -122,8 +141,14 @@ def detect_chapters(pages, title, subject):
         data = gemini_json(prompt)
         chs = [c for c in data.get("chapters", []) if isinstance(c.get("start_page"), int) and c.get("title")]
     except Exception as e:
-        print(f"  chapter detection failed ({e}); using the whole book as one chapter")
+        print(f"  AI chapter detection failed ({str(e)[:120]}); trying lesson headings")
         chs = []
+    if not chs:
+        chs = heading_chapters(pages, subject)
+        if chs:
+            print(f"  found {len(chs)} lessons from headings")
+        else:
+            print("  no lesson headings found; using the whole book as one chapter")
     last_page = pages[-1][0] if pages else 1
     if not chs:
         return [(1, title, "social" if subject == "sciso" else subject, pages[0][0] if pages else 1, last_page)]
@@ -141,7 +166,23 @@ def detect_chapters(pages, title, subject):
         out.append((no, str(c["title"]).strip()[:200], subj, c["start_page"], max(end, c["start_page"])))
     return out
 
+class EmbedQuota(Exception):
+    pass
+
+NO_EMBED = {"on": os.environ.get("SKIP_EMBEDDINGS") == "1"}
+
 def embed(texts):
+    """Gemini embeddings; returns None for every text if the free quota is used up (passages are still stored)."""
+    if NO_EMBED["on"]:
+        return [None] * len(texts)
+    try:
+        return _embed(texts)
+    except EmbedQuota:
+        NO_EMBED["on"] = True
+        print("    embedding quota reached — storing passages without embeddings (keyword + lesson search is used instead)")
+        return [None] * len(texts)
+
+def _embed(texts):
     vecs = []
     for i in range(0, len(texts), 50):
         batch = texts[i:i + 50]
@@ -153,11 +194,13 @@ def embed(texts):
             if r.status_code == 200:
                 vecs += [e["values"] for e in r.json()["embeddings"]]
                 break
+            if r.status_code == 429 and ("quota" in r.text.lower() or attempt >= 1):
+                raise EmbedQuota()
             wait = 20 * (attempt + 1)
             print(f"    embed {r.status_code}, waiting {wait}s: {r.text[:150]}")
             time.sleep(wait)
         else:
-            raise SystemExit("embedding failed repeatedly (daily free limit reached?) — re-run later; finished books are kept")
+            raise EmbedQuota()
         time.sleep(1.5)
     return vecs
 
@@ -260,7 +303,7 @@ def main():
                 continue
             vecs = embed([f"{ctitle}\n{c[2]}" for c in chunks])
             recs = [{"book": title, "std": std, "subject": subj, "term": row.get("term") or None, "page_from": pa, "page_to": pb,
-                     "content": t, "quality": "text", "chapter_id": ch["id"], "embedding": "[" + ",".join(f"{x:.6f}" for x in v) + "]"}
+                     "content": t, "quality": "text", "chapter_id": ch["id"], "embedding": ("[" + ",".join(f"{x:.6f}" for x in v) + "]") if v else None}
                     for (pa, pb, t), v in zip(chunks, vecs)]
             for i in range(0, len(recs), 100):
                 sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
