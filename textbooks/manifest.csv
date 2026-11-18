@@ -1,21 +1,20 @@
 std,subject,term,title,source
 # subject: tamil | social | science | sciso (combined Science & Social Science term books) | maths
 # Group 4 books (Std 6–10) first, then Std 11–12 for Groups 1 and 2. Lines starting with # are skipped.
-# Std 6 and 7 come in three terms. Term 1 links were listed on tnkalvi.online; Terms 2 and 3 follow the same SCERT naming
-# and are checked by the "check only" run. If one fails, use the Google Drive copy from tntextbooks.net instead
-# (e.g. 6th Term 2 Science & Social: https://drive.google.com/file/d/1FIy-z3AIHNXLnFLeByjlVgMrV834HMxt/view).
+# Std 6 and 7 come in three terms. Term 1 = SCERT links (tnkalvi.online); Terms 2 and 3 = Google Drive copies from tntextbooks.net
+# (SCERT's own Term 2/3 file names are not public).
 6,tamil,1,6ஆம் வகுப்பு தமிழ் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%201_Text.pdf
-6,tamil,2,6ஆம் வகுப்பு தமிழ் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%202_Text.pdf
-6,tamil,3,6ஆம் வகுப்பு தமிழ் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%203_Text.pdf
+6,tamil,2,6ஆம் வகுப்பு தமிழ் (பருவம் 2),https://drive.google.com/file/d/12_8chRCexJo5E0GruM1Vh1c1E7KrmOwl/view
+6,tamil,3,6ஆம் வகுப்பு தமிழ் (பருவம் 3),https://drive.google.com/file/d/1mjMO0D9ykM4xJbTfPKmckHOHc4K9h95O/view
 6,sciso,1,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_1_Text.pdf
-6,sciso,2,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_2_Text.pdf
-6,sciso,3,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_3_Text.pdf
+6,sciso,2,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://drive.google.com/file/d/1FIy-z3AIHNXLnFLeByjlVgMrV834HMxt/view
+6,sciso,3,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://drive.google.com/file/d/1z4j8RgjGiuvNCN3vmvu5_FJMpopNQh1N/view
 7,tamil,1,7ஆம் வகுப்பு தமிழ் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%201_Text.pdf
-7,tamil,2,7ஆம் வகுப்பு தமிழ் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%202_Text.pdf
-7,tamil,3,7ஆம் வகுப்பு தமிழ் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%203_Text.pdf
+7,tamil,2,7ஆம் வகுப்பு தமிழ் (பருவம் 2),https://drive.google.com/file/d/1fLJ8Jkumj62X9AUV29xGRrCkSdgDBO0r/view
+7,tamil,3,7ஆம் வகுப்பு தமிழ் (பருவம் 3),https://drive.google.com/file/d/1CIawKQke14BeukmzQOdbzrX38L-ekNrq/view
 7,sciso,1,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_1_Text.pdf
-7,sciso,2,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_2_Text.pdf
-7,sciso,3,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_3_Text.pdf
+7,sciso,2,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://drive.google.com/file/d/1DHP69VUMUXV4t3_lWtafC-WFq5SkOlnR/view
+7,sciso,3,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://drive.google.com/file/d/1kV2VPru55vNgnFXiPaoJg1PShjAcSyMZ/view
 8,tamil,,8ஆம் வகுப்பு தமிழ்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th%20Std%20Tamil_Text.pdf
 8,social,,8ஆம் வகுப்பு சமூக அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th_Social%20Science_TM_Text.pdf
 8,science,,8ஆம் வகுப்பு அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th_Science_Tamil%20Medium_Text.pdf

@@ -32,20 +32,36 @@ def tamil_ratio(s: str) -> float:
 def page_ok(text: str, subject: str) -> bool:
     if len(text.strip()) < 40:
         return False
+    if garble_score(text) > 4:   # SCERT PDFs with broken Tamil font mapping → OCR instead
+        return False
     if LEGACY.search(text):
         return False
     # Tamil-medium books: most letters should be Tamil (maths pages have lots of digits, which are not letters)
     return tamil_ratio(text) >= 0.45
 
-def ocr_page(page) -> str:
+def ocr_png(png: bytes) -> str:
     import pytesseract
     from PIL import Image
-    pix = page.get_pixmap(dpi=300)
-    img = Image.open(io.BytesIO(pix.tobytes("png")))
-    return pytesseract.image_to_string(img, lang="tam+eng")
+    return pytesseract.image_to_string(Image.open(io.BytesIO(png)), lang="tam+eng")
+
+def ocr_page(page) -> str:
+    return ocr_png(page.get_pixmap(dpi=250).tobytes("png"))
+
+VOWEL_SIGNS = "ா-்ௗ"
+REPEAT_SIGN = re.compile("([" + VOWEL_SIGNS + "])(?:�)?\\1+")   # ொ�ொ, ்், ாா  -> one sign
+FOOTER = re.compile(r"^.*(\.indd\b|\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(:\d{2})?).*$", re.M)
+
+def garble_score(t: str) -> float:
+    """How broken the extracted Tamil looks: replacement chars and doubled vowel signs per 1000 chars."""
+    if not t:
+        return 0.0
+    bad = t.count("�") + len(re.findall("[" + VOWEL_SIGNS + "]{2,}", t))
+    return bad * 1000 / max(len(t), 1)
 
 def clean(t: str) -> str:
-    t = t.replace("­", "")
+    t = FOOTER.sub("", t)
+    t = REPEAT_SIGN.sub(r"\1", t)
+    t = t.replace("�", "").replace("­", "")
     t = re.sub(r"[ \t]+", " ", t)
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip()
@@ -154,8 +170,12 @@ def sb(method, path, **kw):
     return r
 
 def already_loaded(title: str) -> bool:
-    r = sb("GET", "textbook_chunks", params={"book": f"eq.{title}", "select": "id", "limit": "1"})
+    r = sb("GET", "job_runs", params={"job": "eq.book_done", "detail->>book": f"eq.{title}", "select": "id", "limit": "1"})
     return len(r.json()) > 0
+
+def remove_partial(title: str):
+    sb("DELETE", "chapters", params={"book": f"eq.{title}"})          # cascades to its passages
+    sb("DELETE", "textbook_chunks", params={"book": f"eq.{title}"})
 
 def get_pdf(source: str) -> pathlib.Path:
     if not source.startswith("http"):
@@ -194,23 +214,32 @@ def main():
         if not check_only and already_loaded(title):
             print("  already loaded, skipping")
             continue
+        if not check_only:
+            remove_partial(title)
         try:
             doc = fitz.open(get_pdf(row["source"].strip()))
         except Exception as e:
             print(f"  !! could not download/open: {e}")
             failed.append(title)
             continue
-        pages, ocr_n = [], 0
+        pages, ocr_n, need = [], 0, []
         for i, page in enumerate(doc):
             text = page.get_text("text")
-            if not page_ok(text, subject):
-                try:
-                    text = ocr_page(page)
-                    ocr_n += 1
-                except Exception as e:  # tesseract missing locally
-                    print(f"  page {i + 1}: OCR unavailable ({e}); skipped")
-                    continue
-            pages.append((i + 1, clean(text)))
+            if page_ok(text, subject):
+                pages.append((i + 1, clean(text)))
+            else:
+                need.append((i + 1, page.get_pixmap(dpi=250).tobytes("png")))
+        if need:
+            try:
+                from concurrent.futures import ProcessPoolExecutor
+                with ProcessPoolExecutor(max_workers=os.cpu_count() or 2) as ex:
+                    for (no, _), text in zip(need, ex.map(ocr_png, [png for _, png in need])):
+                        pages.append((no, clean(text)))
+                        ocr_n += 1
+            except Exception as e:  # tesseract missing locally
+                print(f"  OCR unavailable ({e}); {len(need)} pages skipped")
+        pages.sort(key=lambda x: x[0])
+        pages = [(no, t) for no, t in pages if t.strip()]
         chapters = detect_chapters(pages, title, subject) if pages else []
         print(f"  pages {len(doc)}, OCR {ocr_n}, chapters {len(chapters)}")
         for no, ctitle, subj, a, b in chapters:
@@ -237,6 +266,7 @@ def main():
                 sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
             stored += len(recs)
         total += stored
+        sb("POST", "job_runs", data=json.dumps({"job": "book_done", "ok": True, "detail": {"book": title, "chapters": len(chapters), "passages": stored, "ocr_pages": ocr_n}}), headers={"Prefer": "return=minimal"})
         print(f"  stored {stored} passages in {len(chapters)} chapters")
     if not check_only:
         sb("POST", "job_runs", data=json.dumps({"job": "ingest_textbooks", "ok": True, "detail": {"chunks": total}}), headers={"Prefer": "return=minimal"})
