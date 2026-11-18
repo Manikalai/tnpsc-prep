@@ -83,7 +83,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <h2 className="h2 mb-2">தானியங்கிப் பணிகள்</h2>
         {(runs ?? []).map((r) => (
           <p key={r.id} className={r.ok ? "" : "text-kumkum-500"}>
-            {taDate(r.ran_at)} · {r.job} · {r.ok ? "✓" : "✗"} {r.detail?.notes != null ? `${r.detail.notes} குறிப்புகள், ${r.detail.mcqs} வினாக்கள்` : ""}{r.detail?.added != null ? `${r.detail.added} வினாக்கள்` : ""} {r.detail?.error ?? ""}
+            {taDate(r.ran_at)} · {r.job} · {r.ok ? "✓" : "✗"} {r.detail?.notes != null ? `${r.detail.notes} குறிப்புகள், ${r.detail.mcqs} வினாக்கள்` : ""}{r.detail?.added != null ? `${r.detail.added} வினாக்கள்` : ""}{r.detail?.verified != null ? ` · சரிபார்ப்பு ${r.detail.verified} ✓ / ${r.detail.retired} நீக்கம்` : ""} {r.detail?.error ?? ""}
           </p>
         ))}
       </div>

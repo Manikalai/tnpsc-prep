@@ -78,6 +78,7 @@ export default async function Result({ params, searchParams }: { params: Promise
           <div key={q!.id} className="card">
             <p className="text-xs text-stone-400">
               வினா {n} {q!.origin === "pyq" && <span className="chip ml-1">முந்தைய ஆண்டு {q!.pyq_year ?? ""}</span>}
+              {q!.verified === "ok" && <span className="chip ml-1 bg-brand-50 text-brand-700">✓ பாடநூலுடன் சரிபார்க்கப்பட்டது</span>}
               {q!.difficulty && <span className="chip ml-1">{({ easy: "எளிது", medium: "நடுத்தரம்", hard: "கடினம்" } as Record<string, string>)[q!.difficulty] ?? q!.difficulty}</span>}
             </p>
             <p className="mt-1 whitespace-pre-line font-medium">{q!.stem}</p>

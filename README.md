@@ -31,7 +31,7 @@ A free, installable web app (PWA) for two people preparing for TNPSC exams in Ta
 2. **SQL Editor → New query** → paste all of [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) → **Run**.
 3. New query again → paste all of [`supabase/seed/0002_seed.sql`](supabase/seed/0002_seed.sql) → **Run**. (Loads the syllabus for all three exams and the Tamil glossary.)
 4. New query again → paste all of [`supabase/migrations/0003_chapters.sql`](supabase/migrations/0003_chapters.sql) → **Run**. (Chapter-wise textbook structure.)
-   Then the same for [`supabase/migrations/0004_explanations.sql`](supabase/migrations/0004_explanations.sql) (saved explanations) and [`supabase/migrations/0005_chapter_sections.sql`](supabase/migrations/0005_chapter_sections.sql) (quiz builder sections).
+   Then the same for [`supabase/migrations/0004_explanations.sql`](supabase/migrations/0004_explanations.sql) (saved explanations) [`supabase/migrations/0005_chapter_sections.sql`](supabase/migrations/0005_chapter_sections.sql) (quiz builder sections) and [`supabase/migrations/0006_verification.sql`](supabase/migrations/0006_verification.sql) (fact-check).
 5. **Project Settings → API Keys**: copy the **Project URL**, the **anon / publishable** key and the **service_role / secret** key.
 
 ### 2. Supabase — the two logins

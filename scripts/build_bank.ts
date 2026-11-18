@@ -5,6 +5,7 @@ import { supabaseAdmin } from "../lib/supabase/admin";
 import { generateForUnit, qHash, type Unit } from "../lib/questions";
 import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
+import { verifyPending } from "../lib/verify";
 import { classifyChapters, generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter } from "../lib/chapters";
 
 const admin = supabaseAdmin();
@@ -128,5 +129,10 @@ let chapterCalls = 0;
   }
 }
 
-await admin.from("job_runs").insert({ job: "build_bank", ok: true, detail: { added, calls, chapterCalls, log: log.slice(-60) } });
+// 4) fact-check new AI questions against their textbook passage (retires the ones the passage doesn't support)
+const verify = await verifyPending(admin, Number(process.env.VERIFY_MAX || 400), Number(process.env.BANK_SLEEP_MS || 6000), (s) => { log.push(s); console.log(s); });
+log.push(`fact-check: ${verify.ok} ok, ${verify.failed} retired`);
+console.log(log.at(-1));
+
+await admin.from("job_runs").insert({ job: "build_bank", ok: true, detail: { added, calls, chapterCalls, verified: verify.ok, retired: verify.failed, log: log.slice(-60) } });
 console.log(`done: ${added} questions in ${calls} unit calls + ${chapterCalls} chapter calls`);
