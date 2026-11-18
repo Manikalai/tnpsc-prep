@@ -102,8 +102,9 @@ def read_key(doc):
     """{no: {answer, confidence, cancelled}} from the scanned answer-key booklet (ticks)."""
     out = {}
     for i, page in enumerate(doc):
-        prompt = ("This is a scanned page of the official TNPSC FINAL answer key: the question booklet with the correct option marked by hand "
-                  "(a tick ✓, circle or pen mark next to option A, B, C or D). For EVERY question number visible on the page, report which ONE option is "
+        prompt = ("This is a scanned page of a TNPSC answer key. It is EITHER the question booklet with the correct option marked by hand "
+                  "(a tick ✓, circle or pen mark next to option A, B, C or D), OR an answer-key table listing question numbers with their answer letters. "
+                  "A page with only questions and no marks/answers: return an empty list. For EVERY question number with an answer on the page, report which ONE option is "
                   "marked. confidence = \"high\" if the mark is clear and unambiguous, \"low\" if faint, between two options, or more than one option looks marked. "
                   "If a question is marked deleted / cancelled / 'all answers correct' / has no mark, set answer to null and explain in note.\n"
                   'Return JSON {"answers":[{"no":1,"answer":"A","confidence":"high","note":""}]}')
@@ -177,7 +178,7 @@ def main():
         raise SystemExit("GEMINI_API_KEY missing")
 
     qdoc = download(a.question_url, f"{a.exam}-{a.year}-paper.pdf")
-    kdoc = download(a.key_url, f"{a.exam}-{a.year}-key.pdf")
+    kdoc = qdoc if a.key_url == a.question_url else download(a.key_url, f"{a.exam}-{a.year}-key.pdf")
     print(f"question paper: {len(qdoc)} pages · answer key: {len(kdoc)} pages")
 
     print("\n== reading questions"); qs = read_questions(qdoc)

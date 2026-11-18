@@ -3,3 +3,4 @@ pytesseract>=0.3.10
 requests>=2.31
 pillow>=10
 gdown>=5.1
+pyarrow>=15

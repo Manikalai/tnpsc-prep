@@ -109,3 +109,7 @@ Questions are written from retrieved textbook passages (RAG), validated (4 disti
 - Free tiers change; Gemini's free quota is per project. If AI calls fail, the app says so and the nightly job stops early and continues the next night.
 - Vercel Hobby is for personal, non-commercial use, which this is.
 - Current affairs come from Google News Tamil search feeds and PIB; only headlines and short descriptions are used and every note links to the source. Paste a TN DIPR release or Government Order into "செய்தியை நீங்களே சேர்க்க" to add it.
+
+## Imported question sets
+- `data/import/youth/` — practice questions from YOUTH Academy's MCQ-Quiz-Data (github.com/RajYOUTH/MCQ-Quiz-Data), CC BY-NC-SA 4.0, used here for private, non-commercial study.
+- Real TNPSC questions from the Hugging Face dataset `snegha24/Tamil_tnpscExam`.
