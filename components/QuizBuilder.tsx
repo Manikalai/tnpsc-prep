@@ -19,7 +19,9 @@ function Chips<T extends string | number>({ items, value, onChange, label }: { i
   );
 }
 
-export default function QuizBuilder({ chapters }: { chapters: C[] }) {
+export type StartQuiz = (p: { chapterIds: number[]; count: number; difficulty: string; title: string }) => Promise<void>;
+
+export default function QuizBuilder({ chapters, onStart }: { chapters: C[]; onStart?: StartQuiz }) {
   const router = useRouter();
   const stds = [...new Set(chapters.map((c) => c.std))].sort((a, b) => a - b);
   const [std, setStd] = useState<number>(stds[0]);
@@ -51,6 +53,11 @@ export default function QuizBuilder({ chapters }: { chapters: C[] }) {
     setMsg("");
     const chosen = chapters.filter((c) => picked.has(c.id));
     const title = `${std}ஆம் வகுப்பு ${SUBJECT[subject ?? ""] ?? ""}${section !== "all" ? ` – ${sectionName(section)}` : ""} · ${chosen.length === 1 ? `பாடம் ${chosen[0].no}: ${chosen[0].title}` : `${chosen.length} பாடங்கள்`} · ${DIFFICULTY[difficulty]}`;
+    if (onStart) {
+      await onStart({ chapterIds: [...picked], count, difficulty, title });
+      setBusy(false);
+      return;
+    }
     const r = await fetch("/api/quiz-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chapterIds: [...picked], count, difficulty, title }) });
     const d = await r.json().catch(() => ({}));
     if (r.ok) { if (d.notice) alert(d.notice); router.push(d.redirect); }
@@ -68,7 +75,7 @@ export default function QuizBuilder({ chapters }: { chapters: C[] }) {
         {subject && sections.length > 1 && (
           <Chips label="3. பிரிவு" items={[["all", "எல்லாம்"], ...sections.map((s) => [s, sectionName(s)] as [string, string])]} value={section} onChange={(v) => { setSection(v); reset(); }} />
         )}
-        {subject && unlabelled && sections.length <= 1 && (
+        {subject && unlabelled && sections.length <= 1 && !onStart && (
           <p className="text-xs text-stone-500">
             பிரிவுகள் (வரலாறு, புவியியல்…) இன்னும் வகைப்படுத்தப்படவில்லை — இரவுப் பணி செய்யும்.{" "}
             <button className="underline" onClick={async () => { const r = await fetch("/api/quiz-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "classify" }) }); const d = await r.json(); alert(d.notice ?? d.error); router.refresh(); }}>இப்போதே வகைப்படுத்து</button>

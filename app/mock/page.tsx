@@ -40,6 +40,10 @@ export default async function Mock({ searchParams }: { searchParams: Promise<{ e
           </div>
         </div>
       )}
+      <Link href="/papers" className="card block hover:border-brand-500">
+        <p className="font-semibold">TNPSC உண்மை வினாத்தாள்கள் →</p>
+        <p className="muted">முந்தைய ஆண்டு வினாத்தாளை அதிகாரபூர்வ விடைகளுடன் எழுதுங்கள்</p>
+      </Link>
       <div className="card">
         <h2 className="h2 mb-2">முந்தைய மாதிரித் தேர்வுகள்</h2>
         {!past?.length && <p className="muted">இன்னும் இல்லை.</p>}

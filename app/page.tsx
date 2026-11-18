@@ -29,6 +29,16 @@ export default async function Home() {
   const examDate = profile.exam_date ?? examRow?.exam_date ?? null;
   const left = examDate ? daysUntil(examDate) : null;
   const mine = (tests ?? []).filter((t) => t.user_id === user.id);
+  const { data: dailies } = await sb.from("tests").select("submitted_at").eq("user_id", user.id).eq("kind", "daily").not("submitted_at", "is", null).gte("submitted_at", new Date(Date.now() - 60 * 864e5).toISOString()).limit(200);
+  const days = new Set((dailies ?? []).map((d) => new Date(new Date(d.submitted_at).getTime() + 5.5 * 3600e3).toISOString().slice(0, 10)));
+  let streak = 0;
+  for (let d = new Date(Date.now() + 5.5 * 3600e3); ; d = new Date(d.getTime() - 864e5)) {
+    const key = d.toISOString().slice(0, 10);
+    if (days.has(key)) streak++;
+    else if (key !== today) break;
+    if (streak > 60) break;
+  }
+  const doneToday = days.has(today);
   const board = (profiles ?? []).map((p) => {
     const ts = (tests ?? []).filter((t) => t.user_id === p.id && t.max_score);
     const sc = ts.reduce((s, t) => s + Number(t.score), 0), mx = ts.reduce((s, t) => s + Number(t.max_score), 0);
@@ -47,6 +57,14 @@ export default async function Home() {
         )}
         <div className="mt-3 h-2 rounded-full bg-white/25"><div className="h-2 rounded-full bg-turmeric-500" style={{ width: `${pct(doneTopics, topicCount)}%` }} /></div>
         <p className="mt-1 text-sm opacity-90">பாடத்திட்டம்: {doneTopics}/{topicCount} தலைப்புகள் முடிந்தன ({pct(doneTopics, topicCount)}%) · {units?.length ?? 0} அலகுகள்</p>
+      </section>
+
+      <section className="card flex items-center justify-between gap-3">
+        <div>
+          <h2 className="h2">இன்றைய பயிற்சி {doneToday ? "✓" : ""}</h2>
+          <p className="muted">20 வினாக்கள்: திருப்புதல் + உங்கள் பலவீனமான அலகுகள் + நடப்பு நிகழ்வுகள் · தொடர் {streak} நாள்{streak === 1 ? "" : "கள்"} 🔥</p>
+        </div>
+        <StartButton url="/api/daily" label={doneToday ? "மீண்டும்" : "தொடங்கு"} busyLabel="…" />
       </section>
 
       <section className="grid grid-cols-2 gap-3">
@@ -74,6 +92,7 @@ export default async function Home() {
           <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} முழு மாதிரித் தேர்வு`} busyLabel="வினாத்தாள் தயாராகிறது…" />
           <Link href="/quiz/new" className="btn">வினாத்தாள் உருவாக்கு</Link>
           <Link href="/books" className="btn-ghost">பாடநூல்கள் – பாடம் வாரியாக</Link>
+          <Link href="/papers" className="btn-ghost">உண்மை வினாத்தாள்கள்</Link>
           <Link href="/syllabus" className="btn-ghost">அலகு வினாடி வினா</Link>
           <Link href="/aptitude" className="btn-ghost">திறனறிவுப் பயிற்சி</Link>
           <Link href="/ask" className="btn-ghost">பாடநூலிடம் கேள்</Link>

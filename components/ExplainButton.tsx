@@ -2,10 +2,11 @@
 import { useState } from "react";
 import type { Explanation } from "@/app/api/explain/route";
 
-export default function ExplainButton({ questionId }: { questionId: string }) {
+export default function ExplainButton({ questionId, cached, offline }: { questionId: string; cached?: Explanation | null; offline?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const [ex, setEx] = useState<Explanation | null>(null);
+  const [ex, setEx] = useState<Explanation | null>(cached ?? null);
+  if (!ex && offline) return <span className="text-xs text-stone-400">விரிவான விளக்கம்: இணையம் வந்ததும் கிடைக்கும்</span>;
   if (ex)
     return (
       <div className="mt-2 space-y-2 rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-sm">

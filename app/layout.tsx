@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
+import OfflineAutoSync from "@/components/OfflineAutoSync";
 
 export const metadata: Metadata = {
   title: "TNPSC தயாரிப்பு",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen font-sans antialiased">
         <Nav />
+        <OfflineAutoSync />
         <main className="mx-auto max-w-3xl px-4 pb-28 pt-4 md:pb-10">{children}</main>
         <script
           dangerouslySetInnerHTML={{
