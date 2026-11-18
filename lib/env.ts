@@ -10,7 +10,7 @@ export function serverEnv() {
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean),
-    providers: (process.env.AI_PROVIDERS ?? "gemini,groq,openrouter")
+    providers: (process.env.AI_PROVIDERS || "gemini,groq,openrouter")
       .split(",")
       .map((p) => p.trim())
       .filter(Boolean),

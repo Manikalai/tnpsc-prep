@@ -7,8 +7,8 @@ import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
 
 const admin = supabaseAdmin();
-const maxCalls = Number(process.argv[2] ?? process.env.BANK_MAX_CALLS ?? 120);
-const order = (process.env.BANK_EXAMS ?? "G4,G2,G1").split(",");
+const maxCalls = Number(process.argv[2] || process.env.BANK_MAX_CALLS || 120);
+const order = (process.env.BANK_EXAMS || "G4,G2,G1").split(",");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const { data: units } = await admin.from("units").select("*");
@@ -65,7 +65,7 @@ outer: while (calls < maxCalls) {
       continue;
     }
     failStreak = 0;
-    await sleep(Number(process.env.BANK_SLEEP_MS ?? 7000)); // stay under free-tier per-minute limits
+    await sleep(Number(process.env.BANK_SLEEP_MS || 7000)); // stay under free-tier per-minute limits
   }
   if (!progressed) break;
 }
