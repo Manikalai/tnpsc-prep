@@ -17,6 +17,7 @@ const have = new Map<string, number>();
 for (const c of counts ?? []) if (c.unit_id) have.set(c.unit_id, (have.get(c.unit_id) ?? 0) + c.n);
 
 let calls = 0;
+let failStreak = 0;
 let added = 0;
 const log: string[] = [];
 
@@ -57,7 +58,13 @@ outer: while (calls < maxCalls) {
     if (r.ids.length) progressed = true;
     log.push(`${t.u.id}: +${r.ids.length} via ${r.provider ?? "-"}${r.grounded ? "" : " (no textbook)"}${r.errors.length ? " ! " + r.errors[0].slice(0, 120) : ""}`);
     console.log(log.at(-1));
-    if (r.errors.some((e) => /all AI providers failed|எல்லா AI/.test(e))) break outer; // daily limits reached
+    if (r.errors.some((e) => /all AI providers failed|எல்லா AI/.test(e))) {
+      failStreak++;
+      if (failStreak >= 4) break outer; // daily limits really reached – continue tomorrow
+      await sleep(45000); // busy right now – wait and carry on
+      continue;
+    }
+    failStreak = 0;
     await sleep(Number(process.env.BANK_SLEEP_MS ?? 7000)); // stay under free-tier per-minute limits
   }
   if (!progressed) break;
