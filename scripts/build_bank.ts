@@ -5,6 +5,7 @@ import { supabaseAdmin } from "../lib/supabase/admin";
 import { generateForUnit, qHash, type Unit } from "../lib/questions";
 import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
+import { generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter } from "../lib/chapters";
 
 const admin = supabaseAdmin();
 const maxCalls = Number(process.argv[2] || process.env.BANK_MAX_CALLS || 120);
@@ -70,5 +71,44 @@ outer: while (calls < maxCalls) {
   if (!progressed) break;
 }
 
-await admin.from("job_runs").insert({ job: "build_bank", ok: true, detail: { added, calls, log: log.slice(-60) } });
-console.log(`done: ${added} questions in ${calls} AI calls`);
+// 3) chapters: summary, facts, revision questions and 10 MCQs per chapter (Group 4 classes first)
+const chapterBudget = Number(process.env.BANK_CHAPTER_CALLS || 60);
+let chapterCalls = 0;
+{
+  const { data: chs } = await admin.from("chapters").select("*").order("std").order("term").order("chapter_no").limit(3000);
+  const { data: done } = await admin.from("chapter_notes").select("chapter_id,kind");
+  const have = new Set((done ?? []).map((d) => `${d.chapter_id}:${d.kind}`));
+  const { data: mcq } = await admin.from("questions").select("chapter_id").not("chapter_id", "is", null).limit(50000);
+  const mcqCount = new Map<number, number>();
+  for (const q of mcq ?? []) mcqCount.set(q.chapter_id, (mcqCount.get(q.chapter_id) ?? 0) + 1);
+  outer2: for (const ch of (chs ?? []) as Chapter[]) {
+    for (const kind of NOTE_KINDS) {
+      if (have.has(`${ch.id}:${kind}`)) continue;
+      if (chapterCalls >= chapterBudget) break outer2;
+      chapterCalls++;
+      try {
+        await generateChapterNote(admin, ch, kind);
+        log.push(`chapter ${ch.id} ${kind}: ok`);
+      } catch (e) {
+        log.push(`chapter ${ch.id} ${kind}: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`);
+      }
+      console.log(log.at(-1));
+      await sleep(Number(process.env.BANK_SLEEP_MS || 7000));
+    }
+    if ((mcqCount.get(ch.id) ?? 0) < 10 && chapterCalls < chapterBudget) {
+      chapterCalls++;
+      try {
+        const ids = await generateChapterMCQs(admin, ch, 10);
+        added += ids.length;
+        log.push(`chapter ${ch.id} mcq: +${ids.length}`);
+      } catch (e) {
+        log.push(`chapter ${ch.id} mcq: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`);
+      }
+      console.log(log.at(-1));
+      await sleep(Number(process.env.BANK_SLEEP_MS || 7000));
+    }
+  }
+}
+
+await admin.from("job_runs").insert({ job: "build_bank", ok: true, detail: { added, calls, chapterCalls, log: log.slice(-60) } });
+console.log(`done: ${added} questions in ${calls} unit calls + ${chapterCalls} chapter calls`);

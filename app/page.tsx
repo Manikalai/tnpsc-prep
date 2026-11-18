@@ -72,6 +72,7 @@ export default async function Home() {
         <h2 className="h2">விரைவுத் தொடக்கம்</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} முழு மாதிரித் தேர்வு`} busyLabel="வினாத்தாள் தயாராகிறது…" />
+          <Link href="/books" className="btn-ghost">பாடநூல்கள் – பாடம் வாரியாக</Link>
           <Link href="/syllabus" className="btn-ghost">அலகு வினாடி வினா</Link>
           <Link href="/aptitude" className="btn-ghost">திறனறிவுப் பயிற்சி</Link>
           <Link href="/ask" className="btn-ghost">பாடநூலிடம் கேள்</Link>

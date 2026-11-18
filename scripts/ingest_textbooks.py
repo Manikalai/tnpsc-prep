@@ -50,7 +50,7 @@ def clean(t: str) -> str:
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip()
 
-def chunks_of(pages, size=1200, overlap=150):
+def chunks_of(pages, size=1200, overlap=0):
     """pages: list of (page_no, text) → list of (page_from, page_to, text)"""
     out, buf, start = [], "", None
     for no, text in pages:
@@ -62,13 +62,68 @@ def chunks_of(pages, size=1200, overlap=150):
                 start = no
             if len(buf) + len(para) > size and buf:
                 out.append((start, no, buf.strip()))
-                buf = buf[-overlap:] + "\n" + para
+                buf = (buf[-overlap:] if overlap else "") + "\n" + para
                 start = no
             else:
                 buf += "\n" + para
     if buf.strip():
         out.append((start, pages[-1][0] if pages else start, buf.strip()))
     return [c for c in out if len(c[2]) > 120]
+
+GEN_MODELS = [m.strip() for m in (os.environ.get("GEMINI_MODELS") or "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash").split(",") if m.strip()]
+
+def gemini_json(prompt: str):
+    last = None
+    for model in GEN_MODELS:
+        for attempt in range(3):
+            try:
+                r = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                                  headers={"x-goog-api-key": GEMINI, "Content-Type": "application/json"},
+                                  data=json.dumps({"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                                                   "generationConfig": {"responseMimeType": "application/json", "temperature": 0}}), timeout=240)
+                if r.status_code == 200:
+                    txt = "".join(p.get("text", "") for p in r.json()["candidates"][0]["content"]["parts"])
+                    return json.loads(txt)
+                last = f"{model} {r.status_code}: {r.text[:150]}"
+            except Exception as e:
+                last = f"{model}: {e}"
+            time.sleep(10 * (attempt + 1))
+    raise RuntimeError(last)
+
+def detect_chapters(pages, title, subject):
+    """Return [(chapter_no, title_ta, subject, page_from, page_to)] using the first lines of every page."""
+    index = "\n".join(f"[p{no}] " + re.sub(r"\s+", " ", t[:180]) for no, t in pages)
+    allowed = "science or social" if subject == "sciso" else subject
+    prompt = (
+        f"This is the first text of every page of the Tamil Nadu Samacheer Kalvi textbook \"{title}\". "
+        "Find where each lesson/chapter (பாடம் / அலகு / இயல்) begins. Ignore the contents page (பொருளடக்கம்), preface, "
+        "and exercise/answer pages at the end. For each chapter give its number as printed, its Tamil title, the page number "
+        f"[pN] where it starts, and its subject ({allowed}). If the book has several parts (e.g. Science then Social Science, "
+        "or Tamil then English), number chapters within each subject and SKIP any English-language part. "
+        'Return JSON {"chapters":[{"no":1,"title":"","start_page":5,"subject":"' + ("science" if subject == "sciso" else subject) + '"}]}\n\n' + index
+    )
+    try:
+        data = gemini_json(prompt)
+        chs = [c for c in data.get("chapters", []) if isinstance(c.get("start_page"), int) and c.get("title")]
+    except Exception as e:
+        print(f"  chapter detection failed ({e}); using the whole book as one chapter")
+        chs = []
+    last_page = pages[-1][0] if pages else 1
+    if not chs:
+        return [(1, title, "social" if subject == "sciso" else subject, pages[0][0] if pages else 1, last_page)]
+    chs.sort(key=lambda c: c["start_page"])
+    out, seen = [], set()
+    for i, c in enumerate(chs):
+        subj = c.get("subject") if subject == "sciso" else subject
+        if subj not in ("tamil", "social", "science"):
+            subj = "social" if subject == "sciso" else subject
+        end = (chs[i + 1]["start_page"] - 1) if i + 1 < len(chs) else last_page
+        no = int(c.get("no") or i + 1)
+        while (subj, no) in seen:  # keep (subject, chapter_no) unique
+            no += 100
+        seen.add((subj, no))
+        out.append((no, str(c["title"]).strip()[:200], subj, c["start_page"], max(end, c["start_page"])))
+    return out
 
 def embed(texts):
     vecs = []
@@ -156,20 +211,33 @@ def main():
                     print(f"  page {i + 1}: OCR unavailable ({e}); skipped")
                     continue
             pages.append((i + 1, clean(text)))
-        chunks = chunks_of(pages)
-        print(f"  pages {len(doc)}, OCR {ocr_n}, chunks {len(chunks)}")
-        if chunks:
-            print("  sample:", chunks[len(chunks) // 2][2][:200].replace("\n", " "))
-        if check_only or not chunks:
+        chapters = detect_chapters(pages, title, subject) if pages else []
+        print(f"  pages {len(doc)}, OCR {ocr_n}, chapters {len(chapters)}")
+        for no, ctitle, subj, a, b in chapters:
+            print(f"    {subj} {no}. {ctitle} (p{a}–{b})")
+        sample = [t for _, t in pages[len(pages) // 2: len(pages) // 2 + 1]]
+        if sample:
+            print("  sample:", sample[0][:200].replace("\n", " "))
+        if check_only or not chapters:
             continue
-        vecs = embed([c[2] for c in chunks])
-        recs = [{"book": title, "std": std, "subject": subject, "term": row.get("term") or None, "page_from": a, "page_to": b,
-                 "content": t, "quality": "text", "embedding": "[" + ",".join(f"{x:.6f}" for x in v) + "]"}
-                for (a, b, t), v in zip(chunks, vecs)]
-        for i in range(0, len(recs), 100):
-            sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
-        total += len(recs)
-        print(f"  stored {len(recs)} chunks")
+        stored = 0
+        for no, ctitle, subj, a, b in chapters:
+            ch = sb("POST", "chapters", params={"on_conflict": "book,subject,chapter_no"},
+                    data=json.dumps({"book": title, "std": std, "term": row.get("term") or None, "subject": subj, "chapter_no": no,
+                                     "title_ta": ctitle, "page_from": a, "page_to": b, "source_url": row["source"].strip() if row["source"].strip().startswith("http") else None}),
+                    headers={"Prefer": "resolution=merge-duplicates,return=representation"}).json()[0]
+            chunks = chunks_of([(n, t) for n, t in pages if a <= n <= b])
+            if not chunks:
+                continue
+            vecs = embed([f"{ctitle}\n{c[2]}" for c in chunks])
+            recs = [{"book": title, "std": std, "subject": subj, "term": row.get("term") or None, "page_from": pa, "page_to": pb,
+                     "content": t, "quality": "text", "chapter_id": ch["id"], "embedding": "[" + ",".join(f"{x:.6f}" for x in v) + "]"}
+                    for (pa, pb, t), v in zip(chunks, vecs)]
+            for i in range(0, len(recs), 100):
+                sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
+            stored += len(recs)
+        total += stored
+        print(f"  stored {stored} passages in {len(chapters)} chapters")
     if not check_only:
         sb("POST", "job_runs", data=json.dumps({"job": "ingest_textbooks", "ok": True, "detail": {"chunks": total}}), headers={"Prefer": "return=minimal"})
     print(f"\ndone, {total} chunks stored")

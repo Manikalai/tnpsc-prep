@@ -30,7 +30,8 @@ A free, installable web app (PWA) for two people preparing for TNPSC exams in Ta
 1. supabase.com → **New project** → name `tnpsc-prep`, region **South Asia (Mumbai)**, save the database password.
 2. **SQL Editor → New query** → paste all of [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) → **Run**.
 3. New query again → paste all of [`supabase/seed/0002_seed.sql`](supabase/seed/0002_seed.sql) → **Run**. (Loads the syllabus for all three exams and the Tamil glossary.)
-4. **Project Settings → API Keys**: copy the **Project URL**, the **anon / publishable** key and the **service_role / secret** key.
+4. New query again → paste all of [`supabase/migrations/0003_chapters.sql`](supabase/migrations/0003_chapters.sql) → **Run**. (Chapter-wise textbook structure.)
+5. **Project Settings → API Keys**: copy the **Project URL**, the **anon / publishable** key and the **service_role / secret** key.
 
 ### 2. Supabase — the two logins
 1. **Authentication → Users → Add user → Create new user**: enter your email and a password, tick **Auto Confirm User**, click **Create user**. Do the same for your wife.

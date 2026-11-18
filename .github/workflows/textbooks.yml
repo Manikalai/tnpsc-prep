@@ -19,3 +19,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_EMBED_MODEL: ${{ vars.GEMINI_EMBED_MODEL }}
+          GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
