@@ -1,6 +1,43 @@
 std,subject,term,title,source
-# One line per book. subject = science | social | tamil | maths
-# source = a direct PDF link (https://...) OR a path to a PDF you uploaded into this repo (textbooks/xyz.pdf).
-# Use Tamil-medium books. Lines starting with # are ignored. Example lines (replace with real links):
-# 10,social,,10ஆம் வகுப்பு சமூக அறிவியல்,https://example.org/10th-social-science-tamil.pdf
-# 10,tamil,,10ஆம் வகுப்பு தமிழ்,textbooks/10-tamil.pdf
+# subject: tamil | social | science | sciso (combined Science & Social Science term books) | maths
+# Group 4 books (Std 6–10) first, then Std 11–12 for Groups 1 and 2. Lines starting with # are skipped.
+# Std 6 and 7 come in three terms. Term 1 links were listed on tnkalvi.online; Terms 2 and 3 follow the same SCERT naming
+# and are checked by the "check only" run — if one fails, find its link on tnkalvi.online/textbooks/class/6 and fix the line.
+6,tamil,1,6ஆம் வகுப்பு தமிழ் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%201_Text.pdf
+6,tamil,2,6ஆம் வகுப்பு தமிழ் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%202_Text.pdf
+6,tamil,3,6ஆம் வகுப்பு தமிழ் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Tamil%20&%20English%20Term%203_Text.pdf
+6,sciso,1,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_1_Text.pdf
+6,sciso,2,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_2_Text.pdf
+6,sciso,3,6ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/6th_Science%20&%20Social%20Science_TM_Term_3_Text.pdf
+7,tamil,1,7ஆம் வகுப்பு தமிழ் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%201_Text.pdf
+7,tamil,2,7ஆம் வகுப்பு தமிழ் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%202_Text.pdf
+7,tamil,3,7ஆம் வகுப்பு தமிழ் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Tamil%20&%20English%20Term%203_Text.pdf
+7,sciso,1,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 1),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_1_Text.pdf
+7,sciso,2,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 2),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_2_Text.pdf
+7,sciso,3,7ஆம் வகுப்பு அறிவியல் & சமூக அறிவியல் (பருவம் 3),https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/7th_Science%20&%20Social%20Science_TM_Term_3_Text.pdf
+8,tamil,,8ஆம் வகுப்பு தமிழ்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th%20Std%20Tamil_Text.pdf
+8,social,,8ஆம் வகுப்பு சமூக அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th_Social%20Science_TM_Text.pdf
+8,science,,8ஆம் வகுப்பு அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/8th_Science_Tamil%20Medium_Text.pdf
+9,tamil,,9ஆம் வகுப்பு தமிழ்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/9th_Tamil_Text.pdf
+9,social,,9ஆம் வகுப்பு சமூக அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/9th_Social%20Science_TM_Text.pdf
+9,science,,9ஆம் வகுப்பு அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/9th_Science_TM_Text.pdf
+10,tamil,,10ஆம் வகுப்பு தமிழ்,https://tnkalvi.online/files/textbooks/class-10-tm-full-year-tamil.pdf
+10,social,,10ஆம் வகுப்பு சமூக அறிவியல்,https://tnkalvi.online/files/textbooks/class-10-tm-full-year-social-science.pdf
+10,science,,10ஆம் வகுப்பு அறிவியல்,https://tnkalvi.online/files/textbooks/class-10-tm-full-year-science.pdf
+# ---- Std 11–12 (Groups 1 and 2) ----
+11,tamil,,11ஆம் வகுப்பு பொதுத் தமிழ்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_Genreal%20Tamil.pdf
+11,social,,11ஆம் வகுப்பு வரலாறு,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_History_TM_Text.pdf
+11,social,,11ஆம் வகுப்பு அரசியல் அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_Political%20Science%20TM_Text.pdf
+11,social,,11ஆம் வகுப்பு பொருளியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_Economics_TM_Text.pdf
+11,social,,11ஆம் வகுப்பு புவியியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_Geography_TM_Text.pdf
+11,social,,11ஆம் வகுப்பு அறவியலும் இந்தியப் பண்பாடும்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11thth_Ethics%20and%20Indian%20Culture_TM_Text.pdf
+11,science,,11ஆம் வகுப்பு உயிரி-தாவரவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th%20Bio-Botany_TM.pdf
+11,science,,11ஆம் வகுப்பு உயிரி-விலங்கியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/11th_Bio-Zoology_TM_Text.pdf
+12,tamil,,12ஆம் வகுப்பு பொதுத் தமிழ்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Genreal%20Tamil.pdf
+12,social,,12ஆம் வகுப்பு வரலாறு,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_History_TM_Text.pdf
+12,social,,12ஆம் வகுப்பு அரசியல் அறிவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Political%20Science%20TM_Text.pdf
+12,social,,12ஆம் வகுப்பு பொருளியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Economics_TM_Text.pdf
+12,social,,12ஆம் வகுப்பு புவியியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Geography_TM_Text.pdf
+12,social,,12ஆம் வகுப்பு அறவியலும் இந்தியப் பண்பாடும்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Ethics%20and%20Indian%20Culture_TM_Text.pdf
+12,science,,12ஆம் வகுப்பு உயிரி-தாவரவியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th%20Bio-Botany_TM_Text.pdf
+12,science,,12ஆம் வகுப்பு உயிரி-விலங்கியல்,https://d21mc000xink7q.cloudfront.net/scert/textbook/syllabuspdf/12th_Bio-Zoology_TM_Text.pdf

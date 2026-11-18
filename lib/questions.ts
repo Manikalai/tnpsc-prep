@@ -65,7 +65,9 @@ export async function retrieveForUnit(
     const { data, error } = await admin.rpc("match_chunks", {
       query_embedding: vec as unknown as string,
       match_count: count * 3,
-      subjects: unit.source_subjects.length ? unit.source_subjects : null,
+      subjects: unit.source_subjects.length
+        ? [...unit.source_subjects, ...(unit.source_subjects.some((x) => x === "science" || x === "social") ? ["sciso"] : [])]
+        : null,
       max_std: maxStd,
     });
     if (error) throw error;

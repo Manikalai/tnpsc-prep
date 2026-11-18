@@ -126,13 +126,19 @@ def main():
     if not rows:
         raise SystemExit("manifest has no books yet — add lines to textbooks/manifest.csv")
     total = 0
+    failed = []
     for row in rows:
         title, subject, std = row["title"].strip(), row["subject"].strip(), int(row["std"])
         print(f"\n== {title}")
         if not check_only and already_loaded(title):
             print("  already loaded, skipping")
             continue
-        doc = fitz.open(get_pdf(row["source"].strip()))
+        try:
+            doc = fitz.open(get_pdf(row["source"].strip()))
+        except Exception as e:
+            print(f"  !! could not download/open: {e}")
+            failed.append(title)
+            continue
         pages, ocr_n = [], 0
         for i, page in enumerate(doc):
             text = page.get_text("text")
@@ -161,6 +167,10 @@ def main():
     if not check_only:
         sb("POST", "job_runs", data=json.dumps({"job": "ingest_textbooks", "ok": True, "detail": {"chunks": total}}), headers={"Prefer": "return=minimal"})
     print(f"\ndone, {total} chunks stored")
+    if failed:
+        print("\nBOOKS THAT FAILED (fix their links in textbooks/manifest.csv):")
+        for t in failed:
+            print("  -", t)
 
 if __name__ == "__main__":
     main()
