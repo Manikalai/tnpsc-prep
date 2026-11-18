@@ -20,7 +20,7 @@ A free, installable web app (PWA) for two people preparing for TNPSC exams in Ta
 | Group 1 Mains answer-writing practice with AI marking | முதன்மைத் தேர்வு |
 | Question bank status, previous-year import, reported questions | வினா வங்கி |
 
-**Free stack:** Next.js on Vercel (Hobby) · Supabase (Postgres + pgvector + email login) · Gemini API free tier (Groq / OpenRouter as fallbacks) · GitHub Actions for the daily and nightly jobs.
+**Free stack:** Next.js on Vercel (Hobby) · Supabase (Postgres + pgvector + password login) · Gemini API free tier (Groq / OpenRouter as fallbacks) · GitHub Actions for the daily and nightly jobs.
 
 ---
 
@@ -32,15 +32,10 @@ A free, installable web app (PWA) for two people preparing for TNPSC exams in Ta
 3. New query again → paste all of [`supabase/seed/0002_seed.sql`](supabase/seed/0002_seed.sql) → **Run**. (Loads the syllabus for all three exams and the Tamil glossary.)
 4. **Project Settings → API Keys**: copy the **Project URL**, the **anon / publishable** key and the **service_role / secret** key.
 
-### 2. Supabase — email login with a 6-digit code
-1. **Authentication → Emails → Templates → Magic Link**: replace the body with
-   ```html
-   <h2>TNPSC தயாரிப்பு</h2>
-   <p>உங்கள் உள்நுழைவுக் குறியீடு: <strong>{{ .Token }}</strong></p>
-   ```
-   (Do the same for **Confirm signup** so the very first login also gets a code.)
-2. **Authentication → URL Configuration → Site URL**: your Vercel address (step 4), e.g. `https://tnpsc-prep.vercel.app`.
-3. Supabase's built-in email sender only allows a few emails per hour — fine for two people. If a code doesn't arrive, wait a few minutes.
+### 2. Supabase — the two logins
+1. **Authentication → Users → Add user → Create new user**: enter your email and a password, tick **Auto Confirm User**, click **Create user**. Do the same for your wife.
+2. **Authentication → Sign In / Providers** → turn off **Allow new users to sign up**, so nobody else can create an account.
+3. Log in to the app with that email and password. To change a password later: Users → click the user → **Reset password** / update.
 
 ### 3. AI keys
 - **Gemini** (main): aistudio.google.com → **Get API key** → Create.
@@ -80,9 +75,6 @@ Jobs (see the **Actions** tab):
 3. Run it again without the tick to load everything. Re-running is safe; finished books are skipped.
 
 Until textbooks are loaded, AI questions are marked **⚠ பாடநூல் ஆதாரம் இல்லை** — check those answers.
-
-### 7. After both of you have logged in once
-Supabase → **Authentication → Sign In / Providers** → turn off **Allow new users to sign up**.
 
 ---
 

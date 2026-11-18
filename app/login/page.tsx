@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
+// Simple email + password login. The two users are created once in
+// Supabase → Authentication → Users → Add user (tick "Auto Confirm User").
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,42 +28,22 @@ export default function Login() {
           e.preventDefault();
           setBusy(true);
           setMsg(null);
-          const sb = supabaseBrowser();
-          if (step === "email") {
-            const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
-            if (error) setMsg(error.message);
-            else {
-              setStep("code");
-              setMsg("உங்கள் மின்னஞ்சலுக்கு 6 இலக்கக் குறியீடு அனுப்பப்பட்டது.");
-            }
+          const { error } = await supabaseBrowser().auth.signInWithPassword({ email: email.trim(), password });
+          if (error) {
+            setMsg("மின்னஞ்சல் அல்லது கடவுச்சொல் தவறு.");
+            setBusy(false);
           } else {
-            const { error } = await sb.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
-            if (error) setMsg("குறியீடு தவறு அல்லது காலாவதியானது. மீண்டும் முயலவும்.");
-            else {
-              router.replace("/");
-              router.refresh();
-            }
+            router.replace("/");
+            router.refresh();
           }
-          setBusy(false);
         }}
       >
         <label className="block text-sm font-semibold">மின்னஞ்சல்</label>
-        <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={step === "code"} autoComplete="email" />
-        {step === "code" && (
-          <>
-            <label className="block text-sm font-semibold">குறியீடு</label>
-            <input className="input tracking-widest" inputMode="numeric" required value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" />
-          </>
-        )}
-        <button className="btn w-full" disabled={busy}>
-          {busy ? "காத்திருக்கவும்…" : step === "email" ? "குறியீடு அனுப்பு" : "உள்நுழை"}
-        </button>
-        {step === "code" && (
-          <button type="button" className="w-full text-sm text-stone-500 underline" onClick={() => { setStep("email"); setCode(""); setMsg(null); }}>
-            மின்னஞ்சலை மாற்று
-          </button>
-        )}
-        {msg && <p className="text-sm text-stone-600">{msg}</p>}
+        <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+        <label className="block text-sm font-semibold">கடவுச்சொல்</label>
+        <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+        <button className="btn w-full" disabled={busy}>{busy ? "காத்திருக்கவும்…" : "உள்நுழை"}</button>
+        {msg && <p className="text-sm text-kumkum-500">{msg}</p>}
       </form>
     </div>
   );
