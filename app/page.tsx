@@ -75,6 +75,7 @@ export default async function Home() {
           <Link href="/syllabus" className="btn-ghost">அலகு வினாடி வினா</Link>
           <Link href="/aptitude" className="btn-ghost">திறனறிவுப் பயிற்சி</Link>
           <Link href="/ask" className="btn-ghost">பாடநூலிடம் கேள்</Link>
+          <Link href="/offline" className="btn-ghost">இணையமின்றிப் பயிற்சி</Link>
         </div>
       </section>
 

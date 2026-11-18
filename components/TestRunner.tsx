@@ -15,8 +15,10 @@ const store = {
   del(k: string) { try { localStorage.removeItem(k); } catch { /* storage off */ } },
 };
 
-export default function TestRunner({ testId, title, kind, durationSec, startedAt, questions }: {
+export default function TestRunner({ testId, title, durationSec, startedAt, questions, onSubmit }: {
   testId: string; title: string; kind: string; durationSec: number; startedAt: string; questions: Q[];
+  /** offline mode: handle the answers locally instead of posting to the server */
+  onSubmit?: (r: { answers: Record<string, number | null>; times: Record<string, number>; elapsedSec: number }) => Promise<void>;
 }) {
   const router = useRouter();
   const key = `test-${testId}`;
@@ -59,6 +61,12 @@ export default function TestRunner({ testId, title, kind, durationSec, startedAt
     submitted.current = true;
     setBusy(true);
     go(i);
+    const elapsedSec = Math.round((Date.now() - new Date(startedAt).getTime()) / 1000);
+    if (onSubmit) {
+      await onSubmit({ answers, times: times.current, elapsedSec });
+      store.del(key);
+      return;
+    }
     const res = await fetch("/api/test/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

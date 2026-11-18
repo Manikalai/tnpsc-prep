@@ -1,4 +1,4 @@
-export type CA = { id: string; region: string; category: string; title_ta: string; note_ta: string; exam_point_ta: string | null; source_name: string | null; source_url: string | null };
+export type CA = { id: string; ca_date?: string; region: string; category: string; title_ta: string; note_ta: string; exam_point_ta: string | null; source_name: string | null; source_url: string | null };
 
 export default function CaList({ items }: { items: CA[] }) {
   const groups = [

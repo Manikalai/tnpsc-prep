@@ -1,4 +1,5 @@
-// Offline support: pages you have opened (notes, current affairs) are kept for offline reading.
+// Offline support: pages you have opened are kept for offline reading; with no connection, unknown pages open the
+// offline practice page (/offline), which works from the pack saved on the phone.
 const CACHE = "tnpsc-v1";
 self.addEventListener("install", (e) => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
@@ -14,6 +15,14 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(req).then((r) => r || new Response("இணைய இணைப்பு இல்லை", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } })))
+      .catch(async () => {
+        const hit = await caches.match(req);
+        if (hit) return hit;
+        if (req.mode === "navigate") {
+          const page = await caches.match("/offline");
+          if (page) return page;
+        }
+        return new Response("இணைய இணைப்பு இல்லை", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      })
   );
 });
