@@ -16,7 +16,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const { units } = await loadExam(sb, code);
   const [{ data: counts }, { data: flagged }, { data: runs }, { count: chunks }] = await Promise.all([
     sb.from("bank_counts").select("*"),
-    sb.from("questions").select("id,stem,options,answer_index,explanation,source_ref").eq("status", "flagged").limit(30),
+    sb.from("questions").select("id,stem,options,answer_index,explanation,source_ref,verify_note,origin,pyq_year").eq("status", "flagged").limit(60),
     sb.from("job_runs").select("*").order("ran_at", { ascending: false }).limit(8),
     sb.from("textbook_chunks").select("*", { count: "exact", head: true }),
   ]);
@@ -67,7 +67,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           <div key={q.id} className="border-t border-stone-100 py-3 text-sm">
             <p className="font-medium">{q.stem}</p>
             <ol className="mt-1">{(q.options as string[]).map((o, k) => <li key={k} className={k === q.answer_index ? "font-bold text-brand-700" : ""}>{OPT[k]}) {o}</li>)}</ol>
-            <p className="text-xs text-kumkum-500">புகார்: {(reports ?? []).filter((r) => r.question_id === q.id).map((r) => r.reason).join(" | ")}</p>
+            {q.source_ref && <p className="text-xs text-stone-500">📖 {q.source_ref}</p>}
+            <p className="text-xs text-kumkum-500">
+              {[q.verify_note && `சரிபார்க்க: ${q.verify_note}`, ...(reports ?? []).filter((r) => r.question_id === q.id).map((r) => `புகார்: ${r.reason}`)].filter(Boolean).join(" | ")}
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {[0, 1, 2, 3].map((k) => (
                 <StartButton key={k} url="/api/admin/question" body={{ id: q.id, action: "fix", answer_index: k, explanation: q.explanation }} label={`விடை ${OPT[k]}`} className="btn-ghost btn-sm" busyLabel="…" />

@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""Import a TNPSC previous-year question paper with its official answer key.
+
+  1. Download the question paper PDF and the answer-key PDF (TNPSC's scanned booklet with the correct
+     option ticked).
+  2. Questions: Gemini reads each question-paper page (image + its text layer) and returns every question
+     number with the Tamil question and its four options.
+  3. Answers: Gemini looks at each scanned answer-key page and reports which option is ticked for each
+     question number, with its confidence. Cancelled questions are noted.
+  4. Checks: totals must add up; the AI also solves each question independently and any disagreement with
+     the tick is FLAGGED for a person to check (the tick always decides; the AI never overrides TNPSC).
+  5. Preview mode prints a report and saves pyq_report.json (nothing stored). Import mode stores the questions.
+
+Usage: python scripts/import_pyq.py QUESTION_PDF_URL KEY_PDF_URL --exam G4 --year 2025 [--import]
+Env: GEMINI_API_KEY, GEMINI_MODELS (optional), and for --import: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+"""
+import argparse, base64, hashlib, io, json, os, re, sys, time, pathlib
+import requests
+import fitz  # PyMuPDF
+
+GEMINI = os.environ.get("GEMINI_API_KEY", "")
+MODELS = [m.strip() for m in (os.environ.get("GEMINI_MODELS") or "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash").split(",") if m.strip()]
+URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+L = ["A", "B", "C", "D"]
+UNITS = {
+    "G4": {"G4-TAMIL-1": "இலக்கணம்", "G4-TAMIL-2": "சொல்லகராதி", "G4-TAMIL-3": "எழுதும் திறன்", "G4-TAMIL-4": "கலைச் சொற்கள்",
+           "G4-TAMIL-5": "வாசித்தல் – புரிந்து கொள்ளும் திறன்", "G4-TAMIL-6": "எளிய மொழிபெயர்ப்பு", "G4-TAMIL-7": "இலக்கியம், தமிழ் அறிஞர்கள், தமிழ்த்தொண்டு",
+           "G4-GS-1": "பொது அறிவியல்", "G4-GS-2": "புவியியல்", "G4-GS-3": "இந்திய வரலாறு, பண்பாடு, தேசிய இயக்கம்", "G4-GS-4": "இந்திய ஆட்சியியல்",
+           "G4-GS-5": "இந்தியப் பொருளாதாரம், TN வளர்ச்சி நிர்வாகம்", "G4-GS-6": "தமிழ்நாட்டின் வரலாறு, பண்பாடு, சமூக–அரசியல் இயக்கங்கள்",
+           "G4-APT-1": "திறனறிவு (கணக்கு)", "G4-APT-2": "காரணவியல்"},
+    "G2": {**{f"G2-TAMIL-{k}": v for k, v in {"A": "இலக்கணம்", "B": "இலக்கியம்", "C": "தமிழ் அறிஞர்கள்"}.items()},
+           **{f"G2-GS-{i}": n for i, n in enumerate(["பொது அறிவியல்", "நடப்பு நிகழ்வுகள்", "புவியியல்", "வரலாறு, பண்பாடு", "ஆட்சியியல்", "பொருளாதாரம்", "தேசிய இயக்கம்", "TN வரலாறு, இயக்கங்கள்", "TN வளர்ச்சி நிர்வாகம்"], 1)},
+           "G2-APT-1": "திறனறிவு", "G2-APT-2": "காரணவியல்"},
+    "G1": {**{f"G1-GS-{i}": n for i, n in enumerate(["பொது அறிவியல்", "புவியியல்", "வரலாறு, தேசிய இயக்கம்", "ஆட்சியியல்", "பொருளாதாரம், TN வளர்ச்சி நிர்வாகம்", "TN வரலாறு, இயக்கங்கள்"], 1)},
+           "G1-APT-1": "திறனறிவு", "G1-APT-2": "காரணவியல்"},
+}
+EXAM_NAME = {"G4": "தொகுதி IV", "G2": "தொகுதி II / IIA", "G1": "தொகுதி I"}
+
+
+def gemini(parts, temperature=0.0):
+    last = None
+    for model in MODELS:
+        for attempt in range(3):
+            try:
+                r = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                    headers={"x-goog-api-key": GEMINI, "Content-Type": "application/json"},
+                    data=json.dumps({"contents": [{"role": "user", "parts": parts}],
+                                     "generationConfig": {"responseMimeType": "application/json", "temperature": temperature}}),
+                    timeout=300)
+                if r.status_code == 200:
+                    return json.loads("".join(p.get("text", "") for p in r.json()["candidates"][0]["content"]["parts"]))
+                last = f"{model} {r.status_code}: {r.text[:150]}"
+            except Exception as e:
+                last = f"{model}: {e}"
+            time.sleep(15 * (attempt + 1))
+    raise RuntimeError(last)
+
+
+def img_part(page, dpi):
+    png = page.get_pixmap(dpi=dpi).tobytes("png")
+    return {"inline_data": {"mime_type": "image/png", "data": base64.b64encode(png).decode()}}
+
+
+def download(url, name):
+    p = pathlib.Path("pyq_cache") / name
+    p.parent.mkdir(exist_ok=True)
+    if not p.exists():
+        r = requests.get(url, timeout=300, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        p.write_bytes(r.content)
+    return fitz.open(p)
+
+
+def read_questions(doc):
+    """{no: {stem, options}} from the question paper (image + text layer of each page)."""
+    out = {}
+    for i, page in enumerate(doc):
+        layer = re.sub(r"\s+", " ", page.get_text("text"))[:6000]
+        prompt = ("This is page %d of a TNPSC question paper (it may be bilingual Tamil/English). Extract EVERY complete question on this page. "
+                  "For each: its printed number, the question in TAMIL exactly as printed, and its four options (A)(B)(C)(D) in TAMIL exactly as printed. "
+                  "If a question exists only in English (e.g. an English-language section) give it as printed. Keep match-the-following lists and "
+                  "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge. "
+                  "The page's text layer is given below; use it for exact wording where it is correct, but trust the image where the text layer is garbled.\n"
+                  'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""]}]}\n\nTEXT LAYER:\n' % (i + 1)) + layer
+        try:
+            data = gemini([img_part(page, 170), {"text": prompt}])
+        except Exception as e:
+            print(f"  question page {i + 1}: failed ({e})")
+            continue
+        for q in data.get("questions", []):
+            no = q.get("no")
+            if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out:
+                out[no] = {"stem": q["stem"].strip(), "options": [o.strip() for o in q["options"]]}
+        print(f"  question page {i + 1}/{len(doc)}: total {len(out)}")
+        time.sleep(4)
+    return out
+
+
+def read_key(doc):
+    """{no: {answer, confidence, cancelled}} from the scanned answer-key booklet (ticks)."""
+    out = {}
+    for i, page in enumerate(doc):
+        prompt = ("This is a scanned page of the official TNPSC FINAL answer key: the question booklet with the correct option marked by hand "
+                  "(a tick ✓, circle or pen mark next to option A, B, C or D). For EVERY question number visible on the page, report which ONE option is "
+                  "marked. confidence = \"high\" if the mark is clear and unambiguous, \"low\" if faint, between two options, or more than one option looks marked. "
+                  "If a question is marked deleted / cancelled / 'all answers correct' / has no mark, set answer to null and explain in note.\n"
+                  'Return JSON {"answers":[{"no":1,"answer":"A","confidence":"high","note":""}]}')
+        try:
+            data = gemini([img_part(page, 200), {"text": prompt}])
+        except Exception as e:
+            print(f"  key page {i + 1}: failed ({e})")
+            continue
+        for a in data.get("answers", []):
+            no = a.get("no")
+            if not isinstance(no, int):
+                continue
+            ans = a.get("answer")
+            idx = L.index(ans) if ans in L else None
+            prev = out.get(no)
+            # the same question can appear twice (Tamil + English pages): disagreement → low confidence
+            if prev and prev["answer"] is not None and idx is not None and prev["answer"] != idx:
+                prev["confidence"] = "low"
+                prev["note"] = (prev.get("note") or "") + " different marks on two pages"
+                continue
+            if not prev or (prev["answer"] is None and idx is not None):
+                out[no] = {"answer": idx, "confidence": a.get("confidence", "low"), "note": a.get("note", "")}
+        print(f"  key page {i + 1}/{len(doc)}: total {len(out)}")
+        time.sleep(4)
+    return out
+
+
+def solve_and_tag(qs, exam):
+    """Independent AI answer (only used to FLAG disagreements) + syllabus unit for each question."""
+    units = UNITS[exam]
+    res = {}
+    nos = sorted(qs)
+    for i in range(0, len(nos), 20):
+        batch = nos[i:i + 20]
+        text = "\n\n".join(f"[{n}] {qs[n]['stem']}\n" + "  ".join(f"({L[k]}) {o}" for k, o in enumerate(qs[n]["options"])) for n in batch)
+        prompt = ("For each TNPSC question below: (1) your answer A/B/C/D, (2) the best syllabus unit id from: "
+                  + "; ".join(f"{k} = {v}" for k, v in units.items())
+                  + '. Return JSON {"items":[{"no":1,"answer":"A","unit_id":""}]}\n\n' + text)
+        try:
+            data = gemini([{"text": prompt}])
+            for it in data.get("items", []):
+                if isinstance(it.get("no"), int):
+                    res[it["no"]] = {"ai": L.index(it["answer"]) if it.get("answer") in L else None,
+                                     "unit_id": it.get("unit_id") if it.get("unit_id") in units else None}
+        except Exception as e:
+            print(f"  solve batch {i // 20 + 1}: failed ({e})")
+        time.sleep(4)
+    return res
+
+
+def sb(method, path, **kw):
+    h = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+    h.update(kw.pop("headers", {}))
+    r = requests.request(method, f"{URL}/rest/v1/{path}", headers=h, timeout=120, **kw)
+    if r.status_code >= 300:
+        raise SystemExit(f"supabase {r.status_code}: {r.text[:300]}")
+    return r
+
+
+def norm(s):
+    return re.sub(r"[\s.?!,:;\"'()\-–]+", " ", s).strip().lower()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("question_url"); ap.add_argument("key_url")
+    ap.add_argument("--exam", default="G4", choices=list(UNITS)); ap.add_argument("--year", type=int, required=True)
+    ap.add_argument("--import", dest="do_import", action="store_true")
+    a = ap.parse_args()
+    if not GEMINI:
+        raise SystemExit("GEMINI_API_KEY missing")
+
+    qdoc = download(a.question_url, f"{a.exam}-{a.year}-paper.pdf")
+    kdoc = download(a.key_url, f"{a.exam}-{a.year}-key.pdf")
+    print(f"question paper: {len(qdoc)} pages · answer key: {len(kdoc)} pages")
+
+    print("\n== reading questions"); qs = read_questions(qdoc)
+    if len(qs) < 150:  # the key booklet also contains the questions — use it as a second source
+        print("\n== few questions in the paper; reading questions from the answer-key booklet too")
+        for n, q in read_questions(kdoc).items():
+            qs.setdefault(n, q)
+    print("\n== reading ticks in the answer key"); key = read_key(kdoc)
+    print("\n== independent check + syllabus units"); extra = solve_and_tag(qs, a.exam)
+
+    rows, report = [], []
+    for n in sorted(set(qs) | set(key)):
+        q, k, x = qs.get(n), key.get(n, {}), extra.get(n, {})
+        flags = []
+        if not q: flags.append("question text not found")
+        if k.get("answer") is None: flags.append("no answer in key" + (f" ({k.get('note')})" if k.get("note") else ""))
+        if k.get("confidence") == "low": flags.append("tick unclear")
+        if k.get("answer") is not None and x.get("ai") is not None and x["ai"] != k["answer"]: flags.append(f"AI would answer {L[x['ai']]}")
+        if q and len({norm(o) for o in q["options"]}) < 4: flags.append("options not distinct")
+        report.append({"no": n, "stem": (q or {}).get("stem", "")[:90], "answer": L[k["answer"]] if k.get("answer") is not None else None,
+                       "confidence": k.get("confidence"), "ai": L[x["ai"]] if x.get("ai") is not None else None, "unit": x.get("unit_id"), "flags": flags})
+        if q and k.get("answer") is not None and "options not distinct" not in flags:
+            cancelled = "cancel" in (k.get("note") or "").lower() or "delet" in (k.get("note") or "").lower()
+            if cancelled:
+                continue
+            rows.append({
+                "stem": q["stem"], "options": q["options"], "answer_index": k["answer"], "unit_id": x.get("unit_id"),
+                "exam_code": a.exam, "origin": "pyq", "pyq_year": a.year, "difficulty": "medium",
+                "source_ref": f"TNPSC {EXAM_NAME[a.exam]} {a.year} – வினா {n} (அதிகாரபூர்வ விடைக்குறிப்பு)",
+                "status": "flagged" if flags else "active",
+                "verify_note": "; ".join(flags) if flags else None,
+                "hash": hashlib.sha1((norm(q["stem"]) + "|" + "|".join(sorted(norm(o) for o in q["options"]))).encode()).hexdigest(),
+            })
+
+    flagged = [r for r in report if r["flags"]]
+    print(f"\n==== SUMMARY: {len(qs)} questions read · {sum(1 for r in report if r['answer'])} answers read · "
+          f"{len(rows)} ready · {len(flagged)} flagged for review")
+    print("\nFirst 25 (compare with the PDF):")
+    for r in report[:25]:
+        print(f"  Q{r['no']:>3}  ticked={r['answer'] or '-'} ({r['confidence'] or '-'})  ai={r['ai'] or '-'}  {r['unit'] or '':<11} {r['stem'][:60]}  {'⚑ ' + '; '.join(r['flags']) if r['flags'] else ''}")
+    if flagged:
+        print("\nFlagged:")
+        for r in flagged[:80]:
+            print(f"  Q{r['no']:>3}: {'; '.join(r['flags'])}")
+    pathlib.Path("pyq_report.json").write_text(json.dumps({"report": report, "rows": rows}, ensure_ascii=False, indent=1))
+
+    if not a.do_import:
+        print("\nPreview only — nothing stored. Run again with import ticked to store these questions.")
+        return
+    if len(qs) < 150:
+        raise SystemExit("too few questions were read — not importing. Check the report.")
+    if not (URL and KEY):
+        raise SystemExit("set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
+    for i in range(0, len(rows), 100):
+        sb("POST", "questions", params={"on_conflict": "hash"}, data=json.dumps(rows[i:i + 100]),
+           headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
+    sb("POST", "job_runs", data=json.dumps({"job": "import_pyq", "ok": True, "detail": {"exam": a.exam, "year": a.year, "stored": len(rows), "flagged": len(flagged)}}),
+       headers={"Prefer": "return=minimal"})
+    print(f"\nStored {len(rows)} questions ({sum(1 for r in rows if r['status'] == 'flagged')} flagged — check them in வினா வங்கி).")
+
+
+if __name__ == "__main__":
+    main()
