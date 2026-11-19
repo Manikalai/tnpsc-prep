@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/db";
 import { requireUser } from "@/lib/supabase/server";
 import QuizBuilder from "@/components/QuizBuilder";
 
@@ -5,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 export default async function NewQuiz() {
   const { sb } = await requireUser();
-  const { data } = await sb.from("chapters").select("*").order("std").order("term").order("chapter_no").limit(3000);
-  const { data: qs } = await sb.from("questions").select("chapter_id").not("chapter_id", "is", null).eq("status", "active").limit(50000);
+  const data = await fetchAll((a, b) => sb.from("chapters").select("*").order("std").order("term").order("chapter_no").order("id").range(a, b));
+  const qs = await fetchAll<{ chapter_id: number }>((a, b) => sb.from("questions").select("chapter_id").not("chapter_id", "is", null).eq("status", "active").order("id").range(a, b));
   const counts: Record<number, number> = {};
   for (const q of qs ?? []) counts[q.chapter_id] = (counts[q.chapter_id] ?? 0) + 1;
   type Row = { id: number; book: string; std: number; term: string | null; subject: string; section?: string | null; chapter_no: number; title_ta: string };

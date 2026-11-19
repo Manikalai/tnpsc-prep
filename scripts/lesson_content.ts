@@ -14,6 +14,16 @@ const maxStd = Number(process.env.LESSON_MAX_STD || 12);
 const only = (process.env.LESSON_ONLY || "").split(",").map((s) => s.trim()).filter(Boolean); // e.g. "bookback,clean"
 const want = (k: string) => !only.length || only.includes(k);
 const t0 = Date.now();
+
+/** Supabase returns at most 1000 rows per request — read everything page by page. */
+async function all<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await build(from, from + 999);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) return out;
+  }
+}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const timeLeft = () => Date.now() - t0 < budgetMs;
 
@@ -35,15 +45,19 @@ async function step(name: string, ch: Chapter, f: () => Promise<unknown>) {
   return true;
 }
 
-const { data: chs } = await admin.from("chapters").select("*").lte("std", maxStd).order("std").order("term").order("book").order("chapter_no").limit(5000);
-const { data: notes } = await admin.from("chapter_notes").select("chapter_id,kind,content").limit(20000);
+const chs = await all((a, b) => admin.from("chapters").select("*").lte("std", maxStd).order("std").order("term").order("book").order("chapter_no").order("id").range(a, b));
+const notes = await all((a, b) => admin.from("chapter_notes").select("chapter_id,kind,content").order("chapter_id").order("kind").range(a, b));
 const have = new Set((notes ?? []).map((n) => `${n.chapter_id}:${n.kind}`));
 const clean = new Map((notes ?? []).filter((n) => n.kind === "clean").map((n) => [n.chapter_id as number, n.content as Clean]));
-const { data: mcq } = await admin.from("questions").select("chapter_id").not("chapter_id", "is", null).eq("origin", "ai").limit(100000);
+const mcq = await all((a, b) => admin.from("questions").select("chapter_id").not("chapter_id", "is", null).eq("origin", "ai").order("id").range(a, b));
 const mcqCount = new Map<number, number>();
 for (const q of mcq ?? []) mcqCount.set(q.chapter_id, (mcqCount.get(q.chapter_id) ?? 0) + 1);
-const { data: withText } = await admin.from("textbook_chunks").select("chapter_id").not("chapter_id", "is", null).limit(100000);
-const hasText = new Set((withText ?? []).map((r) => r.chapter_id));
+// lessons that have text: ask per lesson (cheap) instead of reading every passage
+const hasText = new Set<number>();
+for (const c of chs as { id: number }[]) {
+  const { count } = await admin.from("textbook_chunks").select("id", { count: "exact", head: true }).eq("chapter_id", c.id);
+  if ((count ?? 0) > 0) hasText.add(c.id);
+}
 
 // parallel runs: LESSON_SHARD="k/N" takes every N-th lesson (k = 0..N-1)
 const [shardK, shardN] = (process.env.LESSON_SHARD || "0/1").split("/").map(Number);

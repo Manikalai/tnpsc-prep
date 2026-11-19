@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { apiUser } from "@/lib/supabase/server";
 
@@ -13,8 +14,8 @@ export async function GET() {
     sb.from("exams").select("*"),
     sb.from("parts").select("*").order("sort"),
     sb.from("units").select("id,part_id,exam_code,name_ta,questions,subject,sort").order("sort"),
-    sb.from("chapters").select("*").order("std").order("term").order("chapter_no").limit(5000),
-    sb.from("current_affairs").select("*").gte("ca_date", since).order("ca_date", { ascending: false }).limit(3000),
+    fetchAll((a, b) => sb.from("chapters").select("*").order("std").order("term").order("chapter_no").order("id").range(a, b)).then((data) => ({ data })),
+    fetchAll((a, b) => sb.from("current_affairs").select("*").gte("ca_date", since).order("ca_date", { ascending: false }).order("id").range(a, b)).then((data) => ({ data })),
     sb.from("notes").select("id,unit_id,kind,title,content,source_ref").limit(3000),
     sb.from("flashcards").select("id,front,back").eq("user_id", user.id).limit(5000),
     sb.from("questions").select("*", { count: "exact", head: true }).eq("status", "active"),

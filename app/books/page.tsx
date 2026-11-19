@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/db";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 
@@ -10,7 +11,7 @@ type Ch = { id: number; book: string; std: number; term: string | null; subject:
 export default async function Books({ searchParams }: { searchParams: Promise<{ std?: string }> }) {
   const { std } = await searchParams;
   const { sb } = await requireUser();
-  const { data } = await sb.from("chapters").select("id,book,std,term,subject,chapter_no,title_ta").order("std").order("term").order("chapter_no").limit(3000);
+  const data = await fetchAll((a, b) => sb.from("chapters").select("id,book,std,term,subject,chapter_no,title_ta").order("std").order("term").order("chapter_no").order("id").range(a, b));
   const chapters = (data ?? []) as Ch[];
   const stds = [...new Set(chapters.map((c) => c.std))].sort((a, b) => a - b);
   const current = Number(std ?? stds[0] ?? 6);
