@@ -19,6 +19,7 @@ import requests
 import fitz  # PyMuPDF
 
 GEMINI = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_KEYS = [k.strip() for k in (os.environ.get("GEMINI_API_KEY", ""), os.environ.get("GEMINI_API_KEY_2", ""), os.environ.get("GEMINI_API_KEY_3", "")) if k.strip()]
 MODELS = [m.strip() for m in (os.environ.get("GEMINI_MODELS") or "gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash").split(",") if m.strip()]
 URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
 KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -71,28 +72,29 @@ def gemini(parts, temperature=0.0):
     if time.time() - STARTED > BUDGET:
         raise OutOfTime()
     last = None
-    for model in MODELS:
-        if model in DEAD:
+    for ki, key in enumerate(GEMINI_KEYS):
+      for model in MODELS:
+        if (ki, model) in DEAD:
             continue
         for attempt in range(3):
             try:
                 r = requests.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                    headers={"x-goog-api-key": GEMINI, "Content-Type": "application/json"},
+                    headers={"x-goog-api-key": key, "Content-Type": "application/json"},
                     data=json.dumps({"contents": [{"role": "user", "parts": parts}],
                                      "generationConfig": {"responseMimeType": "application/json", "temperature": temperature}}),
                     timeout=150)
                 if r.status_code == 200:
                     return json.loads("".join(p.get("text", "") for p in r.json()["candidates"][0]["content"]["parts"]))
-                last = f"{model} {r.status_code}: {r.text[:150]}"
+                last = f"key{ki + 1} {model} {r.status_code}: {r.text[:150]}"
                 if r.status_code == 404 or (r.status_code == 429 and "PerDay" in r.text):
-                    print(f"    {model}: {'not available' if r.status_code == 404 else 'daily quota used up'} — skipping it")
-                    DEAD.add(model)
+                    print(f"    key{ki + 1} {model}: {'not available' if r.status_code == 404 else 'daily quota used up'} — skipping it")
+                    DEAD.add((ki, model))
                     break
                 if r.status_code == 400:
                     break
             except Exception as e:
-                last = f"{model}: {e}"
+                last = f"key{ki + 1} {model}: {e}"
             time.sleep(10 * (attempt + 1))
     texts = [p["text"] for p in parts if "text" in p]
     if GROQ and len(texts) == len(parts):

@@ -53,30 +53,41 @@ async function callGeminiModel(model: string, key: string, o: GenOpts): Promise<
   return text;
 }
 
-/** Tries each configured Gemini model in turn (busy / rate-limited / unavailable → next one). */
+// key/model pairs whose free DAILY limit is used up — skipped for the rest of this run
+const exhausted = new Set<string>();
+
+/** Tries each Gemini key, and each model with it (busy / rate-limited / used up → next one). */
 async function callGemini(o: GenOpts): Promise<string> {
   const env = serverEnv();
-  if (!env.geminiKey) throw new Error("GEMINI_API_KEY missing");
+  if (!env.geminiKeys.length) throw new Error("GEMINI_API_KEY missing");
   const errs: string[] = [];
-  for (const m of env.geminiModels) {
-    try {
-      return await callGeminiModel(m, env.geminiKey, o);
-    } catch (e) {
-      errs.push(e instanceof Error ? e.message : String(e));
+  for (const [k, key] of env.geminiKeys.entries()) {
+    for (const m of env.geminiModels) {
+      const id = `${k}:${m}`;
+      if (exhausted.has(id)) continue;
+      try {
+        return await callGeminiModel(m, key, o);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/ 429:/.test(msg) && /PerDay|per day|daily/i.test(msg)) exhausted.add(id);
+        if (/ 404:/.test(msg)) exhausted.add(id);
+        errs.push(`key${k + 1} ${msg}`);
+      }
     }
   }
-  throw new Error(errs.join(" | "));
+  throw new Error(errs.slice(-4).join(" | "));
 }
 
-async function callOpenAICompatible(url: string, key: string, model: string, o: GenOpts): Promise<string> {
+async function callOpenAICompatible(url: string, key: string, model: string, o: GenOpts, extra: Record<string, unknown> = {}, maxTokensCap = Infinity): Promise<string> {
   const res = await fetch(url, {
     method: "POST",
     signal: o.timeoutMs ? AbortSignal.timeout(o.timeoutMs) : undefined,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
+      ...extra,
       model,
       temperature: o.temperature ?? 0.6,
-      max_tokens: o.maxTokens ?? 8192,
+      max_tokens: Math.min(o.maxTokens ?? 8192, maxTokensCap),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: o.system },
@@ -94,6 +105,11 @@ async function callOpenAICompatible(url: string, key: string, model: string, o: 
 async function callProvider(name: string, o: GenOpts): Promise<string> {
   const env = serverEnv();
   if (name === "gemini") return callGemini(o);
+  if (name === "sarvam") {
+    // Sarvam AI (Indian-language models), OpenAI-compatible; thinking off so all tokens go to the answer
+    if (!env.sarvamKey) throw new Error("SARVAM_API_KEY missing");
+    return callOpenAICompatible("https://api.sarvam.ai/v1/chat/completions", env.sarvamKey, env.sarvamModel, o, { reasoning_effort: null }, env.sarvamMaxTokens);
+  }
   if (name === "groq") {
     if (!env.groqKey) throw new Error("GROQ_API_KEY missing");
     return callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", env.groqKey, env.groqModel, o);
@@ -138,7 +154,21 @@ export async function generateJSON<T = unknown>(o: GenOpts): Promise<{ data: T; 
 /** Gemini embeddings, 768 dimensions, batched. */
 export async function embed(texts: string[], task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY"): Promise<number[][]> {
   const env = serverEnv();
-  if (!env.geminiKey) throw new Error("GEMINI_API_KEY missing");
+  if (!env.geminiKeys.length) throw new Error("GEMINI_API_KEY missing");
+  let lastErr: unknown;
+  for (const key of env.geminiKeys) {
+    try {
+      return await embedWith(key, texts, task);
+    } catch (e) {
+      lastErr = e;
+      if (!/ 429/.test(String(e))) throw e;
+    }
+  }
+  throw lastErr;
+}
+
+async function embedWith(key: string, texts: string[], task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY"): Promise<number[][]> {
+  const env = serverEnv();
   const out: number[][] = [];
   for (let i = 0; i < texts.length; i += 100) {
     const batch = texts.slice(i, i + 100);
@@ -146,7 +176,7 @@ export async function embed(texts: string[], task: "RETRIEVAL_DOCUMENT" | "RETRI
       `https://generativelanguage.googleapis.com/v1beta/models/${env.geminiEmbedModel}:batchEmbedContents`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": env.geminiKey },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({
           requests: batch.map((t) => ({
             model: `models/${env.geminiEmbedModel}`,

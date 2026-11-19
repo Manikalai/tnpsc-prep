@@ -18,7 +18,7 @@ import fitz  # PyMuPDF
 
 URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
 KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-GEMINI = os.environ.get("GEMINI_API_KEY", "")
+GEMINI = os.environ.get("GEMINI_API_KEY_2") if os.environ.get("USE_KEY_2") else os.environ.get("GEMINI_API_KEY", "")
 EMBED_MODEL = os.environ.get("GEMINI_EMBED_MODEL") or "gemini-embedding-001"
 CACHE = pathlib.Path("textbooks/cache")
 TAMIL = re.compile(r"[஀-௿]")

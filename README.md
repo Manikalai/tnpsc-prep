@@ -56,6 +56,8 @@ vercel.com → **Sign up with GitHub** → **Add New → Project** → import `t
 | `GEMINI_API_KEY` | Gemini key |
 | `GROQ_API_KEY` | Groq key (optional) |
 | `OPENROUTER_API_KEY` | OpenRouter key (optional) |
+| `GEMINI_API_KEY_2` | (optional) a second Gemini key from a **new AI Studio project** — its own free daily limit, used when the first runs out |
+| `SARVAM_API_KEY` | (optional) Sarvam AI key (dashboard.sarvam.ai, ₹100 free credit) — good Tamil, used right after Gemini |
 | `CRON_SECRET` | any long random text |
 | `GH_DISPATCH_TOKEN` | (optional) GitHub fine-grained token, repo `tnpsc-prep`, permission **Actions: Read and write** — lets "இப்போதே புதுப்பி" start the current-affairs job on GitHub |
 
