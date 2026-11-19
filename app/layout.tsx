@@ -4,13 +4,13 @@ import Nav from "@/components/Nav";
 import OfflineAutoSync from "@/components/OfflineAutoSync";
 
 export const metadata: Metadata = {
-  title: "TNPSC தயாரிப்பு",
+  title: "Saranya Prep",
   description: "தொகுதி 1, 2, 4 தேர்வுகளுக்கான தமிழ்வழிப் பயிற்சி",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  appleWebApp: { capable: true, title: "TNPSC", statusBarStyle: "default" },
+  icons: { icon: "/icon.svg", apple: "/icon-192.png" },
+  appleWebApp: { capable: true, title: "Saranya Prep", statusBarStyle: "default" },
 };
-export const viewport: Viewport = { themeColor: "#1f7a5c", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#1f7a5c", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen font-sans antialiased">
         <Nav />
         <OfflineAutoSync />
-        <main className="mx-auto max-w-3xl px-4 pb-28 pt-4 md:pb-10">{children}</main>
+        <main className="mx-auto max-w-3xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-10">{children}</main>
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,

@@ -22,7 +22,7 @@ export default function StartButton({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   return (
-    <div className="inline-flex flex-col gap-1">
+    <div className={className.includes("w-full") ? "flex w-full flex-col gap-1" : "inline-flex flex-col gap-1"}>
       <button
         className={className}
         disabled={busy}

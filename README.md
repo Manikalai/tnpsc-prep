@@ -1,4 +1,4 @@
-# TNPSC தயாரிப்பு — Tamil-medium prep app for Group 1, 2/2A and 4
+# Saranya Prep — Tamil-medium TNPSC prep app (Group 1, 2/2A, 4)
 
 A free, installable web app (PWA) for two people preparing for TNPSC exams in Tamil medium.
 

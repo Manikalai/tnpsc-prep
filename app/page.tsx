@@ -88,15 +88,25 @@ export default async function Home() {
 
       <section className="card">
         <h2 className="h2">விரைவுத் தொடக்கம்</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} முழு மாதிரித் தேர்வு`} busyLabel="வினாத்தாள் தயாராகிறது…" />
-          <Link href="/quiz/new" className="btn">வினாத்தாள் உருவாக்கு</Link>
-          <Link href="/books" className="btn-ghost">பாடநூல்கள் – பாடம் வாரியாக</Link>
-          <Link href="/papers" className="btn-ghost">உண்மை வினாத்தாள்கள்</Link>
-          <Link href="/syllabus" className="btn-ghost">அலகு வினாடி வினா</Link>
-          <Link href="/aptitude" className="btn-ghost">திறனறிவுப் பயிற்சி</Link>
-          <Link href="/ask" className="btn-ghost">பாடநூலிடம் கேள்</Link>
-          <Link href="/offline" className="btn-ghost">இணையமின்றிப் பயிற்சி</Link>
+        <div className="mt-3 space-y-2">
+          <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} முழு மாதிரித் தேர்வு`} busyLabel="வினாத்தாள் தயாராகிறது…" className="btn w-full" />
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              ["/quiz/new", "வினாத்தாள் உருவாக்கு", "✚"],
+              ["/books", "பாடநூல்கள்", "📖"],
+              ["/papers", "உண்மை வினாத்தாள்கள்", "📝"],
+              ["/syllabus", "அலகு வினாடி வினா", "🎯"],
+              ["/aptitude", "திறனறிவுப் பயிற்சி", "🧮"],
+              ["/ask", "பாடநூலிடம் கேள்", "💬"],
+              ["/offline", "இணையமின்றிப் பயிற்சி", "📴"],
+              ["/revision", "திருப்புதல்", "🔁"],
+            ] as const).map(([href, label, icon]) => (
+              <Link key={href} href={href} className="flex min-h-[64px] items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 text-[15px] font-semibold leading-snug active:bg-brand-50">
+                <span className="text-xl" aria-hidden>{icon}</span>
+                <span>{label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 "use client";
+import { Brand } from "@/components/Nav";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -15,10 +16,8 @@ export default function Login() {
 
   return (
     <div className="mx-auto mt-10 max-w-sm">
-      <h1 className="text-center text-3xl font-bold text-brand-700">
-        TNPSC <span className="text-turmeric-500">தயாரிப்பு</span>
-      </h1>
-      <p className="mt-2 text-center text-stone-500">தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
+      <h1 className="text-center"><Brand big /></h1>
+      <p className="mt-3 text-center text-stone-500">TNPSC தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
       {!configured && (
         <p className="card mt-6 text-sm text-kumkum-500">Supabase அமைப்புகள் இன்னும் சேர்க்கப்படவில்லை. README-இல் உள்ள படிகளைப் பின்பற்றவும்.</p>
       )}
