@@ -9,6 +9,7 @@ import type { BookBack } from "@/lib/bookback";
 import Md from "@/components/Md";
 import StartButton from "@/components/StartButton";
 import RevealList from "@/components/RevealList";
+import LessonTabs from "@/components/LessonTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -26,22 +27,25 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { tab = "text" } = await searchParams;
   const { sb, user } = await requireUser();
-  const { data: ch } = await sb.from("chapters").select("*").eq("id", Number(id)).single();
+  const cid = Number(id);
+  const [{ data: ch }, { data: notes }, { data: qs }] = await Promise.all([
+    sb.from("chapters").select("*").eq("id", cid).single(),
+    sb.from("chapter_notes").select("kind,content").eq("chapter_id", cid),
+    sb.from("questions").select("id").eq("chapter_id", cid).eq("status", "active"),
+  ]);
   if (!ch) notFound();
   const c = ch as Chapter;
-  const [{ data: notes }, { data: siblings }, { data: qs }] = await Promise.all([
-    sb.from("chapter_notes").select("kind,content").eq("chapter_id", c.id),
+  const [{ data: siblings }, { data: attempts }] = await Promise.all([
     sb.from("chapters").select("id,chapter_no,subject").eq("book", c.book).eq("subject", c.subject).order("chapter_no"),
-    sb.from("questions").select("id").eq("chapter_id", c.id).eq("status", "active"),
+    qs?.length
+      ? sb.from("answers").select("correct").eq("user_id", user.id).in("question_id", qs.map((q) => q.id))
+      : Promise.resolve({ data: [] as { correct: boolean }[] }),
   ]);
   const note = (k: string) => notes?.find((n) => n.kind === k)?.content;
   const idx = (siblings ?? []).findIndex((s) => s.id === c.id);
   const prev = siblings?.[idx - 1], next = siblings?.[idx + 1];
   const pdf = c.source_url ? `${c.source_url}#page=${c.page_from ?? 1}` : null;
 
-  const { data: attempts } = qs?.length
-    ? await sb.from("answers").select("correct").eq("user_id", user.id).in("question_id", qs.map((q) => q.id))
-    : { data: [] as { correct: boolean }[] };
   const right = (attempts ?? []).filter((a) => a.correct).length;
 
   const Generate = ({ kind, label }: { kind: string; label: string }) => (
@@ -61,19 +65,16 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
           {pdf && <a href={pdf} target="_blank" rel="noreferrer" className="chip bg-brand-50 text-brand-700">PDF ↗</a>}
         </div>
       </div>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-        {TABS.map(([k, l]) => (
-          <Link key={k} href={`/chapter/${c.id}?tab=${k}`} className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${tab === k ? "bg-brand-500 text-white" : "bg-white ring-1 ring-stone-200"}`}>{l}</Link>
-        ))}
-      </div>
-
-      {tab === "text" && <BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />}
-
-      {tab === "bookback" && <BookBackPanel chapterId={c.id} title={c.title_ta} initial={(note("bookback") as BookBack | undefined) ?? null} />}
-
-      {tab === "clean" && <CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />}
-
-      {tab === "summary" && (note("summary") ? (
+      <LessonTabs
+        tabs={TABS}
+        initial={TABS.some(([k]) => k === tab) ? tab : "text"}
+        prev={prev ? { href: `/chapter/${prev.id}`, label: `‹ பாடம் ${prev.chapter_no}` } : undefined}
+        next={next ? { href: `/chapter/${next.id}`, label: `பாடம் ${next.chapter_no} ›` } : undefined}
+        panels={{
+        text: (<BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />),
+        bookback: (<BookBackPanel chapterId={c.id} title={c.title_ta} initial={(note("bookback") as BookBack | undefined) ?? null} />),
+        clean: (<CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />),
+        summary: ((note("summary") ? (
         <>
           <div className="card">
             <h2 className="h2 mb-2">முக்கியக் குறிப்புகள்</h2>
@@ -81,29 +82,23 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
           </div>
           <div className="card"><h2 className="h2 mb-2">சுருக்கம்</h2><Md text={(note("summary") as Summary).summary} /></div>
         </>
-      ) : <Generate kind="summary" label="இந்தப் பாடத்தின் சுருக்கமும் முக்கியக் குறிப்புகளும் இன்னும் உருவாக்கப்படவில்லை." />)}
-
-      {tab === "facts" && (note("facts") ? <FactsView f={note("facts") as Facts} /> : <Generate kind="facts" label="நாட்கள், ஆளுமைகள், உண்மைகள், கலைச்சொற்கள் பட்டியல் இன்னும் உருவாக்கப்படவில்லை." />)}
-
-      {tab === "mcq" && (
+      ) : <Generate kind="summary" label="இந்தப் பாடத்தின் சுருக்கமும் முக்கியக் குறிப்புகளும் இன்னும் உருவாக்கப்படவில்லை." />)),
+        facts: ((note("facts") ? <FactsView f={note("facts") as Facts} /> : <Generate kind="facts" label="நாட்கள், ஆளுமைகள், உண்மைகள், கலைச்சொற்கள் பட்டியல் இன்னும் உருவாக்கப்படவில்லை." />)),
+        mcq: ((
         <div className="card space-y-2 text-center">
           <p>இந்தப் பாடத்தில் {qs?.length ?? 0} வினாக்கள் உள்ளன{attempts?.length ? ` · நீங்கள் ${right}/${attempts.length} சரி` : ""}.</p>
           <StartButton url="/api/chapter" body={{ action: "quiz", chapterId: c.id }} label="15 வினாக்கள் – தொடங்கு" busyLabel="வினாக்கள் தயாராகின்றன… (30 வினாடி வரை)" />
           <p className="muted">வினாக்கள் இந்தப் பாடத்தின் உரையிலிருந்து மட்டுமே; விடைகளில் பக்க எண் தரப்படும். தவறியவை திருப்புதல் பட்டியலில் சேரும்.</p>
         </div>
-      )}
-
-      {tab === "revision" && (note("revision") ? (
+      )),
+        revision: ((note("revision") ? (
         <div className="space-y-3">
           <RevealList items={(note("revision") as Revision).items} />
           <StartButton url="/api/chapter" body={{ action: "cards", chapterId: c.id }} label="இவற்றை நினைவு அட்டைகளாகச் சேர்" className="btn-ghost" />
         </div>
-      ) : <Generate kind="revision" label="குறுவினா–விடை வடிவில் திருப்புதல் வினாக்கள் இன்னும் உருவாக்கப்படவில்லை." />)}
-
-      <div className="flex justify-between gap-2 pt-1">
-        {prev ? <Link className="pill-nav" href={`/chapter/${prev.id}?tab=${tab}`}>‹ பாடம் {prev.chapter_no}</Link> : <span />}
-        {next ? <Link className="pill-nav" href={`/chapter/${next.id}?tab=${tab}`}>பாடம் {next.chapter_no} ›</Link> : <span />}
-      </div>
+      ) : <Generate kind="revision" label="குறுவினா–விடை வடிவில் திருப்புதல் வினாக்கள் இன்னும் உருவாக்கப்படவில்லை." />)),
+        }}
+      />
     </div>
   );
 }
