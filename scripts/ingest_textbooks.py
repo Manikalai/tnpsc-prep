@@ -595,6 +595,14 @@ def main():
         pages.sort(key=lambda x: x[0])
         pages = [(no, t) for no, t in pages if t.strip()]
         chapters = detect_chapters(pages, title, subject) if pages else []
+        if old_links is not None:
+            known = sb_all("chapters", {"book": f"eq.{title}", "select": "subject,chapter_no,title_ta,page_from", "order": "page_from"})
+            if len(known) >= 3 and len(chapters) < len(known) * 0.6:
+                print(f"  detection found only {len(chapters)} lessons (had {len(known)}) — keeping the known lessons, re-checking their start pages")
+                fixed = refine_starts(pages, [{"no": k["chapter_no"], "title": k["title_ta"], "start_page": k["page_from"] or 1, "subject": k["subject"]} for k in known])
+                last_page = pages[-1][0]
+                chapters = [(c["no"], c["title"], c["subject"], c["start_page"], (fixed[i + 1]["start_page"] - 1) if i + 1 < len(fixed) else last_page)
+                            for i, c in enumerate(fixed)]
         print(f"  pages {len(doc)}, OCR {ocr_n}, chapters {len(chapters)}")
         for no, ctitle, subj, a, b in chapters:
             print(f"    {subj} {no}. {ctitle} (p{a}–{b})")
