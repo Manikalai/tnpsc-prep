@@ -6,10 +6,14 @@ module.exports = {
       fontFamily: { sans: ["var(--font-tamil)", "system-ui", "sans-serif"] },
       colors: {
         ink: "#1f2328",
-        paper: "#fbf8f2",
-        brand: { 50: "#eef6f3", 100: "#d5ebe3", 500: "#1f7a5c", 600: "#17644b", 700: "#114c39" },
-        kumkum: { 500: "#b4432b", 50: "#fbeeea" },
-        turmeric: { 500: "#c99a1e", 50: "#fbf3dd" },
+        paper: "#fcf6ec",
+        // Murugan theme: peacock teal (primary), Vel gold / saffron (accent), kumkum red (warnings), maroon (hero)
+        brand: { 50: "#eaf5f6", 100: "#cde8eb", 500: "#0d6e7a", 600: "#0a5a64", 700: "#08434b" },
+        kumkum: { 500: "#b4232a", 50: "#fbeceb" },
+        turmeric: { 500: "#e08a1e", 50: "#fdf2e1" },
+        maroon: { 500: "#a01d1d", 700: "#6d1010", 900: "#4a0a0a" },
+        saffron: { 400: "#f6a33a", 500: "#ec7f1f" },
+        gold: { 400: "#f2c14e", 500: "#d4a017" },
       },
     },
   },

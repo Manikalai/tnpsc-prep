@@ -17,7 +17,8 @@ export default function Login() {
   return (
     <div className="mx-auto mt-10 max-w-sm">
       <h1 className="text-center"><Brand big /></h1>
-      <p className="mt-3 text-center text-stone-500">TNPSC தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
+      <p className="mt-3 text-center font-semibold text-maroon-500">வெற்றிவேல் முருகனுக்கு அரோகரா!</p>
+      <p className="mt-1 text-center text-stone-500">TNPSC தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
       {!configured && (
         <p className="card mt-6 text-sm text-kumkum-500">Supabase அமைப்புகள் இன்னும் சேர்க்கப்படவில்லை. README-இல் உள்ள படிகளைப் பின்பற்றவும்.</p>
       )}

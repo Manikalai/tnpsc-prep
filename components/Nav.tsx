@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Vel } from "@/components/Murugan";
 
 const I = {
   home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
@@ -20,8 +21,10 @@ const MAIN = [
 export function Brand({ big = false }: { big?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2 font-bold ${big ? "text-3xl" : "text-lg"}`}>
-      <span className={`grid place-items-center rounded-xl bg-brand-500 text-paper ${big ? "h-12 w-12 text-2xl" : "h-8 w-8 text-base"}`}>ச</span>
-      <span className="text-brand-700">Saranya <span className="text-turmeric-500">Prep</span></span>
+      <span className={`grid place-items-center rounded-xl bg-gradient-to-br from-maroon-500 to-saffron-500 shadow-sm ${big ? "h-14 w-14" : "h-8 w-8"}`}>
+        <Vel className={big ? "h-11" : "h-6"} gold="#ffd76a" dark="#8a5a00" />
+      </span>
+      <span className="text-maroon-700">Saranya <span className="text-saffron-500">Prep</span></span>
     </span>
   );
 }
@@ -33,6 +36,7 @@ export default function Nav() {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="h-1 bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
           <Link href="/" aria-label="முகப்பு"><Brand /></Link>
           <nav className="hidden gap-1 md:flex">

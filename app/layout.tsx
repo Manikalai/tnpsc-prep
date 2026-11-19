@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg", apple: "/icon-192.png" },
   appleWebApp: { capable: true, title: "Saranya Prep", statusBarStyle: "default" },
 };
-export const viewport: Viewport = { themeColor: "#1f7a5c", width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#7a1414", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -1,3 +1,4 @@
+import { PeacockFeather, Vel } from "@/components/Murugan";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { EXAM_LABEL, getProfile, todayIST } from "@/lib/data";
@@ -47,16 +48,19 @@ export default async function Home() {
 
   return (
     <div className="space-y-4">
-      <section className="card bg-gradient-to-br from-brand-500 to-brand-700 text-white">
-        <p className="text-sm opacity-90">வணக்கம், {profile.display_name ?? ""} · {taDate(new Date(), true)}</p>
-        <h1 className="mt-1 text-2xl font-bold">{EXAM_LABEL[exam]}</h1>
+      <section className="card relative overflow-hidden border-0 bg-gradient-to-br from-maroon-700 via-maroon-500 to-saffron-500 text-white">
+        <PeacockFeather className="pointer-events-none absolute -right-4 -top-6 h-48 rotate-[20deg] opacity-30" />
+        <Vel className="pointer-events-none absolute bottom-3 right-5 h-24 opacity-90" />
+        <p className="relative text-[13px] font-semibold tracking-wide text-gold-400">ஓம் சரவணபவ · வெற்றிவேல் முருகனுக்கு அரோகரா!</p>
+        <p className="relative mt-1 text-sm opacity-90">வணக்கம், {profile.display_name ?? ""} · {taDate(new Date(), true)}</p>
+        <h1 className="relative mt-1 text-2xl font-bold">{EXAM_LABEL[exam]}</h1>
         {left != null && left >= 0 ? (
-          <p className="mt-1 text-lg">தேர்வுக்கு இன்னும் <span className="text-3xl font-bold">{left}</span> நாட்கள் · {taDate(examDate!)}</p>
+          <p className="relative mt-1 pr-14 text-lg">தேர்வுக்கு இன்னும் <span className="text-3xl font-bold">{left}</span> நாட்கள் · {taDate(examDate!)}</p>
         ) : (
           <p className="mt-1 text-sm opacity-90"><Link href="/settings" className="underline">அமைப்புகளில்</Link> தேர்வு தேதியைச் சேர்க்கவும்</p>
         )}
-        <div className="mt-3 h-2 rounded-full bg-white/25"><div className="h-2 rounded-full bg-turmeric-500" style={{ width: `${pct(doneTopics, topicCount)}%` }} /></div>
-        <p className="mt-1 text-sm opacity-90">பாடத்திட்டம்: {doneTopics}/{topicCount} தலைப்புகள் முடிந்தன ({pct(doneTopics, topicCount)}%) · {units?.length ?? 0} அலகுகள்</p>
+        <div className="relative mt-3 mr-16 h-2 rounded-full bg-white/25"><div className="h-2 rounded-full bg-gold-400" style={{ width: `${pct(doneTopics, topicCount)}%` }} /></div>
+        <p className="relative mt-1 pr-16 text-sm opacity-90">பாடத்திட்டம்: {doneTopics}/{topicCount} தலைப்புகள் முடிந்தன ({pct(doneTopics, topicCount)}%) · {units?.length ?? 0} அலகுகள்</p>
       </section>
 
       <section className="card flex items-center justify-between gap-3">

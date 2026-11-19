@@ -7,7 +7,7 @@
   --font-read: "Noto Serif Tamil", "Mukta Malar", serif;
 }
 html { -webkit-text-size-adjust: 100%; }
-body { background: #f8f4ec; color: #1f2328; line-height: 1.7; }
+body { background: #fbf4e8; color: #1f2328; line-height: 1.7; }
 h1, h2, h3 { line-height: 1.4; }
 
 @layer components {
