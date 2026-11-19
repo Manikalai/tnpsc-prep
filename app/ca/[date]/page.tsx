@@ -21,14 +21,14 @@ export default async function CaDay({ params }: { params: Promise<{ date: string
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="முந்தைய நாள்">‹</Link>
+        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="Previous day">‹</Link>
         <h1 className="text-center text-[17px] font-bold leading-tight text-brand-700">{taDate(date, true)}</h1>
-        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="அடுத்த நாள்">›</Link>
+        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="Next day">›</Link>
       </div>
       <div className="card flex flex-wrap items-center justify-between gap-3">
         <DateJump value={date} max={todayIST()} />
         {(count ?? 0) > 0 ? (
-          <StartButton url="/api/ca/quiz" body={{ date }} label={`📝 இந்த நாளின் ${count} வினாக்கள்`} />
+          <StartButton url="/api/ca/quiz" body={{ date }} label={`📝 ${count} questions for this day`} />
         ) : (
           <span className="text-sm text-stone-500">இந்த நாளுக்கு வினாக்கள் இல்லை</span>
         )}
@@ -36,7 +36,7 @@ export default async function CaDay({ params }: { params: Promise<{ date: string
       {!data?.length ? (
         <div className="card">
           <p>இந்த நாளுக்குக் குறிப்புகள் இல்லை.</p>
-          <div className="mt-3"><StartButton url="/api/ca/run" label="இப்போதே தயாரி" busyLabel="செய்திகளைச் சேகரிக்கிறது…" /></div>
+          <div className="mt-3"><StartButton url="/api/ca/run" label="Prepare now" busyLabel="Collecting news…" /></div>
         </div>
       ) : (
         <>

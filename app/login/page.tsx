@@ -49,7 +49,7 @@ export default function Login() {
         <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
         <label className="block text-sm font-semibold">கடவுச்சொல்</label>
         <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-        <button className="btn w-full" disabled={busy}>{busy ? "காத்திருக்கவும்…" : "உள்நுழை"}</button>
+        <button className="btn w-full" disabled={busy}>{busy ? "Please wait…" : "Sign in"}</button>
         {msg && <p className="text-sm text-kumkum-500">{msg}</p>}
       </form>
     </div>

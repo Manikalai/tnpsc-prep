@@ -28,7 +28,7 @@ export default function PyqReveal({ items }: { items: Q[] }) {
               <ExplainButton questionId={q.id} />
             </div>
           ) : (
-            <button className="mt-2 text-sm font-semibold text-brand-600 underline" onClick={() => setOpen({ ...open, [q.id]: true })}>விடை காட்டு</button>
+            <button className="mt-2 text-sm font-semibold text-brand-600 underline" onClick={() => setOpen({ ...open, [q.id]: true })}>Show answer</button>
           )}
         </li>
       ))}

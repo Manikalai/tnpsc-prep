@@ -53,7 +53,7 @@ export default async function Syllabus({ searchParams }: { searchParams: Promise
                         <span className="text-sm">{t.name_ta}</span>
                         <div className="flex shrink-0 items-center gap-2">
                           {u.subject !== "aptitude" && u.subject !== "reasoning" && (
-                            <StartButton url="/api/quiz" body={{ unitId: u.id, topicId: t.id, count: 10 }} label="வினா" className="rounded-lg bg-stone-100 px-2 py-1 text-xs font-semibold" busyLabel="…" />
+                            <StartButton url="/api/quiz" body={{ unitId: u.id, topicId: t.id, count: 10 }} label="Quiz" className="rounded-lg bg-stone-100 px-2 py-1 text-xs font-semibold" busyLabel="…" />
                           )}
                           <StatusSelect topicId={t.id} initial={status.get(t.id) ?? "todo"} />
                         </div>
@@ -62,11 +62,11 @@ export default async function Syllabus({ searchParams }: { searchParams: Promise
                   </ul>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {u.subject === "aptitude" || u.subject === "reasoning" ? (
-                      <Link href="/aptitude" className="btn btn-sm">திறனறிவுப் பயிற்சி</Link>
+                      <Link href="/aptitude" className="btn btn-sm">Aptitude practice</Link>
                     ) : (
-                      <StartButton url="/api/quiz" body={{ unitId: u.id, count: 15 }} label="இந்த அலகில் 15 வினாக்கள்" className="btn btn-sm" busyLabel="வினாக்கள் தயாராகின்றன… (30 வினாடி வரை)" />
+                      <StartButton url="/api/quiz" body={{ unitId: u.id, count: 15 }} label="15 questions from this unit" className="btn btn-sm" busyLabel="Preparing questions… (up to 30 sec)" />
                     )}
-                    <Link href={`/notes?unit=${u.id}`} className="btn-ghost btn-sm">நினைவுக் குறிப்புகள்</Link>
+                    <Link href={`/notes?unit=${u.id}`} className="btn-ghost btn-sm">Memory notes</Link>
                   </div>
                 </details>
               );

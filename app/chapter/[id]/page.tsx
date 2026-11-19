@@ -51,7 +51,7 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
   const Generate = ({ kind, label }: { kind: string; label: string }) => (
     <div className="card text-center">
       <p className="mb-3 text-sm text-stone-600">{label}</p>
-      <StartButton url="/api/chapter" body={{ action: "notes", chapterId: c.id, kind }} label="உருவாக்கு" busyLabel="பாடத்திலிருந்து எழுதுகிறது… (30–50 வினாடி)" />
+      <StartButton url="/api/chapter" body={{ action: "notes", chapterId: c.id, kind }} label="Generate" busyLabel="Writing from the lesson… (30–50 sec)" />
     </div>
   );
 
@@ -87,14 +87,14 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         mcq: ((
         <div className="card space-y-2 text-center">
           <p>இந்தப் பாடத்தில் {qs?.length ?? 0} வினாக்கள் உள்ளன{attempts?.length ? ` · நீங்கள் ${right}/${attempts.length} சரி` : ""}.</p>
-          <StartButton url="/api/chapter" body={{ action: "quiz", chapterId: c.id }} label="15 வினாக்கள் – தொடங்கு" busyLabel="வினாக்கள் தயாராகின்றன… (30 வினாடி வரை)" />
+          <StartButton url="/api/chapter" body={{ action: "quiz", chapterId: c.id }} label="Start 15 questions" busyLabel="Preparing questions… (up to 30 sec)" />
           <p className="muted">வினாக்கள் இந்தப் பாடத்தின் உரையிலிருந்து மட்டுமே; விடைகளில் பக்க எண் தரப்படும். தவறியவை திருப்புதல் பட்டியலில் சேரும்.</p>
         </div>
       )),
         revision: ((note("revision") ? (
         <div className="space-y-3">
           <RevealList items={(note("revision") as Revision).items} />
-          <StartButton url="/api/chapter" body={{ action: "cards", chapterId: c.id }} label="இவற்றை நினைவு அட்டைகளாகச் சேர்" className="btn-ghost" />
+          <StartButton url="/api/chapter" body={{ action: "cards", chapterId: c.id }} label="Add these as flashcards" className="btn-ghost" />
         </div>
       ) : <Generate kind="revision" label="குறுவினா–விடை வடிவில் திருப்புதல் வினாக்கள் இன்னும் உருவாக்கப்படவில்லை." />)),
         }}

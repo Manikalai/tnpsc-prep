@@ -72,10 +72,10 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
   const f = notes.facts as Facts | undefined;
   return (
     <div className="space-y-3">
-      <button className="text-sm underline" onClick={onBack}>← பாடநூல்கள்</button>
+      <button className="text-sm underline" onClick={onBack}>← Textbooks</button>
       <div><p className="muted">{ch.book}{ch.term ? ` · பருவம் ${ch.term}` : ""}</p><h2 className="h1">பாடம் {ch.chapter_no}: {ch.title_ta}</h2></div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-        {[["text", "பாடநூல்"], ["clean", "எளிய குறிப்புகள்"], ["bookback", "புத்தக வினாக்கள்"], ["summary", "முக்கியக் குறிப்புகள்"], ["facts", "நாட்கள் · ஆளுமைகள்"], ["mcq", "வினாக்கள்"], ["revision", "திருப்புதல்"]].map(([k, l]) => (
+        {[["text", "Textbook"], ["clean", "Easy notes"], ["bookback", "Book-back"], ["summary", "Key points"], ["facts", "Dates · People"], ["mcq", "MCQs"], ["revision", "Revision Q&A"]].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${tab === k ? "bg-brand-500 text-white" : "bg-white ring-1 ring-stone-200"}`}>{l}</button>
         ))}
       </div>

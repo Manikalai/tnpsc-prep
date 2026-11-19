@@ -9,7 +9,7 @@ export default function RevealList({ items }: { items: { q: string; a: string }[
     <div className="card">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="h2">திருப்புதல் வினாக்கள் ({items.length})</h2>
-        <button className="text-sm underline" onClick={() => setOpen(all ? {} : Object.fromEntries(items.map((_, k) => [k, true])))}>{all ? "விடைகளை மறை" : "எல்லா விடைகளும்"}</button>
+        <button className="text-sm underline" onClick={() => setOpen(all ? {} : Object.fromEntries(items.map((_, k) => [k, true])))}>{all ? "Hide answers" : "Show all answers"}</button>
       </div>
       <ol className="space-y-2">
         {items.map((it, k) => (

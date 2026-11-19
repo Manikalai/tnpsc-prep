@@ -28,7 +28,7 @@ export function BookBackView({ data, title }: { data: BookBack; title?: string }
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <button className="btn-ghost btn-sm" onClick={() => setOpen(all ? {} : Object.fromEntries(keys.map((k) => [k, true])))}>{all ? "விடைகளை மறை" : "எல்லா விடைகளும் காட்டு"}</button>
+        <button className="btn-ghost btn-sm" onClick={() => setOpen(all ? {} : Object.fromEntries(keys.map((k) => [k, true])))}>{all ? "Hide answers" : "Show all answers"}</button>
       </div>
       {data.sections.map((s, i) => (
         <section key={i} className="card">
@@ -54,7 +54,7 @@ export function BookBackView({ data, title }: { data: BookBack; title?: string }
                       {it.page ? <p className="mt-1 text-xs text-stone-500">பாடநூல் பக். {it.page}</p> : null}
                     </div>
                   ) : (
-                    <button className="mt-2 text-sm font-semibold text-brand-600 underline" onClick={() => setOpen({ ...open, [k]: true })}>விடை & விளக்கம் காட்டு</button>
+                    <button className="mt-2 text-sm font-semibold text-brand-600 underline" onClick={() => setOpen({ ...open, [k]: true })}>Show answer & explanation</button>
                   )}
                 </li>
               );

@@ -68,13 +68,13 @@ export default function QuizBuilder({ chapters, onStart }: { chapters: C[]; onSt
   return (
     <div className="space-y-4">
       <div className="card space-y-4">
-        <Chips label="1. வகுப்பு" items={stds.map((s) => [s, `${s}ஆம்`] as [number, string])} value={std} onChange={(v) => { setStd(v); setTerm("all"); setSubject(null); setSection("all"); reset(); }} />
+        <Chips label="1. Class" items={stds.map((s) => [s, `${s}ஆம்`] as [number, string])} value={std} onChange={(v) => { setStd(v); setTerm("all"); setSubject(null); setSection("all"); reset(); }} />
         {terms.length > 0 && (
-          <Chips label="பருவம்" items={[["all", "எல்லாம்"], ...terms.map((t) => [t, `பருவம் ${t}`] as [string, string])]} value={term} onChange={(v) => { setTerm(v); setSubject(null); setSection("all"); reset(); }} />
+          <Chips label="Term" items={[["all", "All"], ...terms.map((t) => [t, `பருவம் ${t}`] as [string, string])]} value={term} onChange={(v) => { setTerm(v); setSubject(null); setSection("all"); reset(); }} />
         )}
-        <Chips label="2. பாடம்" items={subjects.map((s) => [s, SUBJECT[s] ?? s] as [string, string])} value={subject} onChange={(v) => { setSubject(v); setSection("all"); reset(); }} />
+        <Chips label="2. Subject" items={subjects.map((s) => [s, SUBJECT[s] ?? s] as [string, string])} value={subject} onChange={(v) => { setSubject(v); setSection("all"); reset(); }} />
         {subject && sections.length > 1 && (
-          <Chips label="3. பிரிவு" items={[["all", "எல்லாம்"], ...sections.map((s) => [s, sectionName(s)] as [string, string])]} value={section} onChange={(v) => { setSection(v); reset(); }} />
+          <Chips label="3. Section" items={[["all", "All"], ...sections.map((s) => [s, sectionName(s)] as [string, string])]} value={section} onChange={(v) => { setSection(v); reset(); }} />
         )}
         {subject && unlabelled && sections.length <= 1 && !onStart && (
           <p className="text-xs text-stone-500">
@@ -108,10 +108,10 @@ export default function QuizBuilder({ chapters, onStart }: { chapters: C[]; onSt
 
       {picked.size > 0 && (
         <div className="card space-y-4">
-          <Chips label="5. வினாக்களின் எண்ணிக்கை" items={[10, 15, 25, 50].map((n) => [n, String(n)] as [number, string])} value={count} onChange={setCount} />
-          <Chips label="கடினம்" items={Object.entries(DIFFICULTY) as [string, string][]} value={difficulty} onChange={setDifficulty} />
+          <Chips label="5. Number of questions" items={[10, 15, 25, 50].map((n) => [n, String(n)] as [number, string])} value={count} onChange={setCount} />
+          <Chips label="Difficulty" items={Object.entries(DIFFICULTY) as [string, string][]} value={difficulty} onChange={setDifficulty} />
           <p className="muted">நேரம் {Math.round((count * 54) / 60)} நிமிடம் (TNPSC வேகம்: ஒரு வினாவுக்கு 54 வினாடி).</p>
-          <button className="btn w-full" disabled={busy} onClick={start}>{busy ? "வினாத்தாள் தயாராகிறது… (30 வினாடி வரை)" : "வினாத்தாள் தொடங்கு"}</button>
+          <button className="btn w-full" disabled={busy} onClick={start}>{busy ? "Preparing paper… (up to 30 sec)" : "Start quiz"}</button>
           {msg && <p className="text-sm text-kumkum-500">{msg}</p>}
         </div>
       )}

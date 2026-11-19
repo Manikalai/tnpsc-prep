@@ -59,7 +59,7 @@ export default function CleanNotes({ chapterId, initial }: { chapterId: number; 
           <p className="text-sm text-stone-600">
             {clean ? "இந்தப் பாடத்தின் மீதிப் பகுதிகள் இன்னும் எழுதப்படவில்லை." : "இந்தப் பாடம் இன்னும் எளிய குறிப்புகளாக எழுதப்படவில்லை (இரவுப் பணி படிப்படியாக எல்லாப் பாடங்களையும் எழுதும்)."}
           </p>
-          <button className="btn" disabled={!!busy} onClick={run}>{busy ?? (clean ? "மீதியை எழுது" : "இப்போதே எழுது")}</button>
+          <button className="btn" disabled={!!busy} onClick={run}>{busy ?? (clean ? "Write the rest" : "Write now")}</button>
           {busy && <p className="muted">ஒவ்வொரு பகுதிக்கும் 20–50 வினாடி</p>}
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>

@@ -12,7 +12,7 @@ import OfflineBooks from "./OfflineBooks";
 import OfflineResult from "./OfflineResult";
 
 type Active = { localId: string; kind: string; title: string; exam: string | null; unit_id: string | null; qs: OQ[]; durationSec: number; startedAt: string };
-const TABS = [["home", "பதிவிறக்கம்"], ["books", "பாடநூல்கள்"], ["builder", "வினாத்தாள்"], ["tests", "தேர்வுகள்"], ["ca", "நடப்பு நிகழ்வுகள்"], ["cards", "அட்டைகள்"]] as const;
+const TABS = [["home", "Download"], ["books", "Textbooks"], ["builder", "Quiz"], ["tests", "Tests"], ["ca", "Current affairs"], ["cards", "Cards"]] as const;
 const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 const EXAM_LABEL: Record<string, string> = { G4: "தொகுதி IV", G2: "தொகுதி II / IIA", G1: "தொகுதி I" };
@@ -200,8 +200,8 @@ export default function OfflineApp() {
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <button className="btn" disabled={!online || !stds.length} onClick={doDownload}>{settings?.lastFull ? "முழுவதும் மீண்டும் பதிவிறக்கு" : "பதிவிறக்கு"}</button>
-              {settings?.lastSync && <button className="btn-ghost" disabled={!online} onClick={doUpdate}>புதியவற்றை மட்டும் புதுப்பி</button>}
+              <button className="btn" disabled={!online || !stds.length} onClick={doDownload}>{settings?.lastFull ? "Download all again" : "Download"}</button>
+              {settings?.lastSync && <button className="btn-ghost" disabled={!online} onClick={doUpdate}>Update new only</button>}
             </div>
           )}
           <label className="flex items-center gap-2 text-sm">
@@ -224,12 +224,12 @@ export default function OfflineApp() {
         <div className="space-y-3">
           <div className="card flex items-center justify-between gap-2">
             <div><p className="font-semibold">இன்றைய பயிற்சி</p><p className="muted">20 கலப்பு வினாக்கள்</p></div>
-            <button className="btn" onClick={startDaily}>தொடங்கு</button>
+            <button className="btn" onClick={startDaily}>Start</button>
           </div>
           {meta.exams.map((e) => (
             <div key={e.code} className="card flex items-center justify-between gap-2">
               <div><p className="font-semibold">{e.name_ta} – மாதிரித் தேர்வு</p><p className="muted">{e.total_questions} வினாக்கள் · {e.duration_min / 60} மணி நேரம்</p></div>
-              <button className="btn" onClick={() => startMock(e.code)}>தொடங்கு</button>
+              <button className="btn" onClick={() => startMock(e.code)}>Start</button>
             </div>
           ))}
           <div className="card">
@@ -238,7 +238,7 @@ export default function OfflineApp() {
             {papers.map((p) => (
               <div key={`${p.exam}${p.year}`} className="flex items-center justify-between border-t border-stone-100 py-2">
                 <span>{EXAM_LABEL[p.exam]} {p.year} <span className="muted">({p.qs.length} வினாக்கள்)</span></span>
-                <button className="btn btn-sm" onClick={() => startPaper(p)}>எழுது</button>
+                <button className="btn btn-sm" onClick={() => startPaper(p)}>Write</button>
               </div>
             ))}
           </div>
@@ -279,7 +279,7 @@ function Cards({ cards }: { cards: { id: string; front: string; back: string }[]
         <p className="text-xs text-stone-400">{(i % order.length) + 1}/{order.length}</p>
         <p className={`mt-3 text-xl ${flip ? "text-brand-700" : ""}`}>{flip ? c.back : c.front}</p>
       </button>
-      <button className="btn mt-3 w-full" onClick={() => { setFlip(false); setI(i + 1); }}>அடுத்த அட்டை</button>
+      <button className="btn mt-3 w-full" onClick={() => { setFlip(false); setI(i + 1); }}>Next card</button>
     </div>
   );
 }

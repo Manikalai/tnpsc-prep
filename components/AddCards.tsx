@@ -2,7 +2,7 @@
 import { useState } from "react";
 
 /** Adds a set of memory cards to the user's flashcards (spaced review: 1, 3, 7, 15 … days). */
-export default function AddCards({ cards, label = "நினைவு அட்டைகளாகச் சேர்" }: { cards: { front: string; back: string }[]; label?: string }) {
+export default function AddCards({ cards, label = "Add as flashcards" }: { cards: { front: string; back: string }[]; label?: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   return (

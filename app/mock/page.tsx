@@ -34,9 +34,9 @@ export default async function Mock({ searchParams }: { searchParams: Promise<{ e
             ))}
           </ul>
           <div className="mt-3 h-2 rounded-full bg-stone-100"><div className="h-2 rounded-full bg-brand-500" style={{ width: `${Math.round((ready / exam.total_questions) * 100)}%` }} /></div>
-          <p className="muted mt-1">வினா வங்கி தயார்நிலை: {ready}/{exam.total_questions}. {ready < exam.total_questions && <Link className="underline" href="/admin">வினா வங்கியை நிரப்பு →</Link>}</p>
+          <p className="muted mt-1">வினா வங்கி தயார்நிலை: {ready}/{exam.total_questions}. {ready < exam.total_questions && <Link className="underline" href="/admin">Fill question bank →</Link>}</p>
           <div className="mt-4">
-            <StartButton url="/api/mock" body={{ exam: code }} label="மாதிரித் தேர்வைத் தொடங்கு" busyLabel="வினாத்தாள் தயாராகிறது…" confirm={`${EXAM_LABEL[code]} மாதிரித் தேர்வு ${exam.duration_min / 60} மணி நேரம். தொடங்கலாமா?`} />
+            <StartButton url="/api/mock" body={{ exam: code }} label="Start mock test" busyLabel="Preparing paper…" confirm={`${EXAM_LABEL[code]} மாதிரித் தேர்வு ${exam.duration_min / 60} மணி நேரம். தொடங்கலாமா?`} />
           </div>
         </div>
       )}

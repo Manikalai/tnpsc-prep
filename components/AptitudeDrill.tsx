@@ -29,7 +29,7 @@ export default function AptitudeDrill({ keys, n, title, seconds }: { keys: strin
     return (
       <div className="card flex items-center justify-between gap-2">
         <div><p className="font-semibold">{title}</p><p className="muted">நேரம் {Math.round(seconds / 60)} நிமிடம்</p></div>
-        <button className="btn" onClick={() => { setQs(drill(keys, n)); setAns({}); setDone(false); setStart(Date.now()); setNow(Date.now()); }}>தொடங்கு</button>
+        <button className="btn" onClick={() => { setQs(drill(keys, n)); setAns({}); setDone(false); setStart(Date.now()); setNow(Date.now()); }}>Start</button>
       </div>
     );
 
@@ -58,9 +58,9 @@ export default function AptitudeDrill({ keys, n, title, seconds }: { keys: strin
         </div>
       ))}
       {!done ? (
-        <button className="btn w-full" onClick={finish}>முடி</button>
+        <button className="btn w-full" onClick={finish}>Finish</button>
       ) : (
-        <button className="btn w-full" onClick={() => { setQs(drill(keys, n)); setAns({}); setDone(false); setStart(Date.now()); setNow(Date.now()); window.scrollTo(0, 0); }}>புதிய வினாக்கள்</button>
+        <button className="btn w-full" onClick={() => { setQs(drill(keys, n)); setAns({}); setDone(false); setStart(Date.now()); setNow(Date.now()); window.scrollTo(0, 0); }}>New questions</button>
       )}
     </div>
   );

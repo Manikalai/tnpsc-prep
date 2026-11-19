@@ -98,7 +98,7 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
           <p className="text-xs text-stone-500">விடையளித்தவை {answered}/{questions.length}</p>
         </div>
         <div className={`rounded-lg px-3 py-1 font-mono text-sm font-bold ${left < 300 ? "bg-kumkum-50 text-kumkum-500" : "bg-white text-ink"}`}>⏱ {fmtTime(left)}</div>
-        <button className="btn btn-sm" onClick={() => submit()} disabled={busy}>{busy ? "…" : "சமர்ப்பி"}</button>
+        <button className="btn btn-sm" onClick={() => submit()} disabled={busy}>{busy ? "…" : "Submit"}</button>
       </div>
 
       <div className="card">
@@ -132,9 +132,9 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <button className="btn-ghost" onClick={() => go(i - 1)} disabled={i === 0}>← முந்தைய</button>
-        <button className="btn-ghost" onClick={() => setShowPalette(!showPalette)}>வினா அட்டவணை</button>
-        <button className="btn-ghost" onClick={() => go(i + 1)} disabled={i === questions.length - 1}>அடுத்த →</button>
+        <button className="btn-ghost" onClick={() => go(i - 1)} disabled={i === 0}>← Prev</button>
+        <button className="btn-ghost" onClick={() => setShowPalette(!showPalette)}>Question grid</button>
+        <button className="btn-ghost" onClick={() => go(i + 1)} disabled={i === questions.length - 1}>Next →</button>
       </div>
 
       {showPalette && (

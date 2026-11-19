@@ -25,8 +25,8 @@ export default function Flashcards({ cards }: { cards: Card[] }) {
           </button>
           {flip && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="btn-ghost" onClick={() => grade(false)}>மறந்துவிட்டேன்</button>
-              <button className="btn" onClick={() => grade(true)}>நினைவிருக்கிறது</button>
+              <button className="btn-ghost" onClick={() => grade(false)}>Forgot</button>
+              <button className="btn" onClick={() => grade(true)}>Remembered</button>
             </div>
           )}
         </div>

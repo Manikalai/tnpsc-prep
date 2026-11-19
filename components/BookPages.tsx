@@ -15,7 +15,7 @@ export default function BookPages({ book, from, to, pdf }: { book: string; from:
       <div className="card space-y-2 text-center">
         <p>இந்த நூலின் பக்கங்கள் இன்னும் பயன்பாட்டில் ஏற்றப்படவில்லை.</p>
         <p className="muted">அதுவரை “எளிய குறிப்புகள்” பகுதியைப் படிக்கலாம்{pdf ? " அல்லது PDF-ஐத் திறக்கலாம்" : ""}.</p>
-        {pdf && <a className="btn-ghost btn-sm" href={pdf} target="_blank" rel="noreferrer">PDF-இல் படி ↗</a>}
+        {pdf && <a className="btn-ghost btn-sm" href={pdf} target="_blank" rel="noreferrer">Read in PDF ↗</a>}
       </div>
     );
   }
@@ -42,7 +42,7 @@ export default function BookPages({ book, from, to, pdf }: { book: string; from:
       ))}
       {zoom != null && (
         <div className="fixed inset-0 z-50 overflow-auto bg-black/90" onClick={() => setZoom(null)}>
-          <button className="fixed right-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-sm font-bold">✕ மூடு</button>
+          <button className="fixed right-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-sm font-bold">✕ Close</button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={pageUrl(key, zoom)} crossOrigin="anonymous" alt="" className="mx-auto block w-[200%] max-w-none sm:w-full sm:max-w-3xl" />
         </div>

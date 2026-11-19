@@ -33,7 +33,7 @@ export default function SettingsForm({ name, exam, date }: { name: string; exam:
         >
           சேமி
         </button>
-        <button className="btn-ghost" onClick={async () => { await supabaseBrowser().auth.signOut(); router.replace("/login"); }}>வெளியேறு</button>
+        <button className="btn-ghost" onClick={async () => { await supabaseBrowser().auth.signOut(); router.replace("/login"); }}>Sign out</button>
       </div>
       {msg && <p className="text-sm">{msg}</p>}
     </div>

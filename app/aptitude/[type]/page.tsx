@@ -10,11 +10,11 @@ import PyqReveal from "@/components/PyqReveal";
 export const dynamic = "force-dynamic";
 
 const TABS = [
-  ["learn", "1. கற்க"],
-  ["understand", "2. புரிந்துகொள்"],
-  ["practice", "3. பயிற்சி"],
-  ["pyq", "4. முந்தைய வினாக்கள்"],
-  ["master", "5. தேர்ச்சி"],
+  ["learn", "1. Learn"],
+  ["understand", "2. Understand"],
+  ["practice", "3. Practice"],
+  ["pyq", "4. Previous papers"],
+  ["master", "5. Master"],
 ] as const;
 
 export default async function AptPage({ params, searchParams }: { params: Promise<{ type: string }>; searchParams: Promise<{ tab?: string }> }) {
@@ -52,7 +52,7 @@ export default async function AptPage({ params, searchParams }: { params: Promis
       {tab === "learn" && (
         <>
           <section className="card reading"><Md text={topic.learn} /></section>
-          <Link href={`/aptitude/${topic.key}?tab=understand`} className="btn w-full">அடுத்து: சூத்திரங்களும் எடுத்துக்காட்டுகளும் →</Link>
+          <Link href={`/aptitude/${topic.key}?tab=understand`} className="btn w-full">Next: formulas & examples →</Link>
         </>
       )}
 
@@ -91,7 +91,7 @@ export default async function AptPage({ params, searchParams }: { params: Promis
               {topic.hacks.map((h, k) => <li key={k}>{h}</li>)}
               {shortcuts.flatMap((t) => t!.shortcuts).map((h, k) => <li key={`s${k}`}>{h}</li>)}
             </ul>
-            <Link href="/aptitude/shortcuts" className="mt-3 inline-block text-sm font-semibold text-brand-600 underline">முழு சுருக்கு வழி அட்டவணை →</Link>
+            <Link href="/aptitude/shortcuts" className="mt-3 inline-block text-sm font-semibold text-brand-600 underline">Full shortcuts sheet →</Link>
           </section>
         </>
       )}

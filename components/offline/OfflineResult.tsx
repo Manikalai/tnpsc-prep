@@ -47,7 +47,7 @@ export default function OfflineResult({ result, online, onClose }: { result: Res
           </div>
         ))}
       </details>
-      <button className="btn-ghost btn-sm" onClick={onClose}>மூடு</button>
+      <button className="btn-ghost btn-sm" onClick={onClose}>Close</button>
     </div>
   );
 }

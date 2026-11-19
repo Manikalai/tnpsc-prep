@@ -40,7 +40,7 @@ export default async function Aptitude() {
                     <span className="block text-sm text-stone-500">{t.ta}</span>
                     <span className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
                       {a != null && <span className={`chip ${a >= 70 ? "bg-brand-50 text-brand-700" : a >= 40 ? "bg-turmeric-50 text-turmeric-500" : "bg-kumkum-50 text-kumkum-500"}`}>துல்லியம் {a}%</span>}
-                      {n > 0 && <span className="chip">TNPSC வினாக்கள் {n}</span>}
+                      {n > 0 && <span className="chip">TNPSC Qs {n}</span>}
                     </span>
                   </span>
                   <span className="text-stone-400">›</span>

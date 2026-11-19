@@ -9,7 +9,7 @@ export default function StartButton({
   url,
   body,
   label,
-  busyLabel = "தயாராகிறது…",
+  busyLabel = "Preparing…",
   className = "btn",
   confirm,
 }: {

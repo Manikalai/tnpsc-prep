@@ -29,8 +29,8 @@ export default async function Notes({ searchParams }: { searchParams: Promise<{ 
         <StartButton
           url="/api/notes"
           body={{ action: "generate", unitId: unit.id, topicId: sp.topic }}
-          label="புதிய குறிப்புகளை உருவாக்கு"
-          busyLabel="பாடநூலிலிருந்து குறிப்புகள் எழுதுகிறது… (30 வினாடி)"
+          label="Generate new notes"
+          busyLabel="Writing notes from the textbook… (30 sec)"
         />
       )}
       {!notes?.length && <p className="muted">இந்த அலகுக்கு இன்னும் குறிப்புகள் இல்லை.</p>}
@@ -44,7 +44,7 @@ export default async function Notes({ searchParams }: { searchParams: Promise<{ 
             {n.user_id === user.id && (
               <div className="flex shrink-0 gap-1">
                 <StartButton url="/api/notes" body={{ action: "pin", id: n.id, pinned: !n.pinned }} label={n.pinned ? "★" : "☆"} className="btn-ghost btn-sm" busyLabel="…" />
-                <StartButton url="/api/notes" body={{ action: "delete", id: n.id }} label="நீக்கு" className="btn-ghost btn-sm" busyLabel="…" confirm="இந்தக் குறிப்பை நீக்கவா?" />
+                <StartButton url="/api/notes" body={{ action: "delete", id: n.id }} label="Delete" className="btn-ghost btn-sm" busyLabel="…" confirm="இந்தக் குறிப்பை நீக்கவா?" />
               </div>
             )}
           </div>

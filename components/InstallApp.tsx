@@ -43,7 +43,7 @@ export default function InstallApp({ compact = false }: { compact?: boolean }) {
           <span className="block font-bold">Saranya Prep செயலியாக நிறுவு</span>
           <span className="block text-[13px] text-white/85">முகப்புத் திரையில் ஐகான் · முழுத் திரை · இணையமின்றியும்</span>
         </span>
-        <button onClick={click} className="shrink-0 rounded-xl bg-white px-3.5 py-2 text-sm font-bold text-maroon-700 active:scale-95">நிறுவு</button>
+        <button onClick={click} className="shrink-0 rounded-xl bg-white px-3.5 py-2 text-sm font-bold text-maroon-700 active:scale-95">Install</button>
       </div>
       {help && (
         <div className="space-y-1.5 bg-black/20 p-3.5 text-[14px]">

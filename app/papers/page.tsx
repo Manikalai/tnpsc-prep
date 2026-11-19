@@ -28,7 +28,7 @@ export default async function Papers() {
             <p className="font-semibold">{LABEL[g.exam] ?? g.exam} · {g.year}</p>
             <p className="muted">{g.active} வினாக்கள்{g.flagged ? ` · ${g.flagged} சரிபார்ப்பில் (வினா வங்கி)` : ""}</p>
           </div>
-          <StartButton url="/api/paper" body={{ exam: g.exam, year: g.year }} label="எழுது" confirm={`${LABEL[g.exam]} ${g.year} வினாத்தாள் – 3 மணி நேரம். தொடங்கலாமா?`} />
+          <StartButton url="/api/paper" body={{ exam: g.exam, year: g.year }} label="Write" confirm={`${LABEL[g.exam]} ${g.year} வினாத்தாள் – 3 மணி நேரம். தொடங்கலாமா?`} />
         </div>
       ))}
       {!!past?.length && (

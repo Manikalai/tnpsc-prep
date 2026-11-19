@@ -74,10 +74,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {[0, 1, 2, 3].map((k) => (
-                <StartButton key={k} url="/api/admin/question" body={{ id: q.id, action: "fix", answer_index: k, explanation: q.explanation }} label={`விடை ${OPT[k]}`} className="btn-ghost btn-sm" busyLabel="…" />
+                <StartButton key={k} url="/api/admin/question" body={{ id: q.id, action: "fix", answer_index: k, explanation: q.explanation }} label={`Answer ${OPT[k]}`} className="btn-ghost btn-sm" busyLabel="…" />
               ))}
-              <StartButton url="/api/admin/question" body={{ id: q.id, action: "activate" }} label="சரியானதே" className="btn-ghost btn-sm" busyLabel="…" />
-              <StartButton url="/api/admin/question" body={{ id: q.id, action: "retire" }} label="நீக்கு" className="btn-ghost btn-sm" busyLabel="…" />
+              <StartButton url="/api/admin/question" body={{ id: q.id, action: "activate" }} label="Correct" className="btn-ghost btn-sm" busyLabel="…" />
+              <StartButton url="/api/admin/question" body={{ id: q.id, action: "retire" }} label="Delete" className="btn-ghost btn-sm" busyLabel="…" />
             </div>
           </div>
         ))}

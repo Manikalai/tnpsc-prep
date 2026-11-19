@@ -56,10 +56,10 @@ export default function Nav() {
         <div className="h-1 bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-3">
           {isRoot ? (
-            <Link href="/" aria-label="முகப்பு" className="px-1"><Brand /></Link>
+            <Link href="/" aria-label="Home" className="px-1"><Brand /></Link>
           ) : (
             <div className="flex min-w-0 items-center gap-1">
-              <button onClick={back} aria-label="பின் செல்" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-maroon-700 active:bg-stone-200/70">
+              <button onClick={back} aria-label="Back" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-maroon-700 active:bg-stone-200/70">
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
               </button>
               <span className="truncate text-[17px] font-bold text-maroon-700">{title ?? "Saranya Prep"}</span>

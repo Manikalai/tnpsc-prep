@@ -36,7 +36,7 @@ export default function Timeline({ events }: { events: TEvent[] }) {
         </div>
       </div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-        {([["line", "காலவரிசை"], ["same", "ஒரே ஆண்டு"], ["quiz", "வினாடி வினா"], ["tips", "நினைவு உத்திகள்"]] as const).map(([k, l]) => (
+        {([["line", "Timeline"], ["same", "Same year"], ["quiz", "Quiz"], ["tips", "Memory tricks"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${tab === k ? "bg-brand-500 text-white" : "bg-white ring-1 ring-stone-200"}`}>{l}</button>
         ))}
       </div>
@@ -78,7 +78,7 @@ function Line({ list }: { list: TEvent[] }) {
                 );
               })}
             </ol>
-            <AddCards cards={ev.map((e) => ({ front: `${e.event} — எந்த ஆண்டு?`, back: `${e.label} (${e.lesson})` }))} label="இந்தக் காலத்தை அட்டைகளாகச் சேர்" />
+            <AddCards cards={ev.map((e) => ({ front: `${e.event} — எந்த ஆண்டு?`, back: `${e.label} (${e.lesson})` }))} label="Add this era as flashcards" />
           </section>
         );
       })}
@@ -158,7 +158,7 @@ function Quiz({ list }: { list: TEvent[] }) {
       ))}
       <div className="card flex items-center justify-between">
         <b className="text-maroon-700">{score}/{qs.length}</b>
-        <button className="btn" onClick={() => { setQs(makeQuiz(list)); setAns({}); }}>புதிய 10 வினாக்கள்</button>
+        <button className="btn" onClick={() => { setQs(makeQuiz(list)); setAns({}); }}>New 10 questions</button>
       </div>
     </div>
   );

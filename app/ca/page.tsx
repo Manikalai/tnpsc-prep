@@ -36,10 +36,10 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
       <h1 className="h1">நடப்பு நிகழ்வுகள்</h1>
       <p className="muted">தமிழ்நாடு, இந்தியா — தினமும் காலை 6 மணிக்குத் தானாகத் தயாராகும். <span className="font-semibold text-maroon-500">{sloganOfDay(3)}</span></p>
       <div className="grid grid-cols-2 gap-2 text-[15px]">
-        <Link href={`/ca/${todayIST()}`} className="btn col-span-2">இன்றைய குறிப்புகள்</Link>
-        <StartButton url="/api/ca/run" label="இப்போதே புதுப்பி" className="btn-ghost w-full" busyLabel="தொடங்குகிறது…" />
-        <StartButton url="/api/ca/quiz" body={{ from: start, to: end }} label="மாத வினாக்கள்" className="btn-ghost w-full" />
-        <Link href={`/ca/month?m=${month}`} className="btn-ghost col-span-2">மாதத் தொகுப்பு (அச்சிட)</Link>
+        <Link href={`/ca/${todayIST()}`} className="btn col-span-2">Today's notes</Link>
+        <StartButton url="/api/ca/run" label="Refresh now" className="btn-ghost w-full" busyLabel="Starting…" />
+        <StartButton url="/api/ca/quiz" body={{ from: start, to: end }} label="Month quiz" className="btn-ghost w-full" />
+        <Link href={`/ca/month?m=${month}`} className="btn-ghost col-span-2">Month digest (print)</Link>
       </div>
       {lastRun?.[0] && (
         <p className="muted">கடைசியாகப் புதுப்பித்தது: {taDate(lastRun[0].ran_at)} {lastRun[0].ok ? "✓" : `✗ ${lastRun[0].detail?.error ?? ""}`}</p>
@@ -59,7 +59,7 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
                 <span className="block">{taDate(d, true)}</span>
                 <span className="text-sm text-stone-500">தமிழ்நாடு {c.tn} · இந்தியா {c.india}</span>
               </Link>
-              {(qCount.get(d) ?? 0) > 0 && <StartButton url="/api/ca/quiz" body={{ date: d }} label={`📝 ${qCount.get(d)} வினா`} className="btn-ghost btn-sm" busyLabel="…" />}
+              {(qCount.get(d) ?? 0) > 0 && <StartButton url="/api/ca/quiz" body={{ date: d }} label={`📝 ${qCount.get(d)} Q`} className="btn-ghost btn-sm" busyLabel="…" />}
             </li>
           ))}
         </ul>

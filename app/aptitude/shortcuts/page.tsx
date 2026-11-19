@@ -109,7 +109,7 @@ export default function Shortcuts() {
             <ul className="mt-1 space-y-0.5 text-[15px]">{t.formulas.map((f) => <li key={f.name}><span className="text-stone-500">{f.name}:</span> <b>{f.f}</b></li>)}</ul>
           </div>
         ))}
-        <AddCards cards={APT_TOPICS.flatMap((t) => t.formulas.map((f) => ({ front: `${t.ta} — ${f.name}?`, back: f.f })))} label="எல்லாச் சூத்திரங்களையும் அட்டைகளாகச் சேர்" />
+        <AddCards cards={APT_TOPICS.flatMap((t) => t.formulas.map((f) => ({ front: `${t.ta} — ${f.name}?`, back: f.f })))} label="Add all formulas as flashcards" />
       </section>
     </div>
   );

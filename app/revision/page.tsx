@@ -20,7 +20,7 @@ export default async function Revision() {
         <p className="text-4xl font-bold text-kumkum-500">{due ?? 0}</p>
         <p>இன்று மீண்டும் செய்ய வேண்டிய வினாக்கள் (மொத்தப் பட்டியலில் {total ?? 0})</p>
         <p className="muted mt-1">தவறிய வினா நாளை வரும்; சரியாகச் சொன்னால் 3, 7, 15, 30, 60 நாட்கள் இடைவெளியில் மீண்டும் வரும். 6 முறை தொடர்ந்து சரியானால் பட்டியலிலிருந்து நீங்கும்.</p>
-        <div className="mt-3"><StartButton url="/api/revision" label="திருப்புதலைத் தொடங்கு" /></div>
+        <div className="mt-3"><StartButton url="/api/revision" label="Start revision" /></div>
       </div>
       {byDay.size > 0 && (
         <div className="card">
