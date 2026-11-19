@@ -686,7 +686,7 @@ def main():
         chapters = detect_chapters(pages, title, subject, doc) if pages else []
         if old_links is not None:
             known = sb_all("chapters", {"book": f"eq.{title}", "select": "subject,chapter_no,title_ta,page_from", "order": "page_from"})
-            if len(known) >= 3 and len(chapters) < len(known) * 0.6:
+            if len(known) >= 3 and len(chapters) < len(known) * 0.6 and not os.environ.get("FORCE_DETECT"):
                 print(f"  detection found only {len(chapters)} lessons (had {len(known)}) — keeping the known lessons, re-checking their start pages")
                 fixed = refine_starts(pages, [{"no": k["chapter_no"], "title": k["title_ta"], "start_page": k["page_from"] or 1, "subject": k["subject"]} for k in known])
                 last_page = pages[-1][0]
@@ -705,6 +705,7 @@ def main():
                 print(f"  sample (garble {garble_score(t):.1f}):", t[:220].replace("\n", " "))
         if check_only or not chapters:
             continue
+        before = {(k["subject"], k["chapter_no"]): (k["page_from"], k["page_to"], k["id"]) for k in sb_all("chapters", {"book": f"eq.{title}", "select": "id,subject,chapter_no,page_from,page_to"})} if old_links is not None else {}
         stored = 0
         for no, ctitle, subj, a, b in chapters:
             ch = sb("POST", "chapters", params={"on_conflict": "book,subject,chapter_no"},
@@ -722,6 +723,18 @@ def main():
                 sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
             stored += len(recs)
         total += stored
+        if old_links is not None:
+            # lessons whose pages changed: their notes were made from other pages — clear them so they are made again
+            for no, ctitle, subj, a, b in chapters:
+                old = before.get((subj, no))
+                if old and (old[0], old[1]) != (a, b):
+                    sb("DELETE", "chapter_notes", params={"chapter_id": f"eq.{old[2]}"})
+            # lessons that no longer exist (no passages left): remove them
+            if len(chapters) >= 3:
+                keep = {(subj, no) for no, _, subj, _, _ in chapters}
+                for (subj, no), (_, _, cid) in before.items():
+                    if (subj, no) not in keep:
+                        sb("DELETE", "chapters", params={"id": f"eq.{cid}"})
         if old_links:
             relink_questions(title, old_links)
         try:
