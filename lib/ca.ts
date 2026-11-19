@@ -79,32 +79,30 @@ async function getHtml(url: string) {
   return res.text();
 }
 
-/** Items on one category page: title, link, date. */
+/** Items on one category page: <h3>title</h3> … <span class="calendar">November 19, 2026</span> … <a title="Continue Reading …" href="…/currentaffairs-detail/…">. */
 async function tnptCategory(base: string, cat: string) {
   const html = await getHtml(`${base}/ta/currentaffairs-category/${cat}`);
-  const out = new Map<string, { title: string; link: string; pubDate?: string }>();
-  const rx = /href="([^"]*\/currentaffairs-detail\/[^"]+)"[^>]*?(?:title="(?:Continue Reading\s*)?([^"]*)")?[^>]*>([\s\S]*?)<\/a>/gi;
+  const out: { title: string; link: string; pubDate?: string }[] = [];
+  const rx = /<h3>([\s\S]{1,400}?)<\/h3>[\s\S]{0,800}?class="calendar">[\s\S]{0,200}?([A-Z][a-z]+)\s+(\d{1,2})\s*,\s*(\d{4})[\s\S]{0,4000}?title="Continue Reading[^"]*"\s+href="([^"]+currentaffairs-detail[^"]+)"/g;
   for (let m; (m = rx.exec(html)); ) {
-    const link = m[1].startsWith("http") ? m[1] : base + m[1];
-    const key = link.split("?")[0];
-    const title = decode(strip(m[2] || "") || strip(m[3] || ""));
-    if (!title || /^(தொடர்ந்து படிக்க|continue reading|read more)/i.test(title)) {
-      if (!out.has(key)) out.set(key, { title: "", link });
-    } else if (!out.get(key)?.title) out.set(key, { title, link });
-    // the date shown near the item ("November 19, 2026")
-    const near = html.slice(Math.max(0, m.index - 1500), m.index + 300);
-    const d = [...near.matchAll(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s*(\d{4})/g)].pop();
-    if (d && out.get(key)) out.get(key)!.pubDate = new Date(Date.UTC(Number(d[3]), MONTHS[d[1].toLowerCase()], Number(d[2]))).toISOString();
+    const month = MONTHS[m[2].toLowerCase()];
+    if (month == null) continue;
+    out.push({
+      title: decode(strip(m[1])),
+      link: m[5].startsWith("http") ? m[5] : base + m[5],
+      pubDate: new Date(Date.UTC(Number(m[4]), month, Number(m[3]))).toISOString(),
+    });
   }
-  return [...out.values()].filter((i) => i.title);
+  return out;
 }
 
-/** The article text of one item (for the facts). */
-async function tnptDetail(link: string, title: string) {
-  const text = decode(strip((await getHtml(link)).replace(/<(script|style|nav|header|footer)[\s\S]*?<\/\1>/gi, " ")));
-  const at = text.indexOf(title.slice(0, 20));
-  const body = at >= 0 ? text.slice(at + title.length) : text;
-  return body.replace(/\s+/g, " ").trim().slice(0, 1500);
+/** The article text of one item (its bullet points). */
+async function tnptDetail(link: string) {
+  const html = await getHtml(link);
+  const at = html.indexOf("view-currentaffairs");
+  const part = (at >= 0 ? html.slice(at, at + 20000) : html).replace(/<\/li>|<\/p>|<br\s*\/?>/gi, " • ");
+  const text = decode(strip(part.replace(/^[^>]*>/, "")));
+  return text.replace(/(\s*•\s*)+/g, " • ").trim().slice(0, 1800);
 }
 
 async function fetchTnpt(s: Source, cutoff: number) {
@@ -124,7 +122,7 @@ async function fetchTnpt(s: Source, cutoff: number) {
   const uniq = [...new Map(items.map((i) => [i.link.split("?")[0], i])).values()].slice(0, s.max ?? 40);
   for (const it of uniq) {
     try {
-      it.description = await tnptDetail(it.link, it.title);
+      it.description = await tnptDetail(it.link);
     } catch {
       /* headline only */
     }
