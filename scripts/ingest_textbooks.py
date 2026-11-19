@@ -241,22 +241,103 @@ def get_pdf(source: str) -> pathlib.Path:
                     f.write(part)
     return p
 
+# ───────── real textbook pages as images (Supabase Storage bucket "pages", public) ─────────
+PAGE_WIDTH = int(os.environ.get("PAGE_WIDTH") or 900)    # px; readable on phones (tap to zoom)
+
+def book_key(title: str) -> str:
+    return hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]   # same as lib/book-pages.ts
+
+def ensure_bucket():
+    h = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+    r = requests.get(f"{URL}/storage/v1/bucket/pages", headers=h, timeout=60)
+    if r.status_code == 200:
+        return
+    r = requests.post(f"{URL}/storage/v1/bucket", headers=h, timeout=60,
+                      data=json.dumps({"id": "pages", "name": "pages", "public": True, "allowed_mime_types": ["image/webp"]}))
+    if r.status_code >= 300 and "already exists" not in r.text.lower():
+        raise SystemExit(f"could not create storage bucket 'pages': {r.status_code} {r.text[:200]}")
+
+def page_webp(page) -> bytes:
+    """Smaller of lossless WebP (best for text pages: sharp and tiny) and lossy WebP (best for photo pages)."""
+    from PIL import Image
+    zoom = PAGE_WIDTH / max(page.rect.width, 1)
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
+    img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+    best = None
+    for kw in ({"lossless": True, "quality": 60, "method": 4}, {"quality": 55, "method": 4}):
+        out = io.BytesIO()
+        img.save(out, "WEBP", **kw)
+        if best is None or out.tell() < len(best):
+            best = out.getvalue()
+    return best
+
+def upload_pages(doc, title: str):
+    """Render every page and upload it; returns (pages, MB)."""
+    from concurrent.futures import ThreadPoolExecutor
+    key = book_key(title)
+    h = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "image/webp", "x-upsert": "true", "cache-control": "max-age=31536000"}
+    imgs = [(i + 1, page_webp(page)) for i, page in enumerate(doc)]
+    def put(item):
+        no, data = item
+        for attempt in range(4):
+            try:
+                r = requests.post(f"{URL}/storage/v1/object/pages/{key}/{no}.webp", headers=h, data=data, timeout=120)
+                if r.status_code < 300:
+                    return True
+            except Exception:
+                pass
+            time.sleep(3 * (attempt + 1))
+        return False
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        ok = sum(ex.map(put, imgs))
+    if ok < len(imgs):
+        raise RuntimeError(f"only {ok}/{len(imgs)} page images uploaded")
+    return ok, sum(len(d) for _, d in imgs) / 1048576
+
+def pages_done(title: str) -> bool:
+    r = sb("GET", "job_runs", params={"job": "eq.pages_done", "detail->>book": f"eq.{title}", "select": "id", "limit": "1"})
+    return len(r.json()) > 0
+
+def do_pages(doc, title: str):
+    if pages_done(title):
+        print("  page images already uploaded")
+        return
+    n, mb = upload_pages(doc, title)
+    sb("POST", "job_runs", data=json.dumps({"job": "pages_done", "ok": True, "detail": {"book": title, "pages": n, "mb": round(mb, 1)}}), headers={"Prefer": "return=minimal"})
+    print(f"  page images: {n} pages, {mb:.0f} MB")
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     check_only = "--check" in sys.argv
+    pages_only = "--pages-only" in sys.argv          # only upload page images (books already loaded)
+    only = os.environ.get("BOOK", "").strip()       # load just the books whose title contains this text
     manifest = args[0] if args else "textbooks/manifest.csv"
     if not check_only and not (URL and KEY and GEMINI):
         raise SystemExit("set NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and GEMINI_API_KEY")
     rows = [r for r in csv.DictReader(l for l in open(manifest, encoding="utf-8") if l.strip() and not l.startswith("#"))]
     if not rows:
         raise SystemExit("manifest has no books yet — add lines to textbooks/manifest.csv")
+    if only:
+        rows = [r for r in rows if only in r["title"]]
+        if not rows:
+            raise SystemExit(f"no book in the manifest matches '{only}'")
+    if not check_only:
+        ensure_bucket()
     total = 0
     failed = []
     for row in rows:
         title, subject, std = row["title"].strip(), row["subject"].strip(), int(row["std"])
         print(f"\n== {title}")
-        if not check_only and already_loaded(title):
-            print("  already loaded, skipping")
+        if pages_only or (not check_only and already_loaded(title)):
+            if not check_only:
+                if not pages_only:
+                    print("  already loaded")
+                try:
+                    do_pages(fitz.open(get_pdf(row["source"].strip())), title)
+                except Exception as e:
+                    print(f"  !! page images failed: {e}")
+                    failed.append(title)
             continue
         if not check_only:
             remove_partial(title)
@@ -310,6 +391,10 @@ def main():
                 sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
             stored += len(recs)
         total += stored
+        try:
+            do_pages(doc, title)
+        except Exception as e:
+            print(f"  !! page images failed: {e}")
         sb("POST", "job_runs", data=json.dumps({"job": "book_done", "ok": True, "detail": {"book": title, "chapters": len(chapters), "passages": stored, "ocr_pages": ocr_n}}), headers={"Prefer": "return=minimal"})
         print(f"  stored {stored} passages in {len(chapters)} chapters")
     if not check_only:

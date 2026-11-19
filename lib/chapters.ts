@@ -90,6 +90,64 @@ ${PROMPTS[kind]}`,
   return data;
 }
 
+// ───────── "எளிய குறிப்புகள்": the lesson rewritten neatly (OCR mistakes fixed, headings, bullets, bold key words) ─────────
+export type CleanSection = { title: string; page: number | null; md: string };
+export type Clean = { parts: CleanSection[][]; total: number };
+
+const PART_CHARS = 7000;
+
+/** The lesson's text split into parts small enough for one AI call each, with [பக்கம் N] markers. */
+export async function cleanParts(sb: SupabaseClient, chapterId: number) {
+  const { rows } = await chapterText(sb, chapterId, 400000);
+  const parts: string[] = [];
+  let cur = "";
+  let last = -1;
+  for (const r of rows) {
+    const piece = (r.page_from !== last ? `[பக்கம் ${r.page_from}]\n` : "") + r.content + "\n\n";
+    last = r.page_from;
+    if (cur && cur.length + piece.length > PART_CHARS) {
+      parts.push(cur);
+      cur = "";
+    }
+    cur += piece;
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts;
+}
+
+/** Write part `i` of the lesson's easy notes and save it. Returns the number of parts and the new sections. */
+export async function generateCleanPart(admin: SupabaseClient, ch: Chapter, i: number, timeoutMs?: number) {
+  const parts = await cleanParts(admin, ch.id);
+  if (!parts.length) throw new Error("இந்தப் பாடத்தின் உரை இன்னும் ஏற்றப்படவில்லை");
+  if (i >= parts.length) return { total: parts.length, sections: [] as CleanSection[] };
+  const glossary = await loadGlossary(admin);
+  const { data } = await generateJSON<{ sections: CleanSection[] }>({
+    system: `You turn scanned (OCR) Tamil Samacheer Kalvi textbook text into clean, beautiful study notes in correct formal Tamil.
+The OCR text has spelling mistakes (broken letters, wrong or doubled vowel signs, joined or split words, stray symbols). Fix them from context so every word is correct Tamil.
+Keep the textbook's own facts, wording style and order. Do NOT add facts, dates or names that are not in the text. Do not shorten away facts — every fact in the text must stay.
+Leave out page headers/footers, page numbers, figure/table numbering junk, QR-code text, and exercise instructions.
+Format each topic as one section: "title" = the topic heading (from the book where it has one), "page" = the [பக்கம் N] number where it starts,
+"md" = markdown body: short paragraphs, "- " bullet lists for lists of points, **bold** for key terms, names, places, years and numbers, and a markdown table where the book has a table.
+Official Tamil terms: ${glossaryText(glossary)}.
+Return JSON {"sections":[{"title":"","page":0,"md":""}]}`,
+    user: `நூல்: ${ch.book}\nபாடம் ${ch.chapter_no}: ${ch.title_ta} (பகுதி ${i + 1}/${parts.length})\n\n${parts[i]}`,
+    temperature: 0.2,
+    maxTokens: 8192,
+    timeoutMs,
+  });
+  const sections = (data.sections ?? []).filter((x) => x && typeof x.md === "string" && x.md.trim());
+  if (!sections.length) throw new Error("AI returned nothing");
+  const { data: row } = await admin.from("chapter_notes").select("content").eq("chapter_id", ch.id).eq("kind", "clean").maybeSingle();
+  const prev = (row?.content as Clean | undefined) ?? { parts: [], total: parts.length };
+  const next: Clean = { parts: [...prev.parts], total: parts.length };
+  next.parts[i] = sections.map((x) => ({ title: String(x.title ?? ""), page: Number(x.page) || null, md: x.md }));
+  for (let k = 0; k < next.total; k++) next.parts[k] ??= [];
+  await admin.from("chapter_notes").upsert({ chapter_id: ch.id, kind: "clean", content: next });
+  return { total: parts.length, sections: next.parts[i] };
+}
+
+export const cleanDone = (c: Clean | undefined | null) => !!c && c.parts.length >= c.total && c.parts.every((p) => p?.length);
+
 /** Map a chapter to the syllabus units its questions should count towards in mock tests. */
 async function candidateUnits(admin: SupabaseClient, ch: Chapter) {
   const exam = ch.std <= 10 ? "G4" : "G2";

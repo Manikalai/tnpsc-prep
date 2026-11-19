@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
-import { chapterText, type Chapter, type Facts, type Revision, type Summary } from "@/lib/chapters";
+import { type Chapter, type Clean, type Facts, type Revision, type Summary } from "@/lib/chapters";
+import BookPages from "@/components/BookPages";
+import CleanNotes from "@/components/CleanNotes";
 import Md from "@/components/Md";
 import StartButton from "@/components/StartButton";
 import RevealList from "@/components/RevealList";
@@ -9,7 +11,8 @@ import RevealList from "@/components/RevealList";
 export const dynamic = "force-dynamic";
 
 const TABS = [
-  ["text", "பாடம்"],
+  ["text", "பாடநூல்"],
+  ["clean", "எளிய குறிப்புகள்"],
   ["summary", "முக்கியக் குறிப்புகள்"],
   ["facts", "நாட்கள் · ஆளுமைகள் · உண்மைகள்"],
   ["mcq", "வினாக்கள்"],
@@ -59,7 +62,9 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         ))}
       </div>
 
-      {tab === "text" && <ChapterText chapterId={c.id} />}
+      {tab === "text" && <BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />}
+
+      {tab === "clean" && <CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />}
 
       {tab === "summary" && (note("summary") ? (
         <>
@@ -93,27 +98,6 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         {next ? <Link className="underline" href={`/chapter/${next.id}?tab=${tab}`}>பாடம் {next.chapter_no} →</Link> : <span />}
       </div>
     </div>
-  );
-}
-
-async function ChapterText({ chapterId }: { chapterId: number }) {
-  const { sb } = await requireUser();
-  const { rows } = await chapterText(sb, chapterId, 200000);
-  if (!rows.length) return <p className="card">இந்தப் பாடத்தின் உரை இல்லை.</p>;
-  let lastPage = -1;
-  return (
-    <article className="card space-y-3 leading-loose">
-      {rows.map((r) => {
-        const head = r.page_from !== lastPage ? <p className="text-xs text-stone-400">— பக்கம் {r.page_from} —</p> : null;
-        lastPage = r.page_from;
-        return (
-          <div key={r.id}>
-            {head}
-            <p className="whitespace-pre-line text-[16px]">{r.content}</p>
-          </div>
-        );
-      })}
-    </article>
   );
 }
 

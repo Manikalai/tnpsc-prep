@@ -6,7 +6,7 @@ import { generateForUnit, qHash, type Unit } from "../lib/questions";
 import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
 import { verifyPending } from "../lib/verify";
-import { classifyChapters, generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter } from "../lib/chapters";
+import { classifyChapters, cleanDone, generateChapterMCQs, generateChapterNote, generateCleanPart, NOTE_KINDS, type Chapter, type Clean } from "../lib/chapters";
 
 const admin = supabaseAdmin();
 const maxCalls = Number(process.argv[2] || process.env.BANK_MAX_CALLS || 120);
@@ -97,10 +97,33 @@ let chapterCalls = 0;
   const { data: chs } = await admin.from("chapters").select("*").order("std").order("term").order("chapter_no").limit(3000);
   const { data: done } = await admin.from("chapter_notes").select("chapter_id,kind");
   const have = new Set((done ?? []).map((d) => `${d.chapter_id}:${d.kind}`));
+  const { data: cleanRows } = await admin.from("chapter_notes").select("chapter_id,content").eq("kind", "clean");
+  const clean = new Map((cleanRows ?? []).map((r) => [r.chapter_id as number, r.content as Clean]));
   const { data: mcq } = await admin.from("questions").select("chapter_id").not("chapter_id", "is", null).limit(50000);
   const mcqCount = new Map<number, number>();
   for (const q of mcq ?? []) mcqCount.set(q.chapter_id, (mcqCount.get(q.chapter_id) ?? 0) + 1);
   outer2: for (const ch of (chs ?? []) as Chapter[]) {
+    if (process.uptime() > 40 * 60) break; // leave time for the fact-check before the 60-minute limit
+    // easy notes (lesson rewritten neatly), part by part
+    const c = clean.get(ch.id);
+    if (!cleanDone(c)) {
+      let total = c?.total ?? 1;
+      for (let i = 0; i < total; i++) {
+        if (c?.parts[i]?.length) continue;
+        if (chapterCalls >= chapterBudget || process.uptime() > 40 * 60) break outer2;
+        chapterCalls++;
+        try {
+          total = (await generateCleanPart(admin, ch, i)).total;
+          log.push(`chapter ${ch.id} clean ${i + 1}/${total}: ok`);
+        } catch (e) {
+          log.push(`chapter ${ch.id} clean ${i + 1}: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`);
+          console.log(log.at(-1));
+          break;
+        }
+        console.log(log.at(-1));
+        await sleep(Number(process.env.BANK_SLEEP_MS || 7000));
+      }
+    }
     for (const kind of NOTE_KINDS) {
       if (have.has(`${ch.id}:${kind}`)) continue;
       if (chapterCalls >= chapterBudget) break outer2;

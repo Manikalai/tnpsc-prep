@@ -2,6 +2,8 @@ name: Load textbooks
 on:
   workflow_dispatch:
     inputs:
+      book: { description: "Only this book (part of its title, e.g. 9ஆம் வகுப்பு அறிவியல்). Empty = all books not loaded yet", required: false, default: "" }
+      pages_only: { description: "Only upload the page images (for books already loaded)", type: boolean, default: false }
       check_only: { description: "Only check text extraction (no upload)", type: boolean, default: false }
 env:
   PYTHONUNBUFFERED: "1"
@@ -15,10 +17,11 @@ jobs:
         with: { python-version: "3.12" }
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-tam
       - run: pip install -r scripts/requirements.txt
-      - run: python scripts/ingest_textbooks.py textbooks/manifest.csv ${{ github.event.inputs.check_only == 'true' && '--check' || '' }}
+      - run: python scripts/ingest_textbooks.py textbooks/manifest.csv ${{ github.event.inputs.check_only == 'true' && '--check' || '' }} ${{ github.event.inputs.pages_only == 'true' && '--pages-only' || '' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_EMBED_MODEL: ${{ vars.GEMINI_EMBED_MODEL }}
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
+          BOOK: ${{ github.event.inputs.book }}

@@ -1,11 +1,11 @@
 import { route, ok, fail } from "@/lib/api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateChapterMCQs, generateChapterNote, NOTE_KINDS, type Chapter, type NoteKind, type Revision } from "@/lib/chapters";
+import { generateChapterMCQs, generateChapterNote, generateCleanPart, NOTE_KINDS, type Chapter, type NoteKind, type Revision } from "@/lib/chapters";
 import { shuffle } from "@/lib/questions";
 
 export const maxDuration = 60;
 
-export const POST = route<{ action: "notes" | "quiz" | "cards"; chapterId: number; kind?: NoteKind }>(async ({ sb, user }, b) => {
+export const POST = route<{ action: "notes" | "quiz" | "cards" | "clean"; chapterId: number; kind?: NoteKind; part?: number }>(async ({ sb, user }, b) => {
   const admin = supabaseAdmin();
   const { data: ch } = await admin.from("chapters").select("*").eq("id", b.chapterId).single();
   if (!ch) return fail("பாடம் கிடைக்கவில்லை");
@@ -15,6 +15,10 @@ export const POST = route<{ action: "notes" | "quiz" | "cards"; chapterId: numbe
     if (!b.kind || !NOTE_KINDS.includes(b.kind)) return fail("bad kind");
     await generateChapterNote(admin, chapter, b.kind, 50000);
     return ok();
+  }
+
+  if (b.action === "clean") {
+    return ok(await generateCleanPart(admin, chapter, Math.max(0, Number(b.part) || 0), 52000));
   }
 
   if (b.action === "cards") {

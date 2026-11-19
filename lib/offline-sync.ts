@@ -2,6 +2,7 @@
 // Offline download + auto-update. Everything the app has already generated is copied to the phone:
 // question bank, lessons (text, key points, facts, revision), explanations, current affairs, notes, flashcards.
 import { idb } from "./offline-db";
+import { bookKey, pageUrl, PAGES_CACHE } from "./book-pages";
 
 export type OfflineMeta = {
   serverTime: string;
@@ -74,6 +75,42 @@ export async function syncAttempts() {
   return (synced as string[]).length;
 }
 
+/** Save the real textbook page images of these lessons on the phone (skips pages already saved or not uploaded yet). */
+export async function cachePages(chapters: OfflineMeta["chapters"], progress: Progress, base: number, span: number) {
+  let cache: Cache;
+  try {
+    cache = await caches.open(PAGES_CACHE);
+  } catch {
+    return;
+  }
+  const keys = new Map<string, string>();
+  const urls: string[] = [];
+  for (const c of chapters) {
+    if (!c.page_from || !c.page_to) continue;
+    if (!keys.has(c.book)) keys.set(c.book, await bookKey(c.book));
+    for (let p = c.page_from; p <= c.page_to; p++) urls.push(pageUrl(keys.get(c.book)!, p));
+  }
+  const todo: string[] = [];
+  for (const u of [...new Set(urls)]) if (!(await cache.match(u))) todo.push(u);
+  let done = 0;
+  let missingBooks = 0;
+  const work = async () => {
+    for (let u = todo.shift(); u; u = todo.shift()) {
+      try {
+        const r = await fetch(u, { mode: "cors" });
+        if (r.ok) await cache.put(u, r);
+        else missingBooks++;
+      } catch {
+        /* next time */
+      }
+      done++;
+      if (done % 20 === 0) progress(`பாடநூல் பக்கங்கள் ${done}/${done + todo.length}`, base + Math.round((span * done) / (done + todo.length)));
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, work));
+  return missingBooks;
+}
+
 /** Download everything for the chosen classes. Replaces the question bank so retired questions disappear. */
 export async function fullDownload(stds: number[], progress: Progress) {
   progress("பட்டியலைப் பெறுகிறது…", 2);
@@ -85,8 +122,9 @@ export async function fullDownload(stds: number[], progress: Progress) {
   await idb.clear("chtext");
   await idb.clear("chnotes");
   await pullChapters(ids, progress, 45, 45);
-  progress("விளக்கங்கள்…", 92);
+  progress("விளக்கங்கள்…", 88);
   await pullExplanations(null);
+  await cachePages(meta.chapters.filter((c) => stds.includes(c.std)), progress, 90, 9);
   await syncAttempts();
   const s: Settings = { stds, lastSync: meta.serverTime, lastFull: meta.serverTime, auto: (await getSettings()).auto };
   await idb.set("settings", s);
@@ -116,9 +154,10 @@ export async function incrementalSync(progress: Progress = () => {}) {
   const missing = mine.filter((id) => !have.has(id));
   if (missing.length) await pullChapters(missing, progress, 50, 25);
   const notesHave = new Set((await idb.all<{ key: string }>("chnotes")).map((n) => n.key));
-  const notesMissing = mine.filter((id) => ["summary", "facts", "revision"].some((k) => !notesHave.has(`${id}:${k}`)));
+  const notesMissing = mine.filter((id) => ["clean", "summary", "facts", "revision"].some((k) => !notesHave.has(`${id}:${k}`)));
   if (notesMissing.length) await pullChapters(notesMissing, progress, 75, 15, true);
   await pullExplanations(s.lastSync);
+  await cachePages(meta.chapters.filter((c) => s.stds.includes(c.std)), progress, 92, 7);
   await syncAttempts();
   await idb.set("settings", { ...s, lastSync: meta.serverTime });
   progress("முடிந்தது", 100);

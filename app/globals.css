@@ -4,13 +4,14 @@
 
 :root {
   --font-tamil: "Mukta Malar", "Noto Sans Tamil", system-ui, sans-serif;
+  --font-read: "Noto Serif Tamil", "Mukta Malar", serif;
 }
 html { -webkit-text-size-adjust: 100%; }
-body { background: #fbf8f2; color: #1f2328; line-height: 1.65; }
-h1, h2, h3 { line-height: 1.35; }
+body { background: #f8f4ec; color: #1f2328; line-height: 1.7; }
+h1, h2, h3 { line-height: 1.4; }
 
 @layer components {
-  .card { @apply rounded-2xl border border-stone-200 bg-white p-4 shadow-sm; }
+  .card { @apply rounded-2xl border border-stone-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(60,40,10,0.05),0_4px_14px_rgba(60,40,10,0.04)]; }
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50; }
   .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 font-semibold text-ink transition hover:bg-stone-50 disabled:opacity-50; }
   .btn-sm { @apply px-3 py-1.5 text-sm; }
@@ -19,10 +20,17 @@ h1, h2, h3 { line-height: 1.35; }
   .h1 { @apply text-2xl font-bold text-brand-700; }
   .h2 { @apply text-lg font-bold text-ink; }
   .muted { @apply text-sm text-stone-500; }
-  .prose-ta p { @apply my-2; }
-  .prose-ta ul { @apply my-2 list-disc pl-5; }
-  .prose-ta ol { @apply my-2 list-decimal pl-5; }
-  .prose-ta table { @apply my-3 w-full border-collapse text-sm; }
-  .prose-ta th, .prose-ta td { @apply border border-stone-200 px-2 py-1 text-left align-top; }
-  .prose-ta h3, .prose-ta h4 { @apply mt-3 font-bold; }
+  .prose-ta { @apply text-[16.5px] leading-[1.9]; }
+  .prose-ta p { @apply my-2.5; }
+  .prose-ta strong { @apply font-semibold text-brand-700; }
+  .prose-ta ul { @apply my-2.5 space-y-1.5 pl-5; list-style: none; }
+  .prose-ta ul > li { @apply relative; }
+  .prose-ta ul > li::before { content: ""; @apply absolute -left-4 top-[0.8em] h-1.5 w-1.5 rounded-full bg-turmeric-500; }
+  .prose-ta ol { @apply my-2.5 list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-brand-600; }
+  .prose-ta table { @apply my-3 w-full border-collapse overflow-hidden rounded-lg text-[15px]; }
+  .prose-ta th { @apply border border-stone-200 bg-brand-50 px-2.5 py-1.5 text-left align-top font-semibold text-brand-700; }
+  .prose-ta td { @apply border border-stone-200 px-2.5 py-1.5 text-left align-top; }
+  .prose-ta h3, .prose-ta h4 { @apply mb-1 mt-5 border-l-4 border-turmeric-500 pl-2.5 text-[17px] font-bold text-ink; }
+  .reading .prose-ta { font-family: var(--font-read); @apply text-[17px] leading-[2]; }
+  .reading .prose-ta strong { @apply font-bold; }
 }
