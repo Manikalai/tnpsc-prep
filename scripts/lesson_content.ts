@@ -45,9 +45,12 @@ for (const q of mcq ?? []) mcqCount.set(q.chapter_id, (mcqCount.get(q.chapter_id
 const { data: withText } = await admin.from("textbook_chunks").select("chapter_id").not("chapter_id", "is", null).limit(100000);
 const hasText = new Set((withText ?? []).map((r) => r.chapter_id));
 
-const list = ((chs ?? []) as Chapter[]).filter((c) => hasText.has(c.id));
+// parallel runs: LESSON_SHARD="k/N" takes every N-th lesson (k = 0..N-1)
+const [shardK, shardN] = (process.env.LESSON_SHARD || "0/1").split("/").map(Number);
+const minStd = Number(process.env.LESSON_MIN_STD || 1);
+const list = ((chs ?? []) as Chapter[]).filter((c) => hasText.has(c.id) && c.std >= minStd).filter((_, i) => i % (shardN || 1) === (shardK || 0));
 console.log(`${list.length} lessons with text (std ≤ ${maxStd})`);
-const prog = await startProgress(admin, "lessons", "பாடங்கள் தயாரிப்பு (குறிப்புகள், புத்தக வினாக்கள், MCQ)", list.length);
+const prog = await startProgress(admin, process.env.LESSON_SHARD ? `lessons-${shardK + 1}` : "lessons", `பாடங்கள் தயாரிப்பு${process.env.LESSON_SHARD ? ` · பகுதி ${shardK + 1}/${shardN}` : ""} (குறிப்புகள், புத்தக வினாக்கள், MCQ)`, list.length);
 let idx = 0;
 
 for (const ch of list) {

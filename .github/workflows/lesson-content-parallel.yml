@@ -1,0 +1,33 @@
+name: Prepare lessons (parallel)
+on:
+  workflow_dispatch:
+    inputs:
+      max_std: { description: "Up to which class (10 = Group 4 books)", required: false, default: "10" }
+      providers: { description: "AI order for this run", required: false, default: "sarvam,gemini,groq" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/lesson_content.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
+          AI_PROVIDERS: ${{ github.event.inputs.providers }}
+          LESSON_MAX_STD: ${{ github.event.inputs.max_std }}
+          LESSON_SHARD: ${{ matrix.shard }}/8
+          LESSON_MINUTES: "320"
+          LESSON_SLEEP_MS: "1500"
