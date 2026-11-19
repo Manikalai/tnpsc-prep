@@ -35,6 +35,12 @@ UNITS = {
     "G1": {**{f"G1-GS-{i}": n for i, n in enumerate(["பொது அறிவியல்", "புவியியல்", "வரலாறு, தேசிய இயக்கம்", "ஆட்சியியல்", "பொருளாதாரம், TN வளர்ச்சி நிர்வாகம்", "TN வரலாறு, இயக்கங்கள்"], 1)},
            "G1-APT-1": "திறனறிவு", "G1-APT-2": "காரணவியல்"},
 }
+# the 10 aptitude topics of the app (lib/aptitude-topics.ts) — real questions are tagged style = "apt:<key>"
+APT_TOPICS = {"simplification": "simplification, BODMAS, fractions, square roots", "percentage": "percentage, profit and loss",
+              "hcf-lcm": "HCF and LCM", "ratio": "ratio and proportion, averages, ages, partnership", "interest": "simple and compound interest",
+              "area-volume": "area, perimeter, volume, surface area", "time-work": "time and work, pipes, speed-distance, trains",
+              "logical": "direction, calendar, clock, coding-decoding, blood relations", "puzzles-dice": "puzzles, seating, ranking, dice",
+              "visual-series": "number series, letter series, odd one out, visual/figure reasoning, alpha-numeric"}
 EXAM_NAME = {"G4": "தொகுதி IV", "G2": "தொகுதி II / IIA", "G1": "தொகுதி I"}
 
 
@@ -181,13 +187,15 @@ def solve_and_tag(qs, exam):
         text = "\n\n".join(f"[{n}] {qs[n]['stem']}\n" + "  ".join(f"({L[k]}) {o}" for k, o in enumerate(qs[n]["options"])) for n in batch)
         prompt = ("For each TNPSC question below: (1) your answer A/B/C/D, (2) the best syllabus unit id from: "
                   + "; ".join(f"{k} = {v}" for k, v in units.items())
-                  + '. Return JSON {"items":[{"no":1,"answer":"A","unit_id":""}]}\n\n' + text)
+                  + ". (3) ONLY for aptitude / mental ability / reasoning questions, apt_topic = one of: " + "; ".join(f"{k} = {v}" for k, v in APT_TOPICS.items())
+                  + ' (empty for other questions). Return JSON {"items":[{"no":1,"answer":"A","unit_id":"","apt_topic":""}]}\n\n' + text)
         try:
             data = gemini([{"text": prompt}])
             for it in data.get("items", []):
                 if isinstance(it.get("no"), int):
                     res[it["no"]] = {"ai": L.index(it["answer"]) if it.get("answer") in L else None,
-                                     "unit_id": it.get("unit_id") if it.get("unit_id") in units else None}
+                                     "unit_id": it.get("unit_id") if it.get("unit_id") in units else None,
+                                     "apt_topic": it.get("apt_topic") if it.get("apt_topic") in APT_TOPICS else None}
         except Exception as e:
             print(f"  solve batch {i // 20 + 1}: failed ({e})")
         time.sleep(4)
@@ -250,6 +258,7 @@ def main():
             rows.append({
                 "stem": q["stem"], "options": q["options"], "answer_index": k["answer"], "unit_id": x.get("unit_id"),
                 "exam_code": a.exam, "origin": "pyq", "pyq_year": a.year, "difficulty": "medium",
+                "style": f"apt:{x['apt_topic']}" if x.get("apt_topic") else None,
                 "source_ref": f"TNPSC {EXAM_NAME[a.exam]} {a.year} – வினா {n} (அதிகாரபூர்வ விடைக்குறிப்பு)",
                 "status": "flagged" if flags else "active",
                 "verify_note": "; ".join(flags) if flags else None,

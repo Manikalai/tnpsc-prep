@@ -136,6 +136,7 @@ def main():
             rows.append({
                 "stem": it["stem"], "options": it["options"], "answer_index": it["answer_index"],
                 "explanation": it["explanation"], "difficulty": it["difficulty"], "unit_id": x.get("unit_id"),
+                "style": f"apt:{x['apt_topic']}" if x.get("apt_topic") else None,
                 "exam_code": exam, "origin": it["origin"], "pyq_year": it["year"], "source_ref": ref,
                 "status": "flagged" if flags else "active", "verify_note": "; ".join(flags) or None, "hash": it["hash"],
             })
