@@ -393,8 +393,14 @@ def main():
         print(f"  pages {len(doc)}, OCR {ocr_n}, chapters {len(chapters)}")
         for no, ctitle, subj, a, b in chapters:
             print(f"    {subj} {no}. {ctitle} (p{a}–{b})")
-        for _, t in pages[len(pages) // 4:: max(1, len(pages) // 4)][:3]:
-            print(f"  sample (garble {garble_score(t):.1f}):", t[:220].replace("\n", " "))
+        want = [int(x) for x in (os.environ.get("SAMPLE_PAGES") or "").split(",") if x.strip().isdigit()]
+        if want:   # print whole pages, to compare with the book
+            for no, t in pages:
+                if no in want:
+                    print(f"\n  ---------- PDF page {no} ----------\n{t}\n")
+        else:
+            for _, t in pages[len(pages) // 4:: max(1, len(pages) // 4)][:3]:
+                print(f"  sample (garble {garble_score(t):.1f}):", t[:220].replace("\n", " "))
         if check_only or not chapters:
             continue
         stored = 0
