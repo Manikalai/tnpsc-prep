@@ -8,7 +8,7 @@ import { glossaryText, loadGlossary, qHash, validate } from "./questions";
 import SOURCES from "../data/ca_sources.json";
 
 export type FeedItem = { title: string; summary: string; link: string; source: string; region: string; published?: string; guide?: boolean };
-type Source = { name: string; url: string; region: string; enabled?: boolean; type?: "rss" | "sitemap" | "html"; guide?: boolean; max?: number };
+type Source = { name: string; url: string; region: string; enabled?: boolean; type?: "rss" | "sitemap" | "html" | "tnpt"; guide?: boolean; max?: number; categories?: Record<string, string> };
 
 const strip = (s: string) =>
   s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
@@ -69,6 +69,69 @@ async function fetchListing(url: string) {
   return out;
 }
 
+// ───────── TNPSC Thervupettagam (tnpscthervupettagam.com): daily TNPSC current affairs in Tamil, by category ─────────
+const MONTHS: Record<string, number> = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
+const decode = (s: string) => s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+
+async function getHtml(url: string) {
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "ta,en;q=0.8" }, signal: AbortSignal.timeout(25000) });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.text();
+}
+
+/** Items on one category page: title, link, date. */
+async function tnptCategory(base: string, cat: string) {
+  const html = await getHtml(`${base}/ta/currentaffairs-category/${cat}`);
+  const out = new Map<string, { title: string; link: string; pubDate?: string }>();
+  const rx = /href="([^"]*\/currentaffairs-detail\/[^"]+)"[^>]*?(?:title="(?:Continue Reading\s*)?([^"]*)")?[^>]*>([\s\S]*?)<\/a>/gi;
+  for (let m; (m = rx.exec(html)); ) {
+    const link = m[1].startsWith("http") ? m[1] : base + m[1];
+    const key = link.split("?")[0];
+    const title = decode(strip(m[2] || "") || strip(m[3] || ""));
+    if (!title || /^(தொடர்ந்து படிக்க|continue reading|read more)/i.test(title)) {
+      if (!out.has(key)) out.set(key, { title: "", link });
+    } else if (!out.get(key)?.title) out.set(key, { title, link });
+    // the date shown near the item ("November 19, 2026")
+    const near = html.slice(Math.max(0, m.index - 1500), m.index + 300);
+    const d = [...near.matchAll(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s*(\d{4})/g)].pop();
+    if (d && out.get(key)) out.get(key)!.pubDate = new Date(Date.UTC(Number(d[3]), MONTHS[d[1].toLowerCase()], Number(d[2]))).toISOString();
+  }
+  return [...out.values()].filter((i) => i.title);
+}
+
+/** The article text of one item (for the facts). */
+async function tnptDetail(link: string, title: string) {
+  const text = decode(strip((await getHtml(link)).replace(/<(script|style|nav|header|footer)[\s\S]*?<\/\1>/gi, " ")));
+  const at = text.indexOf(title.slice(0, 20));
+  const body = at >= 0 ? text.slice(at + title.length) : text;
+  return body.replace(/\s+/g, " ").trim().slice(0, 1500);
+}
+
+async function fetchTnpt(s: Source, cutoff: number) {
+  const base = s.url.replace(/\/$/, "");
+  const items: { title: string; link: string; description: string; pubDate?: string; region: string }[] = [];
+  for (const [cat, region] of Object.entries(s.categories ?? {})) {
+    try {
+      for (const it of await tnptCategory(base, cat)) {
+        const t = it.pubDate ? Date.parse(it.pubDate) : NaN;
+        if (Number.isNaN(t) || t < cutoff - 864e5) continue; // date-only, so allow the previous day too
+        items.push({ ...it, description: "", region });
+      }
+    } catch {
+      /* one category failing is fine */
+    }
+  }
+  const uniq = [...new Map(items.map((i) => [i.link.split("?")[0], i])).values()].slice(0, s.max ?? 40);
+  for (const it of uniq) {
+    try {
+      it.description = await tnptDetail(it.link, it.title);
+    } catch {
+      /* headline only */
+    }
+  }
+  return uniq;
+}
+
 export async function collect(hours = 36): Promise<{ items: FeedItem[]; log: string[] }> {
   const log: string[] = [];
   const cutoff = Date.now() - hours * 3600e3;
@@ -76,14 +139,15 @@ export async function collect(hours = 36): Promise<{ items: FeedItem[]; log: str
   for (const s of SOURCES as Source[]) {
     if (s.enabled === false) continue;
     try {
-      const items = s.type === "sitemap" ? await fetchSitemap(s.url) : s.type === "html" ? await fetchListing(s.url) : await fetchFeed(s.url);
+      const items: { title: string; link: string; description?: string; pubDate?: string; region?: string }[] =
+        s.type === "tnpt" ? await fetchTnpt(s, cutoff) : s.type === "sitemap" ? await fetchSitemap(s.url) : s.type === "html" ? await fetchListing(s.url) : await fetchFeed(s.url);
       let n = 0;
       for (const it of items) {
         const t = it.pubDate ? Date.parse(it.pubDate) : NaN;
         if (!Number.isNaN(t) && t < cutoff) continue;
         if (!it.title) continue;
         if (n >= (s.max ?? 40)) break;
-        all.push({ title: it.title, summary: (it.description ?? "").slice(0, s.guide ? 700 : 400), link: it.link, source: s.name, region: s.region, published: it.pubDate, guide: s.guide });
+        all.push({ title: it.title, summary: (it.description ?? "").slice(0, s.guide ? 1500 : 400), link: it.link, source: s.name, region: it.region ?? s.region, published: it.pubDate, guide: s.guide });
         n++;
       }
       log.push(`${s.name}: ${n}`);
@@ -117,7 +181,7 @@ export async function buildCurrentAffairs(admin: SupabaseClient, items: FeedItem
   const system = `You prepare daily current affairs notes for TNPSC Group 1, 2 and 4 candidates who study in Tamil medium.
 Write in simple, formal Tamil as used in TNPSC papers. Official terms: ${glossaryText(glossary)}.
 From the numbered news items:
-- Items marked ★TNPSC were picked by TNPSC coaching teachers as exam-relevant: include all of them (merge duplicates), and use the newspaper items for more detail on the same events.
+- Items marked ★TNPSC were picked by TNPSC coaching teachers as exam-relevant and come with the article text: include all of them (merge duplicates), keep their facts (names, numbers, places, dates, static GK points), and use the newspaper items only to add detail on the same events.
 - Then keep only other items useful for the exam: government schemes and decisions, appointments, awards, reports and indices, science and space, sports results, economy, important days, constitutional and legal changes, environment, Tamil Nadu government orders and announcements, major international events involving India.
 - Drop crime, gossip, party politics without a policy decision, and film news.
 - Merge items that are about the same event.
@@ -125,7 +189,7 @@ From the numbered news items:
 - region: "tn" for Tamil Nadu news, "india" for national/international.
 - category: one of ${CATEGORIES}.
 - note_ta: 2–4 short Tamil sentences. exam_point_ta: one line starting with what is most likely to be asked.
-- At most 25 notes, Tamil Nadu first.
+- At most 35 notes, Tamil Nadu first.
 Return JSON: {"notes":[{"region":"tn","category":"","title_ta":"","note_ta":"","exam_point_ta":"","source_index":0}]}`;
 
   const r = await generateJSON<{ notes: Note[] }>({ system, user: list, temperature: 0.3 });

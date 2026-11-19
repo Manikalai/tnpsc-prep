@@ -1,36 +1,44 @@
 [
   {
-    "name": "Usthadian – TNPSC நடப்பு நிகழ்வுகள்",
+    "name": "TNPSC தேர்வுப் பெட்டகம்",
     "region": "tn",
-    "type": "rss",
+    "type": "tnpt",
     "guide": true,
-    "max": 25,
-    "url": "https://www.usthadian.com/ta/current-affairs/tnpsc-%e0%ae%a8%e0%ae%9f%e0%ae%aa%e0%af%8d%e0%ae%aa%e0%af%81-%e0%ae%a8%e0%ae%bf%e0%ae%95%e0%ae%b4%e0%af%8d%e0%ae%b5%e0%af%81%e0%ae%95%e0%ae%b3%e0%af%8d/feed/"
-  },
-  {
-    "name": "Usthadian – பட்டியல்",
-    "region": "tn",
-    "type": "html",
-    "guide": true,
-    "max": 25,
-    "url": "https://www.usthadian.com/ta/current-affairs/tnpsc-%e0%ae%a8%e0%ae%9f%e0%ae%aa%e0%af%8d%e0%ae%aa%e0%af%81-%e0%ae%a8%e0%ae%bf%e0%ae%95%e0%ae%b4%e0%af%8d%e0%ae%b5%e0%af%81%e0%ae%95%e0%ae%b3%e0%af%8d/"
+    "max": 40,
+    "url": "https://www.tnpscthervupettagam.com",
+    "categories": {
+      "tamilnadu-news": "tn",
+      "state-current-affairs": "india",
+      "national-news": "india",
+      "international-news": "india",
+      "economic-news": "india",
+      "science-and-technology": "india",
+      "environment-news": "india",
+      "reports-and-indices": "india",
+      "personalities-awards-news": "india",
+      "sports-news": "india",
+      "tnpsc-drops": "tn",
+      "other-news": "india"
+    }
   },
   {
     "name": "தினமலர்",
     "region": "tn",
     "type": "sitemap",
-    "max": 40,
+    "max": 25,
     "url": "https://www.dinamalar.com/sitemapxml/sitemap_{DD-MM-YYYY}.xml"
   },
   {
     "name": "தினமணி – தமிழ்நாடு",
     "region": "tn",
-    "url": "https://www.dinamani.com/tamilnadu/rssfeed/?id=480&getXmlFeed=true"
+    "url": "https://www.dinamani.com/tamilnadu/rssfeed/?id=480&getXmlFeed=true",
+    "enabled": false
   },
   {
     "name": "இந்து தமிழ் திசை – தமிழகம்",
     "region": "tn",
-    "url": "https://www.hindutamil.in/rss/tamilnadu"
+    "url": "https://www.hindutamil.in/rss/tamilnadu",
+    "enabled": false
   },
   {
     "name": "Google செய்திகள் – தமிழக அரசு",
