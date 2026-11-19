@@ -51,6 +51,51 @@ VOWEL_SIGNS = "ா-்ௗ"
 REPEAT_SIGN = re.compile("([" + VOWEL_SIGNS + "])(?:�)?\\1+")   # ொ�ொ, ்், ாா  -> one sign
 FOOTER = re.compile(r"^.*(\.indd\b|\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(:\d{2})?).*$", re.M)
 
+def page_text(page) -> str:
+    """The page's own text, rebuilt from character positions: pieces printed on the same line are joined
+    (SCERT PDFs often break words like "வாழ்க|கையிலும்" into separate fragments), and each text block
+    becomes one paragraph."""
+    try:
+        d = page.get_text("rawdict")
+    except Exception:
+        return page.get_text("text")
+    paras = []
+    for b in d.get("blocks", []):
+        if b.get("type") != 0:
+            continue
+        chars = []
+        for ln in b.get("lines", []):
+            for sp in ln.get("spans", []):
+                size = sp.get("size", 10) or 10
+                for ch in sp.get("chars", []):
+                    x0, y0, x1, y1 = ch["bbox"]
+                    chars.append((ch["origin"][1], x0, x1, ch["c"], size))
+        if not chars:
+            continue
+        chars.sort(key=lambda c: (c[0], c[1]))
+        rows, cur = [], [chars[0]]
+        for c in chars[1:]:
+            if abs(c[0] - cur[-1][0]) <= 0.45 * c[4]:
+                cur.append(c)
+            else:
+                rows.append(cur)
+                cur = [c]
+        rows.append(cur)
+        lines = []
+        for r in rows:
+            r.sort(key=lambda c: c[1])
+            out, prev = "", None
+            for c in r:
+                if prev is not None and c[3] != " " and not out.endswith(" ") and c[1] - prev[2] > 0.22 * c[4]:
+                    out += " "
+                out += c[3]
+                prev = c
+            lines.append(out.strip())
+        para = " ".join(l for l in lines if l)
+        if para:
+            paras.append(re.sub(r"\s{2,}", " ", para))
+    return "\n\n".join(paras)
+
 def garble_score(t: str) -> float:
     """How broken the extracted Tamil looks: replacement chars and doubled vowel signs per 1000 chars."""
     if not t:
@@ -64,12 +109,22 @@ def garble_score(t: str) -> float:
 PREFIX_SIGN = re.compile(r"(?<![க-ஹ])([ெேை])([க-ஹ](?:்ஷ)?)")
 
 STRAY_LATIN = re.compile(r"(?<=[\u0B80-\u0BFF])[A-Z](?=[\u0B80-\u0BFF])")   # "பHொருட்கள்" → "பொருட்கள்"
-DOUBLED = re.compile(r"([க-ஹ])\1(?![்])")                                     # "ககாரங்கள்" → "காரங்கள்", "மாறுகிறறது" → "மாறுகிறது"
+DOUBLED = re.compile(r"([க-ஹ])\1(?![்])")
+FIXES = [
+    (re.compile(r"([க-ஹ])்\1\1்\1"), r"\1்\1"),                        # "கொள்ளள்ள" → "கொள்ள"
+    (re.compile(r"(?<=[\u0B80-\u0BFF])([க-ஹ])\1்"), r"\1்"),            # "இநந்த" → "இந்த", "ஓட்டப்பநந்தயம்" → "ஓட்டப்பந்தயம்"
+    (re.compile(r"([க-ஹ][ா-ௌ])\1"), r"\1"),                              # "எடுத்துக்காகாட்டு" → "எடுத்துக்காட்டு"
+    (re.compile(r"([க-ஹ]்[க-ஹ])\1(?=[க-ஹ])"), r"\1"),                    # "நோக்கங்கங்கள்" → "நோக்கங்கள்"
+    (re.compile(r"([க-ஹ])்([க-ஹ])\1்\2"), r"\1்\2"),                    # "கொண்டண்ட" → "கொண்ட"
+    (re.compile(r"(?<=[\u0B80-\u0BFF])([ரனணயலளழ])(கள)"), r"\1்\2"),      # "மாணவரகள்" → "மாணவர்கள்", "திறனகளாவன" → "திறன்களாவன"
+]                                     # "ககாரங்கள்" → "காரங்கள்", "மாறுகிறறது" → "மாறுகிறது"
 
 def fix_order(t: str) -> str:
     t = STRAY_LATIN.sub("", t)
     t = PREFIX_SIGN.sub(r"\2\1", t)
     t = DOUBLED.sub(r"\1", t)
+    for rx, rep in FIXES:
+        t = rx.sub(rep, t)
     return unicodedata.normalize("NFC", t)   # ெ+ா → ொ, ே+ா → ோ, ெ+ௗ → ௌ
 
 OCR_MODE = (os.environ.get("OCR") or "auto").lower()   # "off": use the PDF's own text (fast, no OCR); "auto": OCR broken pages
@@ -370,7 +425,7 @@ def main():
             continue
         pages, ocr_n, need = [], 0, []
         for i, page in enumerate(doc):
-            text = page.get_text("text")
+            text = page_text(page) if OCR_MODE == "off" else page.get_text("text")
             if OCR_MODE == "off":
                 if len(text.strip()) >= 40:
                     pages.append((i + 1, clean(text)))
