@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       check_only: { description: "Only check text extraction (no upload)", type: boolean, default: false }
+env:
+  PYTHONUNBUFFERED: "1"
 jobs:
   run:
     runs-on: ubuntu-latest

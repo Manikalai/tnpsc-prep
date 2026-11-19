@@ -2,6 +2,8 @@ name: Daily current affairs (Tamil)
 on:
   schedule:
     - cron: "17 0 * * *"   # 05:47 IST every day
+    - cron: "43 1 * * *"   # 07:13 IST backup (GitHub sometimes skips scheduled runs)
+    - cron: "11 3 * * *"   # 08:41 IST backup
   workflow_dispatch: {}
 jobs:
   run:

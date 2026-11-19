@@ -14,6 +14,7 @@ import argparse, glob, hashlib, io, json, os, re, sys, time, pathlib
 import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
+import import_pyq  # noqa: E402
 from import_pyq import solve_and_tag, sb, norm, L, UNITS  # noqa: E402
 
 TAMIL = re.compile(r"[஀-௿]")
@@ -142,6 +143,9 @@ def main():
     for r in rows[:15]:
         print(f"  [{r['exam_code']} {r['unit_id'] or '-':<11}] ans={L[r['answer_index']]} {r['stem'][:70]}  {'⚑ ' + r['verify_note'] if r['verify_note'] else ''}")
     pathlib.Path("external_report.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1))
+    if a.do_import and time.time() - import_pyq.STARTED > import_pyq.BUDGET:
+        print("\n!! ran out of time before every question was tagged — nothing stored. Run it again.")
+        return
     if not a.do_import:
         print("\nPreview only — nothing stored.")
         return

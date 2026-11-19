@@ -38,9 +38,36 @@ UNITS = {
 EXAM_NAME = {"G4": "தொகுதி IV", "G2": "தொகுதி II / IIA", "G1": "தொகுதி I"}
 
 
+GROQ = os.environ.get("GROQ_API_KEY")
+GROQ_MODEL = os.environ.get("GROQ_MODEL") or "openai/gpt-oss-120b"
+DEAD = set()          # models whose daily quota is used up — not tried again in this run
+STARTED = time.time()
+BUDGET = float(os.environ.get("TIME_BUDGET_MIN") or 70) * 60   # stop cleanly before GitHub cancels the job
+
+
+class OutOfTime(Exception):
+    pass
+
+
+def _groq(text, temperature):
+    r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                      headers={"Authorization": f"Bearer {GROQ}", "Content-Type": "application/json"},
+                      data=json.dumps({"model": GROQ_MODEL, "temperature": temperature, "response_format": {"type": "json_object"},
+                                       "messages": [{"role": "user", "content": text + "\nReply with JSON only."}]}),
+                      timeout=120)
+    if r.status_code != 200:
+        raise RuntimeError(f"groq {r.status_code}: {r.text[:150]}")
+    return json.loads(r.json()["choices"][0]["message"]["content"])
+
+
 def gemini(parts, temperature=0.0):
+    """Gemini (models in turn); text-only calls fall back to Groq. Gives up fast on used-up daily quota."""
+    if time.time() - STARTED > BUDGET:
+        raise OutOfTime()
     last = None
     for model in MODELS:
+        if model in DEAD:
+            continue
         for attempt in range(3):
             try:
                 r = requests.post(
@@ -48,13 +75,25 @@ def gemini(parts, temperature=0.0):
                     headers={"x-goog-api-key": GEMINI, "Content-Type": "application/json"},
                     data=json.dumps({"contents": [{"role": "user", "parts": parts}],
                                      "generationConfig": {"responseMimeType": "application/json", "temperature": temperature}}),
-                    timeout=300)
+                    timeout=150)
                 if r.status_code == 200:
                     return json.loads("".join(p.get("text", "") for p in r.json()["candidates"][0]["content"]["parts"]))
                 last = f"{model} {r.status_code}: {r.text[:150]}"
+                if r.status_code == 404 or (r.status_code == 429 and "PerDay" in r.text):
+                    print(f"    {model}: {'not available' if r.status_code == 404 else 'daily quota used up'} — skipping it")
+                    DEAD.add(model)
+                    break
+                if r.status_code == 400:
+                    break
             except Exception as e:
                 last = f"{model}: {e}"
-            time.sleep(15 * (attempt + 1))
+            time.sleep(10 * (attempt + 1))
+    texts = [p["text"] for p in parts if "text" in p]
+    if GROQ and len(texts) == len(parts):
+        try:
+            return _groq("\n".join(texts), temperature)
+        except Exception as e:
+            last = f"{last} | {e}"
     raise RuntimeError(last)
 
 
@@ -188,6 +227,10 @@ def main():
             qs.setdefault(n, q)
     print("\n== reading ticks in the answer key"); key = read_key(kdoc)
     print("\n== independent check + syllabus units"); extra = solve_and_tag(qs, a.exam)
+
+    if time.time() - STARTED > BUDGET:
+        print("\n!! ran out of time — some pages were skipped. Showing a preview only; nothing will be stored. Run it again.")
+        a.do_import = False
 
     rows, report = [], []
     for n in sorted(set(qs) | set(key)):

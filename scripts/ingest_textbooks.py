@@ -228,7 +228,8 @@ def get_pdf(source: str) -> pathlib.Path:
     if not p.exists() and "drive.google.com" in source:
         import gdown  # handles Google Drive's "large file" confirmation page
         print(f"  downloading from Google Drive {source}")
-        gdown.download(url=source, output=str(p), quiet=True, fuzzy=True)
+        m = re.search(r"/d/([\w-]+)|[?&]id=([\w-]+)", source)
+        gdown.download(id=(m.group(1) or m.group(2)) if m else None, url=None if m else source, output=str(p), quiet=True)
         if not p.exists() or p.stat().st_size < 10000:
             raise RuntimeError("Google Drive download failed (file not shared publicly?)")
     if not p.exists():
