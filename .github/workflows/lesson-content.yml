@@ -1,0 +1,29 @@
+name: Prepare all lessons
+on:
+  workflow_dispatch:
+    inputs:
+      only: { description: "Only these (comma separated: bookback, clean, summary, facts, revision, mcq). Empty = everything", required: false, default: "" }
+      max_std: { description: "Up to which class (10 = Group 4 books only)", required: false, default: "12" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/lesson_content.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
+          AI_PROVIDERS: ${{ vars.AI_PROVIDERS }}
+          LESSON_ONLY: ${{ github.event.inputs.only }}
+          LESSON_MAX_STD: ${{ github.event.inputs.max_std }}
+          LESSON_MINUTES: "320"
