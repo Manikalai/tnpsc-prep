@@ -1,5 +1,6 @@
 import { Tilak } from "@/components/Murugan";
 import AbodeJourney from "@/components/AbodeJourney";
+import InstallApp from "@/components/InstallApp";
 import { nameOfDay, sloganOfDay } from "@/lib/murugan";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
@@ -73,6 +74,8 @@ export default async function Home() {
           <p className="mt-1 text-xs text-white/80">பாடத்திட்டம் {pct(doneTopics, topicCount)}% · {doneTopics}/{topicCount} தலைப்புகள்</p>
         </div>
       </section>
+
+      <InstallApp />
 
       <AbodeJourney pct={pct(doneTopics, topicCount)} />
 

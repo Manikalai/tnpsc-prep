@@ -1,4 +1,5 @@
 import Link from "next/link";
+import InstallApp from "@/components/InstallApp";
 
 const GROUPS: { title: string; items: [string, string, string, string][] }[] = [
   {
@@ -40,6 +41,7 @@ const GROUPS: { title: string; items: [string, string, string, string][] }[] = [
 export default function More() {
   return (
     <div className="space-y-5">
+      <InstallApp />
       {GROUPS.map((g) => (
         <section key={g.title}>
           <h2 className="mb-1.5 px-1 text-xs font-bold uppercase tracking-wide text-stone-500">{g.title}</h2>

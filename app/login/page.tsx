@@ -1,5 +1,6 @@
 "use client";
 import { Brand } from "@/components/Nav";
+import InstallApp from "@/components/InstallApp";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -22,6 +23,7 @@ export default function Login() {
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-maroon-900/90 to-transparent p-2 text-center text-sm font-bold text-gold-400">யாமிருக்க பயமேன்</div>
       </div>
       <h1 className="text-center"><Brand big /></h1>
+      <div className="mt-3"><InstallApp /></div>
       <p className="mt-3 text-center font-semibold text-maroon-500">வெற்றி வேல்! வீர வேல்!</p>
       <p className="mt-1 text-center text-stone-500">TNPSC தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
       {!configured && (
