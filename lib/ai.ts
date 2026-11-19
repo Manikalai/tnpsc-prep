@@ -112,7 +112,17 @@ async function callProvider(name: string, o: GenOpts): Promise<string> {
   }
   if (name === "groq") {
     if (!env.groqKey) throw new Error("GROQ_API_KEY missing");
-    return callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", env.groqKey, env.groqModel, o);
+    let last: unknown;
+    for (const m of env.groqModels) {
+      if (exhausted.has(`groq:${m}`)) continue;
+      try {
+        return await callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", env.groqKey, m, o);
+      } catch (e) {
+        last = e;
+        if (/ 404:| 400: .*decommission|model_not_found/i.test(String(e))) exhausted.add(`groq:${m}`);
+      }
+    }
+    throw last;
   }
   if (name === "openrouter") {
     if (!env.openrouterKey || env.openrouterModels.length === 0) throw new Error("OpenRouter not configured");

@@ -92,7 +92,8 @@ try {
 }
 
 // 3) chapters: summary, facts, revision questions and 10 MCQs per chapter (Group 4 classes first)
-const chapterBudget = Number(process.env.BANK_CHAPTER_CALLS || 60);
+// lesson notes / book-back / MCQs are made by scripts/lesson_content.ts (its own nightly job); 0 here by default
+const chapterBudget = Number(process.env.BANK_CHAPTER_CALLS || 0);
 let chapterCalls = 0;
 {
   const { data: chs } = await admin.from("chapters").select("*").order("std").order("term").order("chapter_no").limit(3000);

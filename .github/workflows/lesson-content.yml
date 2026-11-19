@@ -1,5 +1,7 @@
 name: Prepare all lessons
 on:
+  schedule:
+    - cron: "37 15 * * *"   # 21:07 IST every night — continues where it stopped; nothing to do once all lessons are ready
   workflow_dispatch:
     inputs:
       only: { description: "Only these (comma separated: bookback, clean, summary, facts, revision, mcq). Empty = everything", required: false, default: "" }
@@ -26,4 +28,4 @@ jobs:
           AI_PROVIDERS: ${{ vars.AI_PROVIDERS }}
           LESSON_ONLY: ${{ github.event.inputs.only }}
           LESSON_MAX_STD: ${{ github.event.inputs.max_std }}
-          LESSON_MINUTES: "320"
+          LESSON_MINUTES: ${{ github.event_name == 'schedule' && '150' || '320' }}
