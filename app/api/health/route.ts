@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { apiUser } from "@/lib/supabase/server";
 import { serverEnv } from "@/lib/env";
+import { pingProviders } from "@/lib/ai";
 
 // Setup check: open /api/health while logged in. Shows which settings work, never the key values.
 export async function GET() {
@@ -61,5 +62,6 @@ export async function GET() {
       out.gemini_test = `ERROR: ${e instanceof Error ? e.message : e}`;
     }
   }
+  out.ai_providers = await pingProviders();
   return NextResponse.json(out, { headers: { "Cache-Control": "no-store" } });
 }

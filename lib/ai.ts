@@ -200,3 +200,27 @@ export const tamilRatio = (s: string) => {
   if (!letters.length) return 0;
   return (letters.match(/[஀-௿]/g)?.length ?? 0) / letters.length;
 };
+
+/** Setup check: one tiny Tamil request to every configured key/provider. Never returns key values. */
+export async function pingProviders() {
+  const env = serverEnv();
+  const o: GenOpts = { system: 'Reply as JSON {"word": "..."}', user: "Reply with the single Tamil word for hello (வணக்கம்).", temperature: 0, maxTokens: 64, timeoutMs: 25000 };
+  const out: Record<string, string> = {};
+  const show = async (name: string, f: () => Promise<string>) => {
+    try {
+      out[name] = `ok: ${(await f()).replace(/\s+/g, " ").slice(0, 40)}`;
+    } catch (e) {
+      out[name] = `ERROR: ${(e instanceof Error ? e.message : String(e)).slice(0, 160)}`;
+    }
+  };
+  for (const [k, key] of env.geminiKeys.entries()) {
+    for (const m of env.geminiModels.slice(0, 2)) await show(`gemini key${k + 1} ${m}`, () => callGeminiModel(m, key, o));
+  }
+  if (!env.geminiKeys.length) out.gemini = "not set";
+  out.gemini_key_2 = env.geminiKeys.length > 1 ? "set" : "NOT SET";
+  if (env.sarvamKey) await show(`sarvam ${env.sarvamModel}`, () => callProvider("sarvam", o));
+  else out.sarvam = "NOT SET";
+  if (env.groqKey) await show(`groq ${env.groqModel}`, () => callProvider("groq", o));
+  out.order = env.providers.join(" → ");
+  return out;
+}
