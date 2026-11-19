@@ -69,7 +69,7 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
 
       {tab === "text" && <BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />}
 
-      {tab === "bookback" && <BookBackPanel chapterId={c.id} initial={(note("bookback") as BookBack | undefined) ?? null} />}
+      {tab === "bookback" && <BookBackPanel chapterId={c.id} title={c.title_ta} initial={(note("bookback") as BookBack | undefined) ?? null} />}
 
       {tab === "clean" && <CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />}
 

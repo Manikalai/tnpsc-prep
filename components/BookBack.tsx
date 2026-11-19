@@ -5,11 +5,26 @@ import type { BookBack } from "@/lib/bookback";
 
 const L = ["அ", "ஆ", "இ", "ஈ"];
 
-export function BookBackView({ data }: { data: BookBack }) {
+/** Opens brainkart's teacher-written answers for this lesson (Google search limited to brainkart.in). */
+export function BrainkartLink({ title }: { title?: string }) {
+  if (!title) return null;
+  const q = encodeURIComponent(`site:brainkart.in ${title} விடை`);
+  return (
+    <a href={`https://www.google.com/search?q=${q}`} target="_blank" rel="noreferrer" className="card flex items-center gap-3 active:bg-stone-50">
+      <span className="text-xl" aria-hidden>👩‍🏫</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">ஆசிரியர் விடைகளை ஒப்பிட (brainkart) ↗</span>
+        <span className="block text-[13px] text-stone-500">இணையத்தில் திறக்கும் — இந்தப் பாடத்தின் புத்தக வினா விடைகள்</span>
+      </span>
+    </a>
+  );
+}
+
+export function BookBackView({ data, title }: { data: BookBack; title?: string }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const keys = data.sections.flatMap((s, i) => s.items.map((_, j) => `${i}-${j}`));
   const all = keys.length > 0 && keys.every((k) => open[k]);
-  if (!data.found || !data.sections.length) return <p className="card text-sm">இந்தப் பாடத்தில் புத்தகப் பயிற்சி வினாக்கள் கண்டறியப்படவில்லை.</p>;
+  if (!data.found || !data.sections.length) return <div className="space-y-3"><p className="card text-sm">இந்தப் பாடத்தில் புத்தகப் பயிற்சி வினாக்கள் கண்டறியப்படவில்லை.</p><BrainkartLink title={title} /></div>;
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -47,16 +62,18 @@ export function BookBackView({ data }: { data: BookBack }) {
           </ol>
         </section>
       ))}
+      <BrainkartLink title={title} />
     </div>
   );
 }
 
-export default function BookBackPanel({ chapterId, initial }: { chapterId: number; initial: BookBack | null }) {
+export default function BookBackPanel({ chapterId, initial, title }: { chapterId: number; initial: BookBack | null; title?: string }) {
   const [data, setData] = useState<BookBack | null>(initial);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  if (data) return <BookBackView data={data} />;
+  if (data) return <BookBackView data={data} title={title} />;
   return (
+    <div className="space-y-3">
     <div className="card space-y-2 text-center">
       <p className="text-sm text-stone-600">இந்தப் பாடத்தின் புத்தக வினாக்கள் இன்னும் தயாராகவில்லை (இரவுப் பணி படிப்படியாக எல்லாப் பாடங்களுக்கும் தயாரிக்கும்).</p>
       <button
@@ -80,6 +97,8 @@ export default function BookBackPanel({ chapterId, initial }: { chapterId: numbe
         {busy ? "புத்தக வினாக்களுக்கு விடை எழுதுகிறது… (1 நிமிடம் வரை)" : "இப்போதே தயாரி"}
       </button>
       {err && <p className="text-sm text-red-700">{err}{/timeout|504|HTTP 5/i.test(err) ? " — நீண்ட பாடம்; இரவுப் பணி தயாரிக்கும்." : ""}</p>}
+    </div>
+    <BrainkartLink title={title} />
     </div>
   );
 }

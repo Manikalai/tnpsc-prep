@@ -80,7 +80,7 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
         ))}
       </div>
       {tab === "text" && <BookPages book={ch.book} from={ch.page_from} to={ch.page_to} />}
-      {tab === "bookback" && (notes.bookback ? <BookBackView data={notes.bookback as BookBack} /> : missing)}
+      {tab === "bookback" && (notes.bookback ? <BookBackView data={notes.bookback as BookBack} title={ch.title_ta} /> : missing)}
       {tab === "clean" && (notes.clean ? <CleanView clean={notes.clean as Clean} /> : missing)}
       {tab === "summary" && (notes.summary ? (
         <>
