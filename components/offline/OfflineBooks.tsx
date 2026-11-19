@@ -90,7 +90,7 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
       ) : missing)}
       {tab === "facts" && (f ? (
         <div className="card space-y-3 text-sm">
-          {!!f.dates?.length && <div><b>நாட்கள்</b>{f.dates.map((d, k) => <p key={k}><span className="font-semibold text-brand-700">{d.date}</span> — {d.event}</p>)}</div>}
+          {!!f.dates?.length && <div><b>நாட்கள்</b>{f.dates.map((d, k) => <p key={k}><span className="whitespace-nowrap font-semibold text-brand-700">{d.date}</span> — {d.event}</p>)}</div>}
           {!!f.persons?.length && <div><b>ஆளுமைகள்</b>{f.persons.map((p, k) => <p key={k}><b>{p.name}</b> — {p.about}</p>)}</div>}
           {!!f.facts?.length && <div><b>உண்மைகள்</b><ul className="list-disc pl-5">{f.facts.map((x, k) => <li key={k}>{x}</li>)}</ul></div>}
           {!!f.terms?.length && <div><b>கலைச்சொற்கள்</b>{f.terms.map((t, k) => <p key={k}><b>{t.term}</b> — {t.meaning}</p>)}</div>}

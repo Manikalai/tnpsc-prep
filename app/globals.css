@@ -10,7 +10,7 @@ html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* feel like an app on phones */
 button, a, summary, label { touch-action: manipulation; }
 button, .btn, .btn-ghost, nav a, summary { -webkit-user-select: none; user-select: none; }
-main { overflow-wrap: anywhere; }
+main { overflow-wrap: break-word; }
 main a.underline { text-decoration: none; color: theme(colors.brand.600); font-weight: 600; }
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }

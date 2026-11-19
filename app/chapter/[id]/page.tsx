@@ -114,7 +114,7 @@ function FactsView({ f }: { f: Facts }) {
       {!!f.dates?.length && (
         <div className="card overflow-x-auto">
           <h2 className="h2 mb-2">முக்கிய நாட்கள் / ஆண்டுகள்</h2>
-          <table className="w-full text-sm"><tbody>{f.dates.map((d, k) => <tr key={k} className="border-t border-stone-100"><td className="py-1.5 pr-3 font-semibold text-brand-700">{d.date}</td><td>{d.event}</td></tr>)}</tbody></table>
+          <table className="w-full text-sm"><tbody>{f.dates.map((d, k) => <tr key={k} className="border-t border-stone-100"><td className="whitespace-nowrap py-1.5 pr-3 align-top font-semibold text-brand-700">{d.date}</td><td>{d.event}</td></tr>)}</tbody></table>
         </div>
       )}
       {!!f.persons?.length && (
