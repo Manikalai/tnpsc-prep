@@ -5,6 +5,7 @@
 import "./env";
 import { supabaseAdmin } from "../lib/supabase/admin";
 import { generateBookBack } from "../lib/bookback";
+import { startProgress } from "../lib/progress";
 import { cleanDone, generateChapterMCQs, generateChapterNote, generateCleanPart, NOTE_KINDS, type Chapter, type Clean } from "../lib/chapters";
 
 const admin = supabaseAdmin();
@@ -46,9 +47,13 @@ const hasText = new Set((withText ?? []).map((r) => r.chapter_id));
 
 const list = ((chs ?? []) as Chapter[]).filter((c) => hasText.has(c.id));
 console.log(`${list.length} lessons with text (std ≤ ${maxStd})`);
+const prog = await startProgress(admin, "lessons", "பாடங்கள் தயாரிப்பு (குறிப்புகள், புத்தக வினாக்கள், MCQ)", list.length);
+let idx = 0;
 
 for (const ch of list) {
+  idx++;
   if (!timeLeft() || failStreak >= 6) break;
+  await prog.update({ done: idx - 1, current: `${ch.book} · பாடம் ${ch.chapter_no}`, failed });
   const todo: [string, () => Promise<unknown>][] = [];
   const c = clean.get(ch.id);
   if (want("bookback") && !have.has(`${ch.id}:bookback`)) todo.push(["bookback", () => generateBookBack(admin, ch)]);
@@ -71,4 +76,5 @@ for (const ch of list) {
 
 const stopped = failStreak >= 6 ? "AI providers kept failing (daily limits) — run again later" : timeLeft() ? "all lessons done" : "time budget used — run again to continue";
 console.log(`\nDONE: ${ok} made, ${failed} failed · ${JSON.stringify(tally)} · ${stopped}`);
+await prog.update({ done: idx, failed, finished: true, note: stopped }, true);
 await admin.from("job_runs").insert({ job: "lesson_content", ok: true, detail: { ok, failed, tally, stopped } });

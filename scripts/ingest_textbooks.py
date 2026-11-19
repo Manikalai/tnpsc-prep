@@ -432,6 +432,29 @@ def do_pages(doc, title: str):
     print(f"  page images: {n} pages, {mb:.0f} MB")
 
 
+class Progress:
+    """Live progress row shown in the app (job_runs, job = progress:textbooks)."""
+    def __init__(self, title, total):
+        self.id, self.last = None, 0
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self.state = {"title": title, "done": 0, "total": total, "started": now, "updated": now, "failed": 0}
+        try:
+            r = sb("POST", "job_runs", data=json.dumps({"job": "progress:textbooks", "ok": True, "detail": self.state}),
+                   headers={"Prefer": "return=representation"}).json()
+            self.id = r[0]["id"]
+        except BaseException:
+            pass
+    def update(self, force=False, **kw):
+        self.state.update(kw)
+        self.state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if not self.id or (not force and time.time() - self.last < 15):
+            return
+        self.last = time.time()
+        try:
+            sb("PATCH", "job_runs", params={"id": f"eq.{self.id}"}, data=json.dumps({"detail": self.state}), headers={"Prefer": "return=minimal"})
+        except BaseException:
+            pass
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     check_only = "--check" in sys.argv
@@ -451,9 +474,12 @@ def main():
         ensure_bucket()
     total = 0
     failed = []
-    for row in rows:
+    prog = Progress("பாடநூல்கள் ஏற்றம் (உரை + பக்கப் படங்கள்)", len(rows)) if not check_only else None
+    for bi, row in enumerate(rows):
         title, subject, std = row["title"].strip(), row["subject"].strip(), int(row["std"])
         print(f"\n== {title}")
+        if prog:
+            prog.update(force=True, done=bi, current=title, failed=len(failed))
         loaded = not check_only and already_loaded(title)
         if pages_only and not loaded:
             print("  not loaded yet, skipping")
@@ -540,6 +566,9 @@ def main():
             print(f"  !! page images failed: {e}")
         sb("POST", "job_runs", data=json.dumps({"job": "book_done", "ok": True, "detail": {"book": title, "chapters": len(chapters), "passages": stored, "ocr_pages": ocr_n}}), headers={"Prefer": "return=minimal"})
         print(f"  stored {stored} passages in {len(chapters)} chapters")
+    if prog:
+        prog.update(force=True, done=len(rows), current=None, failed=len(failed), finished=True,
+                    note=("தோல்வியடைந்தவை: " + ", ".join(failed)) if failed else "எல்லா நூல்களும் முடிந்தன")
     if not check_only:
         sb("POST", "job_runs", data=json.dumps({"job": "ingest_textbooks", "ok": True, "detail": {"chunks": total}}), headers={"Prefer": "return=minimal"})
     print(f"\ndone, {total} chunks stored")

@@ -5,6 +5,7 @@ import { OPT, taDate } from "@/lib/format";
 import ExamTabs from "@/components/ExamTabs";
 import StartButton from "@/components/StartButton";
 import PyqImport from "@/components/PyqImport";
+import JobStatus from "@/components/JobStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div className="space-y-4">
+      <JobStatus sb={sb} />
       <div className="card text-sm">
         <p>ஏற்றப்பட்ட பாடநூல் பகுதிகள்: <b>{chunks ?? 0}</b> {chunks ? "" : "— பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை (README: textbooks)."}</p>
         <p className="muted mt-1">ஒவ்வொரு இரவும் தானியங்கிப் பணி ஒவ்வொரு அலகுக்கும் வினாக்களைச் சேர்க்கும். இங்கே கைமுறையாகவும் சேர்க்கலாம் (ஒரு முறைக்கு ~10).</p>
