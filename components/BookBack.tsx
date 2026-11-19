@@ -33,7 +33,8 @@ export function BookBackView({ data }: { data: BookBack }) {
                   ) : null}
                   {open[k] ? (
                     <div className="mt-2 rounded-lg bg-gold-400/10 p-2.5 text-[15px]">
-                      <p><b className="text-brand-700">விடை:</b> {it.answer}</p>
+                      <p><b className="text-brand-700">விடை:</b> {it.answer}{it.verified === true && <span className="ml-1.5 text-xs font-semibold text-brand-600">✓ பாடத்தில் உள்ளது</span>}</p>
+                      {it.verified === false && <p className="mt-1 rounded-md bg-turmeric-50 px-2 py-1 text-[13px] text-turmeric-500">⚠ சரிபார்க்கவும் — {it.check_note ?? "பாடத்தில் தெளிவாக இல்லை"}{it.page ? ` (பக். ${it.page})` : ""}</p>}
                       {it.explanation && <p className="mt-1 text-stone-700"><b>விளக்கம்:</b> {it.explanation}</p>}
                       {it.page ? <p className="mt-1 text-xs text-stone-500">பாடநூல் பக். {it.page}</p> : null}
                     </div>

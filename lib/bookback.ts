@@ -6,7 +6,7 @@ import { generateJSON } from "./ai";
 import { chapterText, type Chapter } from "./chapters";
 import { glossaryText, loadGlossary, qHash } from "./questions";
 
-export type BookBackItem = { q: string; options?: string[]; answer: string; answer_index?: number | null; explanation: string; page?: number | null };
+export type BookBackItem = { q: string; options?: string[]; answer: string; answer_index?: number | null; explanation: string; page?: number | null; verified?: boolean; check_note?: string };
 export type BookBackSection = { type: "mcq" | "fill" | "truefalse" | "match" | "short" | "long" | "other"; title: string; items: BookBackItem[] };
 export type BookBack = { sections: BookBackSection[]; found: boolean };
 
@@ -58,10 +58,39 @@ Return JSON {"sections":[{"type":"mcq","title":"I. சரியான விட�
       })),
     }))
     .filter((s) => s.items.length);
+  await checkAnswers(sections, withPages(lesson, rows).slice(0, 60000));
   const out: BookBack = { sections, found: true };
   await admin.from("chapter_notes").upsert({ chapter_id: ch.id, kind: "bookback", content: out });
   await saveToBank(admin, ch, sections);
   return out;
+}
+
+/** Strict second pass: every answer is checked against the lesson text. Unsupported ones are marked, never shown as certain. */
+async function checkAnswers(sections: BookBackSection[], lesson: string) {
+  const flat = sections.flatMap((s) => s.items);
+  if (!flat.length) return;
+  for (let i = 0; i < flat.length; i += 25) {
+    const batch = flat.slice(i, i + 25);
+    try {
+      const { data } = await generateJSON<{ results: { id: number; supported: boolean; note?: string }[] }>({
+        system: `You are a strict checker. You get a Tamil textbook lesson and numbered question–answer pairs from its exercises.
+Using ONLY the lesson text (not your own knowledge): supported = true if the lesson clearly supports the given answer (for choose-the-answer, the marked option; for true/false, the verdict).
+supported = false if the lesson does not contain it or says something different; then note = one short Tamil sentence saying what is unclear or what the lesson says.
+Return JSON {"results":[{"id":0,"supported":true,"note":""}]} with one entry per pair.`,
+        user: `=== பாடம் ===\n${lesson}\n\n=== வினா–விடைகள் ===\n${batch.map((it, k) => `[${k}] வினா: ${it.q}${it.options?.length ? `\nவிருப்பங்கள்: ${it.options.join(" / ")}` : ""}\nவிடை: ${it.answer}`).join("\n\n")}`,
+        temperature: 0,
+        maxTokens: 4096,
+      });
+      for (const r of data.results ?? []) {
+        const it = batch[r.id];
+        if (!it) continue;
+        it.verified = r.supported === true;
+        if (!it.verified && r.note) it.check_note = String(r.note).slice(0, 300);
+      }
+    } catch {
+      /* check unavailable: items stay unmarked (shown without the ✓) */
+    }
+  }
 }
 
 /** 4-option multiple-choice book-back questions go into the question bank (for quizzes / mock tests). */
@@ -71,7 +100,7 @@ async function saveToBank(admin: SupabaseClient, ch: Chapter, sections: BookBack
   const rows = sections
     .filter((s) => s.type === "mcq")
     .flatMap((s) => s.items)
-    .filter((it) => it.options?.length === 4 && it.answer_index != null && it.answer_index >= 0 && it.answer_index < 4 && new Set(it.options.map((o) => o.trim())).size === 4)
+    .filter((it) => it.verified === true && it.options?.length === 4 && it.answer_index != null && it.answer_index >= 0 && it.answer_index < 4 && new Set(it.options.map((o) => o.trim())).size === 4)
     .map((it) => ({
       exam_code: ch.std <= 10 ? "G4" : "G2",
       unit_id,

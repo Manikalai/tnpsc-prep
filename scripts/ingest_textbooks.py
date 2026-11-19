@@ -232,8 +232,94 @@ def refine_starts(pages, chs):
         out.append(c)
     return out
 
-def detect_chapters(pages, title, subject):
-    """Return [(chapter_no, title_ta, subject, page_from, page_to)] using the first lines of every page."""
+# ───────── lesson starts from the book's own contents page (பொருளடக்கம்) — no AI ─────────
+def _rows(page):
+    """Words of a page grouped into visual rows (left → right), so table columns stay together."""
+    rows = {}
+    for x0, y0, x1, y1, w, *_ in page.get_text("words"):
+        key = round((y0 + y1) / 2 / 4)
+        rows.setdefault(key, []).append((x0, w))
+    return [[w for _, w in sorted(r)] for _, r in sorted(rows.items())]
+
+def _printed_offset(doc, first):
+    """PDF page − printed page number, from the page numbers printed at the top/bottom of pages."""
+    votes = {}
+    for i in range(first, min(len(doc), first + 60)):
+        rows = _rows(doc[i])
+        for row in rows[:2] + rows[-2:]:
+            for w in (row[0], row[-1]) if row else ():
+                if w.isdigit() and 0 < int(w) < 600:
+                    off = (i + 1) - int(w)
+                    if 0 <= off < 40:
+                        votes[off] = votes.get(off, 0) + 1
+    if not votes:
+        return None
+    off, n = max(votes.items(), key=lambda kv: kv[1])
+    return off if n >= 5 else None
+
+def contents_chapters(doc, subject):
+    """[{no, title, start_page, subject}] from the contents table, or [] if it can't be read reliably."""
+    start = None
+    for i in range(min(15, len(doc))):
+        t = fix_order(doc[i].get_text("text"))
+        if "பொருளடக்கம்" in t or "பொருளடக்கம்" in t.replace(" ", ""):
+            start = i
+            break
+    if start is None:
+        return []
+    entries, section = [], ("social" if subject == "sciso" else subject)
+    for i in range(start, min(start + 3, len(doc))):
+        for row in _rows(doc[i]):
+            text = clean(" ".join(row))
+            tamil = sum(1 for c in text if "\u0B80" <= c <= "\u0BFF")
+            latin = sum(1 for c in text if c.isascii() and c.isalpha())
+            if subject == "sciso" and re.search(r"சமூக\s*அறிவியல்", text) and not re.search(r"\d{1,3}\s*$", text):
+                section = "social"; continue
+            if subject == "sciso" and re.fullmatch(r"\W*அறிவியல்\W*", text):
+                section = "science"; continue
+            m = re.search(r"(\d{1,3})\s*$", text)
+            if not m or tamil < 3 or latin > tamil:
+                continue
+            title = re.sub(r"^\s*(\d{1,2}[.)]?|இயல்\s*\d+|அலகு\s*\d+|பாடம்\s*\d+)\s*", "", text[: m.start()]).strip(" .-–:")
+            title = re.sub(r"\s*\.{2,}.*$", "", title)
+            if len(title) < 2 or "பொருளடக்கம்" in title:
+                continue
+            entries.append({"title": title, "printed": int(m.group(1)), "subject": section})
+        if entries and i > start and not any(True for _ in entries):
+            break
+    # keep entries whose printed pages increase (drops stray numbers)
+    clean_entries, last = [], 0
+    for e in entries:
+        if e["printed"] > last:
+            clean_entries.append(e)
+            last = e["printed"]
+    if len(clean_entries) < 3:
+        return []
+    off = _printed_offset(doc, start + 1)
+    if off is None:
+        return []
+    out, counters = [], {}
+    for e in clean_entries:
+        pg = e["printed"] + off
+        if not 1 <= pg <= len(doc):
+            continue
+        counters[e["subject"]] = counters.get(e["subject"], 0) + 1
+        out.append({"no": counters[e["subject"]], "title": e["title"], "start_page": pg, "subject": e["subject"]})
+    return out if len(out) >= 3 else []
+
+def detect_chapters(pages, title, subject, doc=None):
+    """Return [(chapter_no, title_ta, subject, page_from, page_to)]: from the book's contents page when it can be read
+    (no AI), otherwise by AI from the first lines of every page; every start is checked against the lesson title."""
+    if doc is not None:
+        try:
+            toc = contents_chapters(doc, subject)
+        except Exception as e:
+            toc = []
+            print(f"  contents page unreadable ({str(e)[:80]})")
+        if toc:
+            print(f"  lessons from the contents page: {len(toc)} (no AI)")
+            return _finish(pages, title, subject, toc)
+
     # printed page numbers ("77 ஒளி …") differ from PDF page numbers — strip them so only our [pN] ids are numbers
     index = "\n".join(f"[p{no}] " + re.sub(r"^\s*\d{1,3}\s+", "", re.sub(r"\s+", " ", t[:220])) for no, t in pages)
     allowed = "science or social" if subject == "sciso" else subject
@@ -257,6 +343,9 @@ def detect_chapters(pages, title, subject):
             print(f"  found {len(chs)} lessons from headings")
         else:
             print("  no lesson headings found; using the whole book as one chapter")
+    return _finish(pages, title, subject, chs)
+
+def _finish(pages, title, subject, chs):
     last_page = pages[-1][0] if pages else 1
     if not chs:
         return [(1, title, "social" if subject == "sciso" else subject, pages[0][0] if pages else 1, last_page)]
@@ -485,7 +574,7 @@ class Progress:
 def repair_chapters(doc, title, subject):
     pages = [(i + 1, clean(page_text(page))) for i, page in enumerate(doc)]
     pages = [(n, t) for n, t in pages if t.strip()]
-    found = detect_chapters(pages, title, subject)
+    found = detect_chapters(pages, title, subject, doc)
     old = sb_all("chapters", {"book": f"eq.{title}", "select": "id,subject,chapter_no,page_from,page_to,title_ta"})
     by_key = {(c["subject"], c["chapter_no"]): c for c in old}
     changed = 0
@@ -594,7 +683,7 @@ def main():
                 print(f"  OCR unavailable ({e}); {len(need)} pages skipped")
         pages.sort(key=lambda x: x[0])
         pages = [(no, t) for no, t in pages if t.strip()]
-        chapters = detect_chapters(pages, title, subject) if pages else []
+        chapters = detect_chapters(pages, title, subject, doc) if pages else []
         if old_links is not None:
             known = sb_all("chapters", {"book": f"eq.{title}", "select": "subject,chapter_no,title_ta,page_from", "order": "page_from"})
             if len(known) >= 3 and len(chapters) < len(known) * 0.6:
