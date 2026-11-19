@@ -52,48 +52,52 @@ REPEAT_SIGN = re.compile("([" + VOWEL_SIGNS + "])(?:�)?\\1+")   # ொ�ொ, �
 FOOTER = re.compile(r"^.*(\.indd\b|\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}(:\d{2})?).*$", re.M)
 
 def page_text(page) -> str:
-    """The page's own text, rebuilt from character positions: pieces printed on the same line are joined
-    (SCERT PDFs often break words like "வாழ்க|கையிலும்" into separate fragments), and each text block
-    becomes one paragraph."""
+    """The page's own text, with fragments printed on the same visual line joined back together
+    (SCERT PDFs split many lines into word pieces like "வாழ்க" / "கையிலும்"). Letters inside each
+    piece keep the PDF's own order; each text block becomes one paragraph."""
     try:
-        d = page.get_text("rawdict")
+        d = page.get_text("dict")
     except Exception:
         return page.get_text("text")
     paras = []
     for b in d.get("blocks", []):
         if b.get("type") != 0:
             continue
-        chars = []
+        pieces = []
         for ln in b.get("lines", []):
-            for sp in ln.get("spans", []):
-                size = sp.get("size", 10) or 10
-                for ch in sp.get("chars", []):
-                    x0, y0, x1, y1 = ch["bbox"]
-                    chars.append((ch["origin"][1], x0, x1, ch["c"], size))
-        if not chars:
+            txt = "".join(sp.get("text", "") for sp in ln.get("spans", []))
+            if not txt.strip():
+                continue
+            size = max((sp.get("size", 10) for sp in ln.get("spans", [])), default=10) or 10
+            x0, y0, x1, y1 = ln["bbox"]
+            pieces.append(((y0 + y1) / 2, x0, x1, txt, size))
+        if not pieces:
             continue
-        chars.sort(key=lambda c: (c[0], c[1]))
-        rows, cur = [], [chars[0]]
-        for c in chars[1:]:
-            if abs(c[0] - cur[-1][0]) <= 0.45 * c[4]:
+        pieces.sort(key=lambda c: (round(c[0] / 3), c[1]))
+        rows, cur = [], [pieces[0]]
+        for c in pieces[1:]:
+            if abs(c[0] - cur[-1][0]) <= 0.5 * c[4]:
                 cur.append(c)
             else:
                 rows.append(cur)
                 cur = [c]
         rows.append(cur)
-        lines = []
+        out = []
         for r in rows:
             r.sort(key=lambda c: c[1])
-            out, prev = "", None
+            line, prev = "", None
             for c in r:
-                if prev is not None and c[3] != " " and not out.endswith(" ") and c[1] - prev[2] > 0.22 * c[4]:
-                    out += " "
-                out += c[3]
+                t = c[3]
+                if prev is not None:
+                    tight = c[1] - prev[2] < 0.12 * c[4]
+                    line = line.rstrip() + ("" if tight else " ") + t.lstrip()
+                else:
+                    line = t
                 prev = c
-            lines.append(out.strip())
-        para = " ".join(l for l in lines if l)
-        if para:
-            paras.append(re.sub(r"\s{2,}", " ", para))
+            out.append(line.strip())
+        para = re.sub(r"\s{2,}", " ", " ".join(out))
+        if para.strip():
+            paras.append(para.strip())
     return "\n\n".join(paras)
 
 def garble_score(t: str) -> float:
