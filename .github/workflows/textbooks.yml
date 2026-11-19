@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       book: { description: "Only this book (part of its title, e.g. 9ஆம் வகுப்பு அறிவியல்). Empty = all books not loaded yet", required: false, default: "" }
+      ocr: { description: "OCR: off = use the PDF's own text (fast); auto = OCR pages whose text is broken (slow)", type: choice, options: ["off", "auto"], default: "off" }
       pages_only: { description: "Only upload the page images (for books already loaded)", type: boolean, default: false }
       check_only: { description: "Only check text extraction (no upload)", type: boolean, default: false }
 env:
@@ -25,3 +26,4 @@ jobs:
           GEMINI_EMBED_MODEL: ${{ vars.GEMINI_EMBED_MODEL }}
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
           BOOK: ${{ github.event.inputs.book }}
+          OCR: ${{ github.event.inputs.ocr }}

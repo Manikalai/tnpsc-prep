@@ -12,7 +12,7 @@ Books already loaded are skipped, so the job can be re-run safely.
 Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GEMINI_EMBED_MODEL (optional)
 Usage: python scripts/ingest_textbooks.py [textbooks/manifest.csv] [--check]   (--check = extraction report only)
 """
-import csv, io, json, os, re, sys, time, hashlib, pathlib
+import csv, io, json, os, re, sys, time, hashlib, pathlib, unicodedata
 import requests
 import fitz  # PyMuPDF
 
@@ -58,7 +58,19 @@ def garble_score(t: str) -> float:
     bad = t.count("�") + len(re.findall("[" + VOWEL_SIGNS + "]{2,}", t))
     return bad * 1000 / max(len(t), 1)
 
+# Some SCERT fonts store the "prefix" vowel signs (ெ ே ை) BEFORE the consonant, in visual order.
+# Correct Unicode never has one of these signs right after something that isn't a consonant, so
+# "ெக" → "கெ" is safe; then ெ+ா → ொ, ே+ா → ோ, ெ+ௗ → ௌ.
+PREFIX_SIGN = re.compile(r"(?<![க-ஹ])([ெேை])([க-ஹ](?:்ஷ)?)")
+
+def fix_order(t: str) -> str:
+    t = PREFIX_SIGN.sub(r"\2\1", t)
+    return unicodedata.normalize("NFC", t)   # ெ+ா → ொ, ே+ா → ோ, ெ+ௗ → ௌ
+
+OCR_MODE = (os.environ.get("OCR") or "auto").lower()   # "off": use the PDF's own text (fast, no OCR); "auto": OCR broken pages
+
 def clean(t: str) -> str:
+    t = fix_order(t)
     t = FOOTER.sub("", t)
     t = REPEAT_SIGN.sub(r"\1", t)
     t = t.replace("�", "").replace("­", "")
@@ -354,7 +366,10 @@ def main():
         pages, ocr_n, need = [], 0, []
         for i, page in enumerate(doc):
             text = page.get_text("text")
-            if page_ok(text, subject):
+            if OCR_MODE == "off":
+                if len(text.strip()) >= 40:
+                    pages.append((i + 1, clean(text)))
+            elif page_ok(text, subject):
                 pages.append((i + 1, clean(text)))
             else:
                 need.append((i + 1, page.get_pixmap(dpi=250).tobytes("png")))
@@ -373,9 +388,8 @@ def main():
         print(f"  pages {len(doc)}, OCR {ocr_n}, chapters {len(chapters)}")
         for no, ctitle, subj, a, b in chapters:
             print(f"    {subj} {no}. {ctitle} (p{a}–{b})")
-        sample = [t for _, t in pages[len(pages) // 2: len(pages) // 2 + 1]]
-        if sample:
-            print("  sample:", sample[0][:200].replace("\n", " "))
+        for _, t in pages[len(pages) // 4:: max(1, len(pages) // 4)][:3]:
+            print(f"  sample (garble {garble_score(t):.1f}):", t[:220].replace("\n", " "))
         if check_only or not chapters:
             continue
         stored = 0
