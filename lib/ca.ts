@@ -7,7 +7,8 @@ import { generateJSON } from "./ai";
 import { glossaryText, loadGlossary, qHash, validate } from "./questions";
 import SOURCES from "../data/ca_sources.json";
 
-export type FeedItem = { title: string; summary: string; link: string; source: string; region: string; published?: string };
+export type FeedItem = { title: string; summary: string; link: string; source: string; region: string; published?: string; guide?: boolean };
+type Source = { name: string; url: string; region: string; enabled?: boolean; type?: "rss" | "sitemap" | "html"; guide?: boolean; max?: number };
 
 const strip = (s: string) =>
   s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
@@ -32,20 +33,57 @@ async function fetchFeed(url: string): Promise<{ title: string; link: string; de
   }));
 }
 
+const dmy = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
+
+/** A daily news sitemap (e.g. Dinamalar's sitemap_DD-MM-YYYY.xml): article links with their headlines. */
+async function fetchSitemap(url: string) {
+  const now = new Date(Date.now() + 5.5 * 3600e3);
+  const res = await fetch(url.replace("{DD-MM-YYYY}", dmy(now)), { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`${res.status}`);
+  const doc = new XMLParser({ ignoreAttributes: false }).parse(await res.text());
+  const urls = doc?.urlset?.url ?? [];
+  return (Array.isArray(urls) ? urls : [urls]).map((u: Record<string, unknown>) => {
+    const news = (u["news:news"] ?? {}) as Record<string, unknown>;
+    const img = (u["image:image"] ?? {}) as Record<string, unknown>;
+    return {
+      title: strip(String(news["news:title"] ?? img["image:title"] ?? "")),
+      link: String(u.loc ?? ""),
+      description: "",
+      pubDate: String(news["news:publication_date"] ?? u.lastmod ?? ""),
+    };
+  });
+}
+
+/** A plain listing page (coaching site's daily current affairs): headline links + the text right after each. */
+async function fetchListing(url: string) {
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`${res.status}`);
+  const html = await res.text();
+  const out: { title: string; link: string; description: string; pubDate?: string }[] = [];
+  const rx = /<h[23][^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*<\/h[23]>([\s\S]{0,1500}?)(?=<h[23]|$)/gi;
+  for (let m; (m = rx.exec(html)); ) {
+    const title = strip(m[2]);
+    if (title.length < 8) continue;
+    out.push({ title, link: m[1], description: strip(m[3]).slice(0, 500) });
+  }
+  return out;
+}
+
 export async function collect(hours = 36): Promise<{ items: FeedItem[]; log: string[] }> {
   const log: string[] = [];
   const cutoff = Date.now() - hours * 3600e3;
   const all: FeedItem[] = [];
-  for (const s of SOURCES as { name: string; url: string; region: string; enabled?: boolean }[]) {
+  for (const s of SOURCES as Source[]) {
     if (s.enabled === false) continue;
     try {
-      const items = await fetchFeed(s.url);
+      const items = s.type === "sitemap" ? await fetchSitemap(s.url) : s.type === "html" ? await fetchListing(s.url) : await fetchFeed(s.url);
       let n = 0;
       for (const it of items) {
         const t = it.pubDate ? Date.parse(it.pubDate) : NaN;
         if (!Number.isNaN(t) && t < cutoff) continue;
         if (!it.title) continue;
-        all.push({ title: it.title, summary: (it.description ?? "").slice(0, 400), link: it.link, source: s.name, region: s.region, published: it.pubDate });
+        if (n >= (s.max ?? 40)) break;
+        all.push({ title: it.title, summary: (it.description ?? "").slice(0, s.guide ? 700 : 400), link: it.link, source: s.name, region: s.region, published: it.pubDate, guide: s.guide });
         n++;
       }
       log.push(`${s.name}: ${n}`);
@@ -61,7 +99,9 @@ export async function collect(hours = 36): Promise<{ items: FeedItem[]; log: str
     seen.add(k);
     return true;
   });
-  return { items: items.slice(0, 90), log };
+  // TNPSC coaching-site picks first (they mark what is exam-worthy), then the newspapers / PIB
+  items.sort((a, b) => Number(!!b.guide) - Number(!!a.guide));
+  return { items: items.slice(0, 110), log };
 }
 
 const CATEGORIES = "திட்டங்கள், நியமனங்கள், விருதுகள், அறிவியல் தொழில்நுட்பம், விளையாட்டு, பொருளாதாரம், அரசியலமைப்பு–சட்டம், சுற்றுச்சூழல், முக்கிய நாட்கள், உலகம், பிற";
@@ -72,19 +112,20 @@ type Note = { region: "tn" | "india"; category: string; title_ta: string; note_t
 export async function buildCurrentAffairs(admin: SupabaseClient, items: FeedItem[], date = todayIST()) {
   if (!items.length) return { notes: 0, mcqs: 0, provider: null as string | null };
   const glossary = await loadGlossary(admin);
-  const list = items.map((it, i) => `[${i}] (${it.source}; ${it.region}) ${it.title}${it.summary ? ` — ${it.summary}` : ""}`).join("\n");
+  const list = items.map((it, i) => `[${i}] ${it.guide ? "★TNPSC " : ""}(${it.source}; ${it.region}) ${it.title}${it.summary ? ` — ${it.summary}` : ""}`).join("\n");
 
   const system = `You prepare daily current affairs notes for TNPSC Group 1, 2 and 4 candidates who study in Tamil medium.
 Write in simple, formal Tamil as used in TNPSC papers. Official terms: ${glossaryText(glossary)}.
 From the numbered news items:
-- Keep only items useful for the exam: government schemes and decisions, appointments, awards, reports and indices, science and space, sports results, economy, important days, constitutional and legal changes, environment, Tamil Nadu government orders and announcements, major international events involving India.
+- Items marked ★TNPSC were picked by TNPSC coaching teachers as exam-relevant: include all of them (merge duplicates), and use the newspaper items for more detail on the same events.
+- Then keep only other items useful for the exam: government schemes and decisions, appointments, awards, reports and indices, science and space, sports results, economy, important days, constitutional and legal changes, environment, Tamil Nadu government orders and announcements, major international events involving India.
 - Drop crime, gossip, party politics without a policy decision, and film news.
 - Merge items that are about the same event.
 - Use ONLY facts written in the items. Never add numbers, names or dates that are not in them. If a detail is unclear, leave it out.
 - region: "tn" for Tamil Nadu news, "india" for national/international.
 - category: one of ${CATEGORIES}.
 - note_ta: 2–4 short Tamil sentences. exam_point_ta: one line starting with what is most likely to be asked.
-- At most 18 notes, Tamil Nadu first.
+- At most 25 notes, Tamil Nadu first.
 Return JSON: {"notes":[{"region":"tn","category":"","title_ta":"","note_ta":"","exam_point_ta":"","source_index":0}]}`;
 
   const r = await generateJSON<{ notes: Note[] }>({ system, user: list, temperature: 0.3 });

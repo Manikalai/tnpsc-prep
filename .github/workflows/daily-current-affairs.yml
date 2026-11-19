@@ -4,7 +4,9 @@ on:
     - cron: "17 0 * * *"   # 05:47 IST every day
     - cron: "43 1 * * *"   # 07:13 IST backup (GitHub sometimes skips scheduled runs)
     - cron: "11 3 * * *"   # 08:41 IST backup
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      collect_only: { description: "Only test the news sources (nothing stored, no AI)", type: boolean, default: false }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -14,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npx tsx scripts/daily_ca.ts
+      - run: npx tsx scripts/daily_ca.ts ${{ github.event.inputs.collect_only == 'true' && '--collect-only' || '' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
