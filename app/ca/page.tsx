@@ -32,7 +32,7 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
       <p className="muted">தமிழ்நாடு, இந்தியா — தினமும் காலை 6 மணிக்குத் தானாகத் தயாராகும்.</p>
       <div className="grid grid-cols-2 gap-2 text-[15px]">
         <Link href={`/ca/${todayIST()}`} className="btn col-span-2">இன்றைய குறிப்புகள்</Link>
-        <StartButton url="/api/ca/run" label="இப்போதே புதுப்பி" className="btn-ghost w-full" busyLabel="சேகரிக்கிறது… (1 நிமிடம்)" />
+        <StartButton url="/api/ca/run" label="இப்போதே புதுப்பி" className="btn-ghost w-full" busyLabel="தொடங்குகிறது…" />
         <StartButton url="/api/ca/quiz" body={{ from: start, to: end }} label="மாத வினாக்கள்" className="btn-ghost w-full" />
         <Link href={`/ca/month?m=${month}`} className="btn-ghost col-span-2">மாதத் தொகுப்பு (அச்சிட)</Link>
       </div>

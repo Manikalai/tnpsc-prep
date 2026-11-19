@@ -57,6 +57,7 @@ vercel.com → **Sign up with GitHub** → **Add New → Project** → import `t
 | `GROQ_API_KEY` | Groq key (optional) |
 | `OPENROUTER_API_KEY` | OpenRouter key (optional) |
 | `CRON_SECRET` | any long random text |
+| `GH_DISPATCH_TOKEN` | (optional) GitHub fine-grained token, repo `tnpsc-prep`, permission **Actions: Read and write** — lets "இப்போதே புதுப்பி" start the current-affairs job on GitHub |
 
 Optional: `GEMINI_MODELS` (comma-separated, tried in order; default `gemini-3.8-flash,gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash,gemini-3.5-flash-lite`), `GEMINI_EMBED_MODEL` (default `gemini-embedding-001`), `GROQ_MODEL` (default `openai/gpt-oss-120b`), `OPENROUTER_MODELS` (comma-separated `:free` model ids), `AI_PROVIDERS` (default `gemini,groq,openrouter`).
 
