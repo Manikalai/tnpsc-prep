@@ -208,34 +208,11 @@ Return JSON: {"notes":[{"region":"tn","category":"","title_ta":"","note_ta":"","
   });
   if (rows.length) await admin.from("current_affairs").upsert(rows, { onConflict: "hash", ignoreDuplicates: true });
 
-  // 5 MCQs from today's notes
+  // MCQs written from the ACTUAL source articles (not from AI knowledge), then fact-checked against the same text
   let mcqs = 0;
   if (rows.length >= 3) {
-    const notesText = rows.map((n, i) => `[${i}] ${n.title_ta}: ${n.note_ta}`).join("\n");
     try {
-      const q = await generateJSON<{ questions: unknown[] }>({
-        system: `Write 5 TNPSC-style multiple choice questions in Tamil from these current affairs notes. Use only facts in the notes. Exactly 4 options, one correct. explanation in Tamil.
-Return JSON: {"questions":[{"stem":"","options":["","","",""],"answer_index":0,"explanation":"","source":0}]}`,
-        user: notesText,
-        temperature: 0.4,
-      });
-      const qrows = (q.data.questions ?? [])
-        .map((x) => validate(x))
-        .filter((x): x is NonNullable<typeof x> => !!x)
-        .map((x) => ({
-          stem: x.stem,
-          options: x.options,
-          answer_index: x.answer_index,
-          explanation: x.explanation,
-          origin: "ca",
-          ca_date: date,
-          source_ref: `நடப்பு நிகழ்வுகள் ${date}`,
-          hash: qHash(x.stem, x.options),
-        }));
-      if (qrows.length) {
-        const { data } = await admin.from("questions").upsert(qrows, { onConflict: "hash", ignoreDuplicates: true }).select("id");
-        mcqs = data?.length ?? 0;
-      }
+      mcqs = await caQuestions(admin, items, notes, date);
     } catch {
       /* notes are still saved */
     }
@@ -257,4 +234,63 @@ export async function runDaily(admin: SupabaseClient) {
   }
   await admin.from("job_runs").insert({ job: "daily_ca", ok, detail: { date, collected: items.length, log, ...out, error } });
   return { ok, date, collected: items.length, log, ...out, error };
+}
+
+const LT = ["அ", "ஆ", "இ", "ஈ"];
+
+/** Up to 15 MCQs from the source articles behind today's notes. Every question must name its source article;
+ *  a second, strict pass keeps only questions whose answer that article clearly supports. */
+async function caQuestions(admin: SupabaseClient, items: FeedItem[], notes: Note[], date: string) {
+  const used = [...new Set(notes.map((n) => n.source_index).filter((i) => items[i]))];
+  // coaching-site articles carry the full facts; put them first
+  used.sort((a, b) => Number(!!items[b].guide) - Number(!!items[a].guide));
+  const srcs = used.slice(0, 25).map((i) => items[i]);
+  if (!srcs.length) return 0;
+  const text = srcs.map((it, k) => `[${k}] ${it.title}\n${it.summary}`).join("\n\n");
+  const q = await generateJSON<{ questions: { stem: string; options: string[]; answer_index: number; explanation: string; source: number }[] }>({
+    system: `Write up to 15 TNPSC-style multiple choice questions in formal Tamil from these current affairs SOURCE ARTICLES.
+STRICT RULES: every fact in a question, its answer and its explanation must be written in the article it comes from. Never use your own knowledge, never add numbers, names, places or dates that are not in the article.
+"source" = the number of the article the question comes from (required). Exactly 4 options, one correct, the wrong options plausible.
+explanation (required): 1–2 Tamil sentences quoting the fact from the article.
+Prefer facts TNPSC asks: scheme names and benefits, who/what/where, first/largest, numbers, organisations, places, dates.
+Return JSON {"questions":[{"stem":"","options":["","","",""],"answer_index":0,"explanation":"","source":0}]}`,
+    user: text,
+    temperature: 0.3,
+    maxTokens: 8192,
+  });
+  const cand = (q.data.questions ?? [])
+    .map((x) => ({ v: validate(x), x }))
+    .filter(({ v, x }) => v && typeof x.source === "number" && srcs[x.source] && (x.explanation ?? "").trim().length >= 10)
+    .map(({ v, x }) => ({ ...v!, explanation: x.explanation.trim(), source: x.source }));
+  if (!cand.length) return 0;
+
+  // fact-check against the article text
+  const check = await generateJSON<{ results: { id: number; supported: boolean; correct_index: number | null }[] }>({
+    system: `You are a strict fact-checker. For each item you get a news article, a multiple-choice question and the marked answer.
+Using ONLY the article (not your own knowledge): supported = true only if the article clearly states the fact AND the marked option is the one it supports AND no other option is also correct by the article.
+correct_index = the 0-based option the article supports (null if none). Return JSON {"results":[{"id":0,"supported":true,"correct_index":0}]}`,
+    user: cand
+      .map((c, i) => `### [${i}]\nகட்டுரை: ${srcs[c.source].title}\n${srcs[c.source].summary}\nவினா: ${c.stem}\n${c.options.map((o, k) => `(${LT[k]}) ${o}`).join("  ")}\nகுறிக்கப்பட்ட விடை: (${LT[c.answer_index]})`)
+      .join("\n\n"),
+    temperature: 0,
+    maxTokens: 4096,
+  });
+  const ok = new Set((check.data.results ?? []).filter((r) => r.supported === true && r.correct_index === cand[r.id]?.answer_index).map((r) => r.id));
+  const qrows = cand
+    .filter((_, i) => ok.has(i))
+    .map((c) => ({
+      stem: c.stem,
+      options: c.options,
+      answer_index: c.answer_index,
+      explanation: c.explanation,
+      origin: "ca",
+      ca_date: date,
+      source_ref: `நடப்பு நிகழ்வுகள் ${date} · ${srcs[c.source].source}${srcs[c.source].link ? ` · ${srcs[c.source].link}` : ""}`,
+      verified: "ok",
+      verified_at: new Date().toISOString(),
+      hash: qHash(c.stem, c.options),
+    }));
+  if (!qrows.length) return 0;
+  const { data } = await admin.from("questions").upsert(qrows, { onConflict: "hash", ignoreDuplicates: true }).select("id");
+  return data?.length ?? 0;
 }

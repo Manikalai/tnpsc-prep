@@ -26,11 +26,15 @@ export const POST = route<{ questionId: string }>(async (_ctx, b) => {
 
   // textbook context: the passage the question came from, else the closest passages
   let passages: { book: string; page_from: number | null; content: string }[] = [];
-  if (q.chunk_id) {
+  if (q.origin === "ca" && q.ca_date) {
+    const { data } = await admin.from("current_affairs").select("title_ta,note_ta,exam_point_ta,source_name").eq("ca_date", q.ca_date).limit(40);
+    passages = (data ?? []).map((n) => ({ book: `நடப்பு நிகழ்வுகள் ${q.ca_date} · ${n.source_name ?? ""}`, page_from: null, content: `${n.title_ta}: ${n.note_ta} ${n.exam_point_ta ?? ""}` }));
+    if (q.explanation) passages.unshift({ book: "வினாவின் மூலச் செய்தி", page_from: null, content: q.explanation });
+  } else if (q.chunk_id) {
     const { data } = await admin.from("textbook_chunks").select("book,page_from,content").eq("id", q.chunk_id).limit(1);
     passages = data ?? [];
   }
-  if (!passages.length) {
+  if (!passages.length && q.origin !== "ca") {
     try {
       passages = await findPassages(admin, { text: `${q.stem} ${(q.options as string[])[q.answer_index]}`, count: 3 });
     } catch {
