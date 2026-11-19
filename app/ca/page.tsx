@@ -4,6 +4,7 @@ import { todayIST } from "@/lib/data";
 import { taDate } from "@/lib/format";
 import StartButton from "@/components/StartButton";
 import CaAddForm from "@/components/CaAddForm";
+import DateJump from "@/components/DateJump";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
     d[r.region as "tn" | "india"]++;
     days.set(r.ca_date, d);
   }
+  const { data: qs } = await sb.from("questions").select("ca_date").eq("origin", "ca").eq("status", "active").gte("ca_date", start).lt("ca_date", end).limit(3000);
+  const qCount = new Map<string, number>();
+  for (const q of qs ?? []) qCount.set(q.ca_date, (qCount.get(q.ca_date) ?? 0) + 1);
   const { data: lastRun } = await sb.from("job_runs").select("ran_at,ok,detail").eq("job", "daily_ca").order("ran_at", { ascending: false }).limit(1);
   const prev = new Date(start + "T00:00:00Z");
   prev.setUTCMonth(prev.getUTCMonth() - 1);
@@ -39,6 +43,7 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
       {lastRun?.[0] && (
         <p className="muted">கடைசியாகப் புதுப்பித்தது: {taDate(lastRun[0].ran_at)} {lastRun[0].ok ? "✓" : `✗ ${lastRun[0].detail?.error ?? ""}`}</p>
       )}
+      <div className="card"><DateJump max={todayIST()} /></div>
       <div className="card">
         <div className="mb-2 flex items-center justify-between">
           <Link href={`/ca?month=${prev.toISOString().slice(0, 7)}`} className="text-sm underline">← முந்தைய மாதம்</Link>
@@ -48,11 +53,12 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
         {days.size === 0 && <p className="muted">இந்த மாதத்துக்குக் குறிப்புகள் இல்லை.</p>}
         <ul className="divide-y divide-stone-100">
           {[...days.entries()].map(([d, c]) => (
-            <li key={d}>
-              <Link href={`/ca/${d}`} className="flex justify-between py-2 hover:text-brand-600">
-                <span>{taDate(d, true)}</span>
+            <li key={d} className="flex items-center gap-2 py-2">
+              <Link href={`/ca/${d}`} className="min-w-0 flex-1 hover:text-brand-600">
+                <span className="block">{taDate(d, true)}</span>
                 <span className="text-sm text-stone-500">தமிழ்நாடு {c.tn} · இந்தியா {c.india}</span>
               </Link>
+              {(qCount.get(d) ?? 0) > 0 && <StartButton url="/api/ca/quiz" body={{ date: d }} label={`📝 ${qCount.get(d)} வினா`} className="btn-ghost btn-sm" busyLabel="…" />}
             </li>
           ))}
         </ul>

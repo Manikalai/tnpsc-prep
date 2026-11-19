@@ -251,7 +251,12 @@ export default function OfflineApp() {
           {[...new Set(meta.ca.map((c) => c.ca_date))].map((d) => (
             <details key={d} className="card">
               <summary className="cursor-pointer font-semibold">{taDate(d, true)}</summary>
-              <div className="mt-3 space-y-3"><CaList items={meta.ca.filter((c) => c.ca_date === d)} /></div>
+              <div className="mt-3 space-y-3">
+                {questions.some((q) => q.origin === "ca" && q.ca_date === d) && (
+                  <button className="btn-ghost btn-sm" onClick={() => { const qs = questions.filter((q) => q.origin === "ca" && q.ca_date === d); begin({ kind: "ca", exam: null, unit_id: null, title: `நடப்பு நிகழ்வுகள் – ${d}`, qs, durationSec: qs.length * 54 }); }}>📝 இந்த நாளின் வினாக்கள் ({questions.filter((q) => q.origin === "ca" && q.ca_date === d).length})</button>
+                )}
+                <CaList items={meta.ca.filter((c) => c.ca_date === d)} />
+              </div>
             </details>
           ))}
         </div>
