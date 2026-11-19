@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       collect_only: { description: "Only test the news sources (nothing stored, no AI)", type: boolean, default: false }
+      dump_url: { description: "Debug: save this page's HTML as an artifact", required: false, default: "" }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -16,6 +17,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - if: ${{ github.event.inputs.dump_url != '' }}
+        run: |
+          mkdir -p dump
+          curl -sL -A "Mozilla/5.0" "${{ github.event.inputs.dump_url }}" -o dump/page.html
+          curl -sL -A "Mozilla/5.0" "$(grep -o 'href="[^"]*currentaffairs-detail[^"]*"' dump/page.html | head -1 | sed 's/href="//;s/"$//' | sed 's#^/#https://www.tnpscthervupettagam.com/#')" -o dump/detail.html || true
+          ls -la dump
+      - if: ${{ github.event.inputs.dump_url != '' }}
+        uses: actions/upload-artifact@v4
+        with: { name: html-dump, path: dump }
       - run: npx tsx scripts/daily_ca.ts ${{ github.event.inputs.collect_only == 'true' && '--collect-only' || '' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
