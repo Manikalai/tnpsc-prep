@@ -329,7 +329,11 @@ def main():
     for row in rows:
         title, subject, std = row["title"].strip(), row["subject"].strip(), int(row["std"])
         print(f"\n== {title}")
-        if pages_only or (not check_only and already_loaded(title)):
+        loaded = not check_only and already_loaded(title)
+        if pages_only and not loaded:
+            print("  not loaded yet, skipping")
+            continue
+        if pages_only or loaded:
             if not check_only:
                 if not pages_only:
                     print("  already loaded")
