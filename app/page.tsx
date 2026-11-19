@@ -81,45 +81,45 @@ export default async function Home() {
 
       <section className="card flex items-center justify-between gap-3">
         <div>
-          <h2 className="h2">இன்றைய பயிற்சி {doneToday ? "✓" : ""}</h2>
-          <p className="muted">20 வினாக்கள்: திருப்புதல் + உங்கள் பலவீனமான அலகுகள் + நடப்பு நிகழ்வுகள் · தொடர் {streak} நாள்{streak === 1 ? "" : "கள்"} 🔥</p>
+          <h2 className="h2">Today's practice {doneToday ? "✓" : ""}</h2>
+          <p className="muted">20 questions: revision + weak units + current affairs · streak {streak} day{streak === 1 ? "" : "s"} 🔥</p>
         </div>
-        <div className="shrink-0"><StartButton url="/api/daily" label={doneToday ? "மீண்டும்" : "தொடங்கு"} busyLabel="…" className="btn whitespace-nowrap" /></div>
+        <div className="shrink-0"><StartButton url="/api/daily" label={doneToday ? "Again" : "Start"} busyLabel="…" className="btn whitespace-nowrap" /></div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
         <Link href="/revision" className="card hover:border-brand-500">
           <p className="text-3xl font-bold text-kumkum-500">{due ?? 0}</p>
-          <p className="text-sm">இன்று திருப்ப வேண்டிய வினாக்கள்</p>
+          <p className="text-sm">Revision due today</p>
         </Link>
         <Link href={`/ca/${today}`} className="card hover:border-brand-500">
           <p className="text-3xl font-bold text-brand-600">{caToday ?? 0}</p>
-          <p className="text-sm">இன்றைய நடப்பு நிகழ்வுகள்</p>
+          <p className="text-sm">Today's current affairs</p>
         </Link>
         <Link href="/flashcards" className="card hover:border-brand-500">
           <p className="text-3xl font-bold text-turmeric-500">{cardsDue ?? 0}</p>
-          <p className="text-sm">நினைவு அட்டைகள்</p>
+          <p className="text-sm">Flashcards due</p>
         </Link>
         <Link href="/planner" className="card hover:border-brand-500">
           <p className="text-3xl font-bold text-ink">{mine.length}</p>
-          <p className="text-sm">இந்த வாரத் தேர்வுகள் · திட்டம் →</p>
+          <p className="text-sm">Tests this week · Plan →</p>
         </Link>
       </section>
 
       <section className="card">
-        <h2 className="h2">விரைவுத் தொடக்கம்</h2>
+        <h2 className="h2">Quick start</h2>
         <div className="mt-3 space-y-2">
-          <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} முழு மாதிரித் தேர்வு`} busyLabel="வினாத்தாள் தயாராகிறது…" className="btn w-full" />
+          <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} full mock test`} busyLabel="Preparing paper…" className="btn w-full" />
           <div className="grid grid-cols-2 gap-2">
             {([
-              ["/quiz/new", "வினாத்தாள் உருவாக்கு", "✚"],
-              ["/books", "பாடநூல்கள்", "📖"],
-              ["/papers", "உண்மை வினாத்தாள்கள்", "📝"],
-              ["/syllabus", "அலகு வினாடி வினா", "🎯"],
-              ["/aptitude", "திறனறிவுப் பயிற்சி", "🧮"],
-              ["/ask", "பாடநூலிடம் கேள்", "💬"],
-              ["/offline", "இணையமின்றிப் பயிற்சி", "📴"],
-              ["/revision", "திருப்புதல்", "🔁"],
+              ["/quiz/new", "Create quiz", "✚"],
+              ["/books", "Textbooks", "📖"],
+              ["/papers", "Previous papers", "📝"],
+              ["/syllabus", "Unit quiz", "🎯"],
+              ["/aptitude", "Aptitude", "🧮"],
+              ["/ask", "Ask the textbook", "💬"],
+              ["/offline", "Offline practice", "📴"],
+              ["/revision", "Revision", "🔁"],
             ] as const).map(([href, label, icon]) => (
               <Link key={href} href={href} className="flex min-h-[64px] items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 text-[15px] font-semibold leading-snug active:bg-brand-50">
                 <span className="text-xl" aria-hidden>{icon}</span>
@@ -132,13 +132,13 @@ export default async function Home() {
 
       {board.length > 1 && (
         <section className="card">
-          <h2 className="h2">இந்த வாரம் (7 நாட்கள்)</h2>
+          <h2 className="h2">This week (7 days)</h2>
           <div className="mt-2 grid grid-cols-2 gap-3">
             {board.map((b) => (
               <div key={b.name} className={`rounded-xl p-3 ${b.me ? "bg-brand-50" : "bg-stone-50"}`}>
                 <p className="font-semibold">{b.name}</p>
                 <p className="text-2xl font-bold">{b.acc}%</p>
-                <p className="muted">{b.tests} தேர்வுகள்</p>
+                <p className="muted">{b.tests} tests</p>
               </div>
             ))}
           </div>
@@ -147,7 +147,7 @@ export default async function Home() {
 
       {mine.length > 0 && (
         <section className="card">
-          <h2 className="h2">சமீபத்திய தேர்வுகள்</h2>
+          <h2 className="h2">Recent tests</h2>
           <ul className="mt-2 divide-y divide-stone-100">
             {mine.slice(0, 6).map((t, k) => (
               <li key={k} className="flex justify-between py-2 text-sm">

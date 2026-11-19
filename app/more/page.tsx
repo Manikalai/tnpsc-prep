@@ -3,38 +3,38 @@ import InstallApp from "@/components/InstallApp";
 
 const GROUPS: { title: string; items: [string, string, string, string][] }[] = [
   {
-    title: "படிக்க",
+    title: "Study",
     items: [
-      ["/books", "📚", "பாடநூல்கள்", "வகுப்பு → பருவம் → பாடம்"],
-      ["/syllabus", "🗂️", "பாடத்திட்டம்", "அலகு வாரியாக முன்னேற்றம்"],
-      ["/timeline", "⏳", "ஆண்டுகள் & நிகழ்வுகள்", "எல்லாப் பாடங்களின் காலவரிசை, நினைவு உத்திகள்"],
-      ["/notes", "📝", "நினைவுக் குறிப்புகள்", "நினைவூட்டிகள், சுருக்கம், அட்டவணைகள்"],
-      ["/aptitude", "🧮", "திறனறிவு", "10 தலைப்புகள், சுருக்கு வழிகள்"],
-      ["/ask", "💬", "பாடநூலிடம் கேள்", "சந்தேகத்துக்கு பாடநூல் ஆதாரத்துடன் விடை"],
+      ["/books", "📚", "Textbooks", "Class → Term → Lesson"],
+      ["/syllabus", "🗂️", "Syllabus", "Progress by unit"],
+      ["/timeline", "⏳", "Years & events", "Timeline across subjects, memory tricks"],
+      ["/notes", "📝", "Memory notes", "Mnemonics, summaries, tables"],
+      ["/aptitude", "🧮", "Aptitude", "10 topics, shortcuts"],
+      ["/ask", "💬", "Ask the textbook", "Doubts answered from the textbook"],
     ],
   },
   {
-    title: "பயிற்சி",
+    title: "Practice",
     items: [
-      ["/papers", "📄", "TNPSC உண்மை வினாத்தாள்கள்", "முந்தைய ஆண்டு, தேர்வு நேரத்துடன்"],
-      ["/revision", "🔁", "திருப்புதல்", "தவறியவை 1, 3, 7, 15 நாட்களில்"],
-      ["/flashcards", "🃏", "நினைவு அட்டைகள்", "விரைவுத் திருப்புதல்"],
-      ["/mains", "✍️", "முதன்மைத் தேர்வு", "குரூப் 1 விடை எழுதுதல்"],
+      ["/papers", "📄", "TNPSC previous papers", "Past years, timed"],
+      ["/revision", "🔁", "Revision", "Missed questions after 1, 3, 7, 15 days"],
+      ["/flashcards", "🃏", "Flashcards", "Quick revision"],
+      ["/mains", "✍️", "Mains", "Group 1 answer writing"],
     ],
   },
   {
-    title: "திட்டமும் முன்னேற்றமும்",
+    title: "Plan & progress",
     items: [
-      ["/planner", "🗓️", "படிப்புத் திட்டம்", "தேர்வு தேதி வரை இலக்கு"],
-      ["/analysis", "📊", "பகுப்பாய்வு", "பலவீனமான அலகுகள்"],
+      ["/planner", "🗓️", "Study plan", "Targets up to the exam date"],
+      ["/analysis", "📊", "Analysis", "Weak units"],
     ],
   },
   {
-    title: "அமைப்புகள்",
+    title: "Settings",
     items: [
-      ["/offline", "📴", "இணையமின்றி", "எல்லாவற்றையும் கைப்பேசியில் சேமிக்க"],
-      ["/admin", "🏦", "வினா வங்கி", "வினாக்கள், முந்தைய ஆண்டு இறக்குமதி"],
-      ["/settings", "⚙️", "அமைப்புகள்", "பெயர், இலக்குத் தேர்வு, தேதி"],
+      ["/offline", "📴", "Offline", "Save everything on the phone"],
+      ["/admin", "🏦", "Question bank", "Questions, past-paper import"],
+      ["/settings", "⚙️", "Settings", "Name, target exam, date"],
     ],
   },
 ];

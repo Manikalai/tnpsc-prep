@@ -11,11 +11,11 @@ const I = {
   more: "M4 6h16M4 12h16M4 18h16",
 };
 const MAIN = [
-  { href: "/", label: "முகப்பு", full: "முகப்பு", icon: I.home },
-  { href: "/quiz/new", label: "வினாத்தாள்", full: "வினாத்தாள்", icon: I.quiz },
-  { href: "/mock", label: "தேர்வு", full: "மாதிரித் தேர்வு", icon: I.mock },
-  { href: "/ca", label: "நடப்பு", full: "நடப்பு நிகழ்வுகள்", icon: I.ca },
-  { href: "/more", label: "மேலும்", full: "மேலும்", icon: I.more },
+  { href: "/", label: "Home", full: "Home", icon: I.home },
+  { href: "/quiz/new", label: "Quiz", full: "Quiz", icon: I.quiz },
+  { href: "/mock", label: "Mock", full: "Mock test", icon: I.mock },
+  { href: "/ca", label: "Current", full: "Current affairs", icon: I.ca },
+  { href: "/more", label: "More", full: "More", icon: I.more },
 ];
 
 export function Brand({ big = false }: { big?: boolean }) {
@@ -32,11 +32,11 @@ export function Brand({ big = false }: { big?: boolean }) {
 const ROOTS = ["/", "/quiz/new", "/mock", "/ca", "/more"];
 // short app-bar titles for sub-pages
 const TITLES: [RegExp, string][] = [
-  [/^\/aptitude\/shortcuts/, "சுருக்கு வழிகள்"], [/^\/aptitude/, "திறனறிவு"], [/^\/books/, "பாடநூல்கள்"], [/^\/chapter\//, "பாடம்"],
-  [/^\/ca\//, "நடப்பு நிகழ்வுகள்"], [/^\/papers/, "உண்மை வினாத்தாள்கள்"], [/^\/revision/, "திருப்புதல்"], [/^\/notes/, "நினைவுக் குறிப்புகள்"],
-  [/^\/flashcards/, "நினைவு அட்டைகள்"], [/^\/analysis/, "பகுப்பாய்வு"], [/^\/planner/, "படிப்புத் திட்டம்"], [/^\/ask/, "பாடநூலிடம் கேள்"],
-  [/^\/mains/, "முதன்மைத் தேர்வு"], [/^\/admin/, "வினா வங்கி"], [/^\/settings/, "அமைப்புகள்"], [/^\/syllabus/, "பாடத்திட்டம்"],
-  [/^\/offline/, "இணையமின்றி"], [/^\/timeline/, "ஆண்டுகள் & நிகழ்வுகள்"], [/^\/test\/.*\/result/, "முடிவுகள்"],
+  [/^\/aptitude\/shortcuts/, "Shortcuts"], [/^\/aptitude/, "Aptitude"], [/^\/books/, "Textbooks"], [/^\/chapter\//, "Lesson"],
+  [/^\/ca\//, "Current affairs"], [/^\/papers/, "Previous papers"], [/^\/revision/, "Revision"], [/^\/notes/, "Memory notes"],
+  [/^\/flashcards/, "Flashcards"], [/^\/analysis/, "Analysis"], [/^\/planner/, "Study plan"], [/^\/ask/, "Ask the textbook"],
+  [/^\/mains/, "Mains"], [/^\/admin/, "Question bank"], [/^\/settings/, "Settings"], [/^\/syllabus/, "Syllabus"],
+  [/^\/offline/, "Offline"], [/^\/timeline/, "Years & events"], [/^\/test\/.*\/result/, "Results"],
 ];
 
 export default function Nav() {

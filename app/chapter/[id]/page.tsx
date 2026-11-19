@@ -14,13 +14,13 @@ import LessonTabs from "@/components/LessonTabs";
 export const dynamic = "force-dynamic";
 
 const TABS = [
-  ["text", "பாடநூல்"],
-  ["clean", "எளிய குறிப்புகள்"],
-  ["bookback", "புத்தக வினாக்கள்"],
-  ["summary", "முக்கியக் குறிப்புகள்"],
-  ["facts", "நாட்கள் · ஆளுமைகள் · உண்மைகள்"],
-  ["mcq", "வினாக்கள்"],
-  ["revision", "திருப்புதல் வினாக்கள்"],
+  ["text", "Textbook"],
+  ["clean", "Easy notes"],
+  ["bookback", "Book-back"],
+  ["summary", "Key points"],
+  ["facts", "Dates · People · Facts"],
+  ["mcq", "MCQs"],
+  ["revision", "Revision Q&A"],
 ] as const;
 
 export default async function ChapterPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
@@ -68,8 +68,8 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
       <LessonTabs
         tabs={TABS}
         initial={TABS.some(([k]) => k === tab) ? tab : "text"}
-        prev={prev ? { href: `/chapter/${prev.id}`, label: `‹ பாடம் ${prev.chapter_no}` } : undefined}
-        next={next ? { href: `/chapter/${next.id}`, label: `பாடம் ${next.chapter_no} ›` } : undefined}
+        prev={prev ? { href: `/chapter/${prev.id}`, label: `‹ Lesson ${prev.chapter_no}` } : undefined}
+        next={next ? { href: `/chapter/${next.id}`, label: `Lesson ${next.chapter_no} ›` } : undefined}
         panels={{
         text: (<BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />),
         bookback: (<BookBackPanel chapterId={c.id} title={c.title_ta} initial={(note("bookback") as BookBack | undefined) ?? null} />),
