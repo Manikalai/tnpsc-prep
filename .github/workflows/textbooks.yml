@@ -5,6 +5,7 @@ on:
       book: { description: "Only this book (part of its title, e.g. 9ஆம் வகுப்பு அறிவியல்). Empty = all books not loaded yet", required: false, default: "" }
       ocr: { description: "OCR: off = use the PDF's own text (fast); auto = OCR pages whose text is broken (slow)", type: choice, options: ["off", "auto"], default: "off" }
       sample_pages: { description: "Check mode: print these PDF pages in full (e.g. 5,81,165)", required: false, default: "" }
+      reload: { description: "Also reload the text of books already loaded (keeps lessons, notes and questions)", type: boolean, default: false }
       pages_only: { description: "Only upload the page images (for books already loaded)", type: boolean, default: false }
       check_only: { description: "Only check text extraction (no upload)", type: boolean, default: false }
 env:
@@ -29,3 +30,4 @@ jobs:
           BOOK: ${{ github.event.inputs.book }}
           OCR: ${{ github.event.inputs.ocr }}
           SAMPLE_PAGES: ${{ github.event.inputs.sample_pages }}
+          RELOAD: ${{ github.event.inputs.reload }}

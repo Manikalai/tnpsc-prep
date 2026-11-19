@@ -302,6 +302,49 @@ def remove_partial(title: str):
     sb("DELETE", "chapters", params={"book": f"eq.{title}"})          # cascades to its passages
     sb("DELETE", "textbook_chunks", params={"book": f"eq.{title}"})
 
+RELOAD = os.environ.get("RELOAD", "").lower() in ("1", "true", "yes")
+
+def sb_all(path: str, params: dict) -> list:
+    out, off = [], 0
+    while True:
+        r = sb("GET", path, params={**params, "limit": "1000", "offset": str(off)}).json()
+        out += r
+        if len(r) < 1000:
+            return out
+        off += 1000
+
+def drop_text_keep_links(title: str):
+    """Reload a book's text without losing its lessons, notes or questions: remember which lesson/page each
+    question's passage was on, delete the old passages; relink_questions() points the questions at the new ones."""
+    old = {c["id"]: c for c in sb_all("textbook_chunks", {"book": f"eq.{title}", "select": "id,chapter_id,page_from"})}
+    links = []
+    ids = list(old)
+    for i in range(0, len(ids), 150):
+        qs = sb("GET", "questions", params={"chunk_id": f"in.({','.join(map(str, ids[i:i + 150]))})", "select": "id,chunk_id", "limit": "5000"}).json()
+        links += [(q["id"], old[q["chunk_id"]]["chapter_id"], old[q["chunk_id"]]["page_from"] or 0) for q in qs]
+    sb("DELETE", "textbook_chunks", params={"book": f"eq.{title}"})   # questions.chunk_id → null for a moment
+    print(f"  {len(old)} old passages removed; {len(links)} questions will be relinked")
+    return links
+
+def relink_questions(title: str, links):
+    new = sb_all("textbook_chunks", {"book": f"eq.{title}", "select": "id,chapter_id,page_from", "order": "page_from"})
+    by_ch = {}
+    for c in new:
+        by_ch.setdefault(c["chapter_id"], []).append(c)
+    target = {}
+    for qid, ch, page in links:
+        cands = by_ch.get(ch) or []
+        if not cands:
+            continue
+        best = max((c for c in cands if (c["page_from"] or 0) <= page), key=lambda c: c["page_from"] or 0, default=cands[0])
+        target.setdefault(best["id"], []).append(qid)
+    n = 0
+    for cid, qids in target.items():
+        for i in range(0, len(qids), 100):
+            sb("PATCH", "questions", params={"id": f"in.({','.join(qids[i:i + 100])})"}, data=json.dumps({"chunk_id": cid}), headers={"Prefer": "return=minimal"})
+            n += len(qids[i:i + 100])
+    print(f"  relinked {n}/{len(links)} questions to the new passages")
+
 def get_pdf(source: str) -> pathlib.Path:
     if not source.startswith("http"):
         return pathlib.Path(source)
@@ -415,7 +458,11 @@ def main():
         if pages_only and not loaded:
             print("  not loaded yet, skipping")
             continue
-        if pages_only or loaded:
+        old_links = None
+        if loaded and RELOAD and not pages_only:
+            print("  already loaded — reloading its text (lessons and questions are kept)")
+            old_links = drop_text_keep_links(title)
+        elif pages_only or loaded:
             if not check_only:
                 if not pages_only:
                     print("  already loaded")
@@ -425,7 +472,7 @@ def main():
                     print(f"  !! page images failed: {e}")
                     failed.append(title)
             continue
-        if not check_only:
+        if not check_only and old_links is None:
             remove_partial(title)
         try:
             doc = fitz.open(get_pdf(row["source"].strip()))
@@ -485,6 +532,8 @@ def main():
                 sb("POST", "textbook_chunks", data=json.dumps(recs[i:i + 100]), headers={"Prefer": "return=minimal"})
             stored += len(recs)
         total += stored
+        if old_links:
+            relink_questions(title, old_links)
         try:
             do_pages(doc, title)
         except Exception as e:

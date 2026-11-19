@@ -27,7 +27,7 @@ const log: string[] = [];
 {
   const { count: chunks } = await admin.from("textbook_chunks").select("*", { count: "exact", head: true });
   if ((chunks ?? 0) >= 3000) {
-    const { data: gone } = await admin.from("questions").update({ status: "retired" }).eq("origin", "ai").is("chunk_id", null).eq("status", "active").select("id");
+    const { data: gone } = await admin.from("questions").update({ status: "retired" }).eq("origin", "ai").is("chunk_id", null).is("chapter_id", null).eq("status", "active").select("id");
     if (gone?.length) log.push(`retired ${gone.length} AI questions without a textbook source`);
   }
 }
