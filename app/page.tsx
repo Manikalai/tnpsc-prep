@@ -1,6 +1,6 @@
 import { Tilak } from "@/components/Murugan";
 import AbodeJourney from "@/components/AbodeJourney";
-import { sloganOfDay } from "@/lib/murugan";
+import { nameOfDay, sloganOfDay } from "@/lib/murugan";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { EXAM_LABEL, getProfile, todayIST } from "@/lib/data";
@@ -59,6 +59,7 @@ export default async function Home() {
           <p className="text-[12.5px] font-bold tracking-wide text-gold-400">{sloganOfDay()}</p>
           <Tilak className="mt-2 h-3.5 w-12" />
           <p className="mt-2 text-sm text-white/85">வணக்கம் சரண்யா 🙏</p>
+          <p className="text-[11px] text-gold-400/90">இன்றைய திருநாமம்: {nameOfDay()}</p>
           <p className="text-xs text-white/60">{taDate(new Date(), true)}</p>
           <h1 className="mt-2 text-2xl font-bold">{EXAM_LABEL[exam]}</h1>
           {left != null && left >= 0 ? (
