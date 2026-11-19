@@ -1,0 +1,31 @@
+name: Back-fill current affairs
+on:
+  schedule:
+    - cron: "23 17 * * *"   # 22:53 IST nightly until the range is filled (exits quickly when nothing is left)
+  workflow_dispatch:
+    inputs:
+      months: { description: "How many months back", default: "12" }
+      providers: { description: "AI order", default: "gemini,sarvam,groq" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/ca_backfill.ts
+        env:
+          CA_MONTHS: ${{ github.event.inputs.months || '12' }}
+          CA_MINUTES: "310"
+          AI_PROVIDERS: ${{ github.event.inputs.providers || 'gemini,sarvam,groq' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}

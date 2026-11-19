@@ -36,8 +36,8 @@ async function fetchFeed(url: string): Promise<{ title: string; link: string; de
 const dmy = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
 
 /** A daily news sitemap (e.g. Dinamalar's sitemap_DD-MM-YYYY.xml): article links with their headlines. */
-async function fetchSitemap(url: string) {
-  const now = new Date(Date.now() + 5.5 * 3600e3);
+export async function fetchSitemap(url: string, day?: string) {
+  const now = day ? new Date(`${day}T00:00:00Z`) : new Date(Date.now() + 5.5 * 3600e3);
   const res = await fetch(url.replace("{DD-MM-YYYY}", dmy(now)), { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`${res.status}`);
   const doc = new XMLParser({ ignoreAttributes: false }).parse(await res.text());
@@ -80,8 +80,8 @@ async function getHtml(url: string) {
 }
 
 /** Items on one category page: <h3>title</h3> … <span class="calendar">November 19, 2026</span> … <a title="Continue Reading …" href="…/currentaffairs-detail/…">. */
-async function tnptCategory(base: string, cat: string) {
-  const html = await getHtml(`${base}/ta/currentaffairs-category/${cat}`);
+export async function tnptCategory(base: string, cat: string, page = 0) {
+  const html = await getHtml(`${base}/ta/currentaffairs-category/${cat}${page > 0 ? `/${page}` : ""}`);
   const out: { title: string; link: string; pubDate?: string }[] = [];
   const rx = /<h3>([\s\S]{1,400}?)<\/h3>[\s\S]{0,800}?class="calendar">[\s\S]{0,200}?([A-Z][a-z]+)\s+(\d{1,2})\s*,\s*(\d{4})[\s\S]{0,4000}?title="Continue Reading[^"]*"\s+href="([^"]+currentaffairs-detail[^"]+)"/g;
   for (let m; (m = rx.exec(html)); ) {
@@ -97,7 +97,7 @@ async function tnptCategory(base: string, cat: string) {
 }
 
 /** The article text of one item (its bullet points). */
-async function tnptDetail(link: string) {
+export async function tnptDetail(link: string) {
   const html = await getHtml(link);
   const at = html.indexOf("view-currentaffairs");
   const part = (at >= 0 ? html.slice(at, at + 20000) : html).replace(/<\/li>|<\/p>|<br\s*\/?>/gi, " • ");
