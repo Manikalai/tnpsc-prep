@@ -20,7 +20,6 @@ export default async function Papers() {
   const list = [...groups.values()].sort((a, b) => a.exam.localeCompare(b.exam) || b.year - a.year);
   return (
     <div className="space-y-4">
-      <h1 className="h1">TNPSC உண்மை வினாத்தாள்கள்</h1>
       <p className="muted">உண்மையான முந்தைய ஆண்டு வினாத்தாள், அதே வரிசையில், தேர்வு நேரத்துடன் (3 மணி). மதிப்பீடு TNPSC-யின் அதிகாரபூர்வ விடைக்குறிப்பின்படி.</p>
       {!list.length && <p className="card">இன்னும் வினாத்தாள்கள் சேர்க்கப்படவில்லை.</p>}
       {list.map((g) => (

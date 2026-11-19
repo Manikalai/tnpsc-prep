@@ -12,7 +12,6 @@ export default async function Page() {
   ]);
   return (
     <div className="space-y-4">
-      <h1 className="h1">நினைவு அட்டைகள்</h1>
       <p className="muted">இன்று {due?.length ?? 0} அட்டைகள் · மொத்தம் {count ?? 0}. குறிப்புகளை உருவாக்கும்போது அட்டைகள் தானாகச் சேரும்.</p>
       <Flashcards cards={due ?? []} />
     </div>

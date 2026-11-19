@@ -31,7 +31,6 @@ export default async function Analysis({ searchParams }: { searchParams: Promise
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">பகுப்பாய்வு</h1>
       <ExamTabs base="/analysis" current={code} />
       <div className="card">
         <h2 className="h2">முதலில் கவனிக்க வேண்டியவை</h2>

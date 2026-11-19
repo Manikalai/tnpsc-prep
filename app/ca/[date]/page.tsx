@@ -20,12 +20,11 @@ export default async function CaDay({ params }: { params: Promise<{ date: string
   const next = new Date(date + "T00:00:00Z"); next.setUTCDate(next.getUTCDate() + 1);
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-sm">
-        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="underline">← முந்தைய நாள்</Link>
-        <Link href="/ca" className="underline">எல்லா நாட்களும்</Link>
-        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="underline">அடுத்த நாள் →</Link>
+      <div className="flex items-center justify-between gap-2">
+        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="முந்தைய நாள்">‹</Link>
+        <h1 className="text-center text-[17px] font-bold leading-tight text-brand-700">{taDate(date, true)}</h1>
+        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="அடுத்த நாள்">›</Link>
       </div>
-      <h1 className="h1">நடப்பு நிகழ்வுகள் · {taDate(date, true)}</h1>
       <div className="card flex flex-wrap items-center justify-between gap-3">
         <DateJump value={date} max={todayIST()} />
         {(count ?? 0) > 0 ? (

@@ -39,7 +39,6 @@ export default async function Planner() {
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">படிப்புத் திட்டம்</h1>
       <div className="card">
         <p>{EXAM_LABEL[code]} · {taDate(examDate)} · இன்னும் <b>{days}</b> நாட்கள்</p>
         <p className="muted mt-1">
@@ -49,15 +48,15 @@ export default async function Planner() {
       </div>
       <div className="card">
         <h2 className="h2 mb-2">இன்று படிக்க</h2>
-        <ul className="space-y-1">
-          {today.map((t) => <li key={t.id}>• {t.name_ta} <span className="text-xs text-stone-500">({uname(t.unit_id)})</span></li>)}
+        <ul className="divide-y divide-stone-100">
+          {today.map((t) => <li key={t.id} className="py-2"><span className="block font-medium leading-snug">{t.name_ta}</span><span className="block text-xs text-stone-500">{uname(t.unit_id)}</span></li>)}
         </ul>
         <p className="muted mt-2">ஒவ்வொரு தலைப்பையும் பாடநூலில் படித்து, <Link href="/syllabus" className="underline">பாடத்திட்டத்தில்</Link> &quot;முடிந்தது&quot; எனக் குறித்து, வினாடி வினா எடுக்கவும்.</p>
       </div>
       <div className="card">
         <h2 className="h2 mb-2">இந்த வாரம் அடுத்து</h2>
-        <ul className="space-y-1 text-sm">
-          {week.map((t) => <li key={t.id}>• {t.name_ta} <span className="text-xs text-stone-500">({uname(t.unit_id)})</span></li>)}
+        <ul className="divide-y divide-stone-100">
+          {week.map((t) => <li key={t.id} className="py-2"><span className="block text-[15px] leading-snug">{t.name_ta}</span><span className="block text-xs text-stone-500">{uname(t.unit_id)}</span></li>)}
         </ul>
       </div>
       <div className="card">

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Vel } from "@/components/Murugan";
 
 const I = {
@@ -29,16 +29,42 @@ export function Brand({ big = false }: { big?: boolean }) {
   );
 }
 
+const ROOTS = ["/", "/quiz/new", "/mock", "/ca", "/more"];
+// short app-bar titles for sub-pages
+const TITLES: [RegExp, string][] = [
+  [/^\/aptitude\/shortcuts/, "சுருக்கு வழிகள்"], [/^\/aptitude/, "திறனறிவு"], [/^\/books/, "பாடநூல்கள்"], [/^\/chapter\//, "பாடம்"],
+  [/^\/ca\//, "நடப்பு நிகழ்வுகள்"], [/^\/papers/, "உண்மை வினாத்தாள்கள்"], [/^\/revision/, "திருப்புதல்"], [/^\/notes/, "நினைவுக் குறிப்புகள்"],
+  [/^\/flashcards/, "நினைவு அட்டைகள்"], [/^\/analysis/, "பகுப்பாய்வு"], [/^\/planner/, "படிப்புத் திட்டம்"], [/^\/ask/, "பாடநூலிடம் கேள்"],
+  [/^\/mains/, "முதன்மைத் தேர்வு"], [/^\/admin/, "வினா வங்கி"], [/^\/settings/, "அமைப்புகள்"], [/^\/syllabus/, "பாடத்திட்டம்"],
+  [/^\/offline/, "இணையமின்றி"], [/^\/test\/.*\/result/, "முடிவுகள்"],
+];
+
 export default function Nav() {
   const path = usePathname();
+  const router = useRouter();
+  const isRoot = ROOTS.includes(path);
+  const title = TITLES.find(([rx]) => rx.test(path))?.[1];
+  const back = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push(path.split("/").slice(0, -1).join("/") || "/");
+  };
   if (path === "/login" || (path.startsWith("/test/") && !path.endsWith("/result"))) return null;
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="h-1 bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
-          <Link href="/" aria-label="முகப்பு"><Brand /></Link>
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-3">
+          {isRoot ? (
+            <Link href="/" aria-label="முகப்பு" className="px-1"><Brand /></Link>
+          ) : (
+            <div className="flex min-w-0 items-center gap-1">
+              <button onClick={back} aria-label="பின் செல்" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-maroon-700 active:bg-stone-200/70">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+              </button>
+              <span className="truncate text-[17px] font-bold text-maroon-700">{title ?? "Saranya Prep"}</span>
+            </div>
+          )}
           <nav className="hidden gap-1 md:flex">
             {MAIN.map((m) => (
               <Link key={m.href} href={m.href} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${active(m.href) ? "bg-brand-50 text-brand-700" : "text-stone-600 hover:bg-stone-100"}`}>

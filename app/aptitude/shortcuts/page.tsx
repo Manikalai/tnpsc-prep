@@ -42,8 +42,6 @@ export default function Shortcuts() {
   const cubes = Array.from({ length: 15 }, (_, i) => i + 1);
   return (
     <div className="space-y-4">
-      <div className="text-sm"><Link href="/aptitude" className="underline">← திறனறிவு</Link></div>
-      <h1 className="h1">⚡ சுருக்கு வழி அட்டவணை</h1>
       <p className="muted">மனப்பாடம் செய்ய வேண்டியவை. ஒவ்வொரு பகுதியையும் நினைவு அட்டைகளாகச் சேர்த்தால் 1, 3, 7, 15 நாள் இடைவெளியில் மீண்டும் வரும்.</p>
 
       <section className="card">

@@ -9,7 +9,6 @@ export default function Ask() {
   const [err, setErr] = useState("");
   return (
     <div className="space-y-4">
-      <h1 className="h1">பாடநூலிடம் கேள்</h1>
       <p className="muted">உங்கள் சந்தேகத்தைத் தமிழில் கேளுங்கள். சமச்சீர் பாடநூல்களிலிருந்து ஆதாரத்துடன் விடை தரப்படும்.</p>
       <textarea className="input min-h-28" value={q} onChange={(e) => setQ(e.target.value)} placeholder="எ.கா. அரசின் நெறிமுறைக் கோட்பாடுகள் எந்தப் பகுதியில் உள்ளன?" />
       <button

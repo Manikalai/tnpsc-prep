@@ -31,7 +31,6 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">வினா வங்கி</h1>
       <div className="card text-sm">
         <p>ஏற்றப்பட்ட பாடநூல் பகுதிகள்: <b>{chunks ?? 0}</b> {chunks ? "" : "— பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை (README: textbooks)."}</p>
         <p className="muted mt-1">ஒவ்வொரு இரவும் தானியங்கிப் பணி ஒவ்வொரு அலகுக்கும் வினாக்களைச் சேர்க்கும். இங்கே கைமுறையாகவும் சேர்க்கலாம் (ஒரு முறைக்கு ~10).</p>

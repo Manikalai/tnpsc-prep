@@ -46,9 +46,9 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
       <div className="card"><DateJump max={todayIST()} /></div>
       <div className="card">
         <div className="mb-2 flex items-center justify-between">
-          <Link href={`/ca?month=${prev.toISOString().slice(0, 7)}`} className="text-sm underline">← முந்தைய மாதம்</Link>
+          <Link href={`/ca?month=${prev.toISOString().slice(0, 7)}`} className="pill-nav">‹</Link>
           <span className="font-semibold">{taDate(start).replace(/^\d+\s/, "")}</span>
-          <Link href={`/ca?month=${end.slice(0, 7)}`} className="text-sm underline">அடுத்த மாதம் →</Link>
+          <Link href={`/ca?month=${end.slice(0, 7)}`} className="pill-nav">›</Link>
         </div>
         {days.size === 0 && <p className="muted">இந்த மாதத்துக்குக் குறிப்புகள் இல்லை.</p>}
         <ul className="divide-y divide-stone-100">

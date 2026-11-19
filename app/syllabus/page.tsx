@@ -24,7 +24,6 @@ export default async function Syllabus({ searchParams }: { searchParams: Promise
   if (!exam) return <p className="card">பாடத்திட்டம் இன்னும் ஏற்றப்படவில்லை (README: seed SQL).</p>;
   return (
     <div>
-      <h1 className="h1">பாடத்திட்டம்</h1>
       <p className="muted mb-3">ஒவ்வொரு தலைப்பையும் படித்தபின் நிலையை மாற்றுங்கள்; அலகை முடித்ததும் வினாடி வினா எடுங்கள்.</p>
       <ExamTabs base="/syllabus" current={code} />
       {exam.notes_ta && <p className="mb-3 rounded-xl bg-turmeric-50 p-3 text-sm">{exam.notes_ta}</p>}
@@ -46,7 +45,6 @@ export default async function Syllabus({ searchParams }: { searchParams: Promise
                         {a ? ` · சரியானவை ${pct(a.correct, a.attempted)}%` : ""}
                       </p>
                     </div>
-                    <span className="text-stone-400 transition group-open:rotate-90">›</span>
                   </summary>
                   <div className="mt-3 h-1.5 rounded-full bg-stone-100"><div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${pct(done, ts.length)}%` }} /></div>
                   <ul className="mt-3 divide-y divide-stone-100">

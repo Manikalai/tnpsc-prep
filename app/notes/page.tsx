@@ -23,7 +23,6 @@ export default async function Notes({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">நினைவுக் குறிப்புகள்</h1>
       <p className="muted">அலகு அல்லது தலைப்பைத் தேர்ந்தெடுத்து, பாடநூலிலிருந்து நினைவூட்டி, சுருக்கம், அட்டவணை, 10 நினைவு அட்டைகளை உருவாக்குங்கள். நல்லவற்றை ★ செய்து வைத்துக்கொள்ளுங்கள்.</p>
       <UnitPicker units={units.filter((u) => u.subject !== "aptitude" && u.subject !== "reasoning").map((u) => ({ id: u.id, name: u.name_ta }))} unitId={unit?.id} topics={topics ?? []} topicId={sp.topic} />
       {unit && (

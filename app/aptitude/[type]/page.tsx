@@ -38,7 +38,6 @@ export default async function AptPage({ params, searchParams }: { params: Promis
 
   return (
     <div className="space-y-4">
-      <div className="text-sm"><Link href="/aptitude" className="underline">← திறனறிவு</Link></div>
       <div>
         <p className="muted">{topic.en}</p>
         <h1 className="h1">{topic.ta}</h1>

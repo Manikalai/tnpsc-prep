@@ -1,31 +1,61 @@
 import Link from "next/link";
 
-const ITEMS = [
-  ["/quiz/new", "வினாத்தாள் உருவாக்கு", "வகுப்பு → பாடம் → பிரிவு → பாடங்கள் → எண்ணிக்கை, கடினம்"],
-  ["/papers", "TNPSC உண்மை வினாத்தாள்கள்", "முந்தைய ஆண்டு வினாத்தாளை அதே வரிசையில், தேர்வு நேரத்துடன் எழுதுங்கள்"],
-  ["/books", "பாடநூல்கள் (சமச்சீர் கல்வி)", "வகுப்பு → பருவம் → பாடம்: பாட உரை, முக்கியக் குறிப்புகள், நாட்கள்–ஆளுமைகள், வினாக்கள், திருப்புதல்"],
-  ["/offline", "இணையமின்றி (முழுமையாக)", "பாடநூல்கள், வினாக்கள், உண்மை வினாத்தாள்கள், விளக்கங்கள், நடப்பு நிகழ்வுகள் — அனைத்தையும் கைப்பேசியில் சேமிக்க"],
-  ["/revision", "திருப்புதல்", "தவறிய வினாக்கள் 1, 3, 7, 15 நாட்களில் மீண்டும் வரும்"],
-  ["/notes", "நினைவுக் குறிப்புகள்", "நினைவூட்டிகள், ஒருபக்கச் சுருக்கம், அட்டவணைகள்"],
-  ["/flashcards", "நினைவு அட்டைகள்", "விரைவுத் திருப்புதல்"],
-  ["/aptitude", "திறனறிவு", "வழிமுறைகள், சுருக்கு வழிகள், நேரப் பயிற்சி"],
-  ["/analysis", "பகுப்பாய்வு", "அதிகம் கேட்கப்படும் அலகுகள், உங்கள் பலவீனங்கள்"],
-  ["/planner", "படிப்புத் திட்டம்", "தேர்வு தேதி வரை வாரவாரியான இலக்கு"],
-  ["/ask", "பாடநூலிடம் கேள்", "சந்தேகம் கேளுங்கள் – பாடநூல் ஆதாரத்துடன் விடை"],
-  ["/mains", "முதன்மைத் தேர்வு விடை எழுதுதல்", "தொகுதி I மெயின்ஸ் பயிற்சி"],
-  ["/admin", "வினா வங்கி", "வினாக்களை உருவாக்கு, முந்தைய ஆண்டு வினாக்களைச் சேர், புகார்கள்"],
-  ["/settings", "அமைப்புகள்", "பெயர், இலக்குத் தேர்வு, தேர்வு தேதி"],
+const GROUPS: { title: string; items: [string, string, string, string][] }[] = [
+  {
+    title: "படிக்க",
+    items: [
+      ["/books", "📚", "பாடநூல்கள்", "வகுப்பு → பருவம் → பாடம்"],
+      ["/syllabus", "🗂️", "பாடத்திட்டம்", "அலகு வாரியாக முன்னேற்றம்"],
+      ["/notes", "📝", "நினைவுக் குறிப்புகள்", "நினைவூட்டிகள், சுருக்கம், அட்டவணைகள்"],
+      ["/aptitude", "🧮", "திறனறிவு", "10 தலைப்புகள், சுருக்கு வழிகள்"],
+      ["/ask", "💬", "பாடநூலிடம் கேள்", "சந்தேகத்துக்கு பாடநூல் ஆதாரத்துடன் விடை"],
+    ],
+  },
+  {
+    title: "பயிற்சி",
+    items: [
+      ["/papers", "📄", "TNPSC உண்மை வினாத்தாள்கள்", "முந்தைய ஆண்டு, தேர்வு நேரத்துடன்"],
+      ["/revision", "🔁", "திருப்புதல்", "தவறியவை 1, 3, 7, 15 நாட்களில்"],
+      ["/flashcards", "🃏", "நினைவு அட்டைகள்", "விரைவுத் திருப்புதல்"],
+      ["/mains", "✍️", "முதன்மைத் தேர்வு", "குரூப் 1 விடை எழுதுதல்"],
+    ],
+  },
+  {
+    title: "திட்டமும் முன்னேற்றமும்",
+    items: [
+      ["/planner", "🗓️", "படிப்புத் திட்டம்", "தேர்வு தேதி வரை இலக்கு"],
+      ["/analysis", "📊", "பகுப்பாய்வு", "பலவீனமான அலகுகள்"],
+    ],
+  },
+  {
+    title: "அமைப்புகள்",
+    items: [
+      ["/offline", "📴", "இணையமின்றி", "எல்லாவற்றையும் கைப்பேசியில் சேமிக்க"],
+      ["/admin", "🏦", "வினா வங்கி", "வினாக்கள், முந்தைய ஆண்டு இறக்குமதி"],
+      ["/settings", "⚙️", "அமைப்புகள்", "பெயர், இலக்குத் தேர்வு, தேதி"],
+    ],
+  },
 ];
 
 export default function More() {
   return (
-    <div className="space-y-2">
-      <h1 className="h1 mb-3">மேலும்</h1>
-      {ITEMS.map(([href, title, sub]) => (
-        <Link key={href} href={href} className="card block hover:border-brand-500">
-          <p className="font-semibold">{title}</p>
-          <p className="muted">{sub}</p>
-        </Link>
+    <div className="space-y-5">
+      {GROUPS.map((g) => (
+        <section key={g.title}>
+          <h2 className="mb-1.5 px-1 text-xs font-bold uppercase tracking-wide text-stone-500">{g.title}</h2>
+          <div className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-200/80 bg-white">
+            {g.items.map(([href, icon, title, sub]) => (
+              <Link key={href} href={href} className="flex min-h-[60px] items-center gap-3 px-4 py-2.5 active:bg-stone-50">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-stone-100 text-lg" aria-hidden>{icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold leading-snug">{title}</span>
+                  <span className="block truncate text-[13px] text-stone-500">{sub}</span>
+                </span>
+                <span className="text-xl text-stone-300">›</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );

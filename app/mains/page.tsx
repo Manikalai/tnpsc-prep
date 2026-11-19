@@ -22,7 +22,6 @@ export default function Mains() {
   const words = answer.trim() ? answer.trim().split(/\s+/).length : 0;
   return (
     <div className="space-y-4">
-      <h1 className="h1">முதன்மைத் தேர்வு – விடை எழுதுதல் (தொகுதி I)</h1>
       <div className="grid gap-2 sm:grid-cols-2">
         <select className="input" value={paper} onChange={(e) => { setPaper(+e.target.value); setUnit(0); }}>
           {G1_MAINS.map((p, k) => <option key={k} value={k}>{p.paper}</option>)}

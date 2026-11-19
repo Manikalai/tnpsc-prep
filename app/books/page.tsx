@@ -22,7 +22,6 @@ export default async function Books({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">சமச்சீர் கல்வி – பாடநூல்கள்</h1>
       {!chapters.length && <p className="card">பாடநூல்கள் இன்னும் ஏற்றப்படவில்லை. GitHub-இல் &quot;Load textbooks&quot; பணியை இயக்கவும்.</p>}
       <div className="flex gap-2 overflow-x-auto">
         {stds.map((s) => (

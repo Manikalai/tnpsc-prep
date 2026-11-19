@@ -16,7 +16,6 @@ export default async function Revision() {
   for (const r of upcoming ?? []) byDay.set(r.due_date, (byDay.get(r.due_date) ?? 0) + 1);
   return (
     <div className="space-y-4">
-      <h1 className="h1">திருப்புதல்</h1>
       <div className="card">
         <p className="text-4xl font-bold text-kumkum-500">{due ?? 0}</p>
         <p>இன்று மீண்டும் செய்ய வேண்டிய வினாக்கள் (மொத்தப் பட்டியலில் {total ?? 0})</p>

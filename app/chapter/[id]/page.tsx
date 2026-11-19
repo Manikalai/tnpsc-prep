@@ -53,11 +53,13 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="space-y-4">
-      <div className="text-sm"><Link href={`/books?std=${c.std}`} className="underline">← {c.std}ஆம் வகுப்பு பாடநூல்கள்</Link></div>
       <div>
         <p className="muted">{c.book}{c.term ? ` · பருவம் ${c.term}` : ""}</p>
         <h1 className="h1">பாடம் {c.chapter_no}: {c.title_ta}</h1>
-        <p className="muted">பக்கம் {c.page_from}–{c.page_to}{pdf && <> · <a href={pdf} target="_blank" rel="noreferrer" className="underline">PDF-இல் படி ↗</a></>}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <span className="chip">பக்கம் {c.page_from}–{c.page_to}</span>
+          {pdf && <a href={pdf} target="_blank" rel="noreferrer" className="chip bg-brand-50 text-brand-700">PDF ↗</a>}
+        </div>
       </div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
         {TABS.map(([k, l]) => (
@@ -98,9 +100,9 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         </div>
       ) : <Generate kind="revision" label="குறுவினா–விடை வடிவில் திருப்புதல் வினாக்கள் இன்னும் உருவாக்கப்படவில்லை." />)}
 
-      <div className="flex justify-between text-sm">
-        {prev ? <Link className="underline" href={`/chapter/${prev.id}?tab=${tab}`}>← பாடம் {prev.chapter_no}</Link> : <span />}
-        {next ? <Link className="underline" href={`/chapter/${next.id}?tab=${tab}`}>பாடம் {next.chapter_no} →</Link> : <span />}
+      <div className="flex justify-between gap-2 pt-1">
+        {prev ? <Link className="pill-nav" href={`/chapter/${prev.id}?tab=${tab}`}>‹ பாடம் {prev.chapter_no}</Link> : <span />}
+        {next ? <Link className="pill-nav" href={`/chapter/${next.id}?tab=${tab}`}>பாடம் {next.chapter_no} ›</Link> : <span />}
       </div>
     </div>
   );
