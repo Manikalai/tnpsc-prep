@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 
 type Card = { id: string; front: string; back: string; interval_days: number };
@@ -43,7 +44,7 @@ export default function Flashcards({ cards }: { cards: Card[] }) {
             onClick={async () => {
               await fetch("/api/flashcards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", front, back }) });
               setFront(""); setBack("");
-              alert("சேர்க்கப்பட்டது");
+              toast("சேர்க்கப்பட்டது");
             }}
           >
             சேர்

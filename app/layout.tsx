@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import OfflineAutoSync from "@/components/OfflineAutoSync";
+import Toaster from "@/components/Toaster";
 
 export const metadata: Metadata = {
   title: "Saranya Prep",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen font-sans antialiased">
         <Nav />
         <OfflineAutoSync />
+        <Toaster />
         <main className="mx-auto max-w-3xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-10">{children}</main>
         <script
           dangerouslySetInnerHTML={{

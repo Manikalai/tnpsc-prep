@@ -1,4 +1,6 @@
-import { PeacockFeather, Vel } from "@/components/Murugan";
+import { Tilak } from "@/components/Murugan";
+import AbodeJourney from "@/components/AbodeJourney";
+import { sloganOfDay } from "@/lib/murugan";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { EXAM_LABEL, getProfile, todayIST } from "@/lib/data";
@@ -48,27 +50,37 @@ export default async function Home() {
 
   return (
     <div className="space-y-4">
-      <section className="card relative overflow-hidden border-0 bg-gradient-to-br from-maroon-700 via-maroon-500 to-saffron-500 text-white">
-        <PeacockFeather className="pointer-events-none absolute -right-4 -top-6 h-48 rotate-[20deg] opacity-30" />
-        <Vel className="pointer-events-none absolute bottom-3 right-5 h-24 opacity-90" />
-        <p className="relative text-[13px] font-semibold tracking-wide text-gold-400">ஓம் சரவணபவ · வெற்றிவேல் முருகனுக்கு அரோகரா!</p>
-        <p className="relative mt-1 text-sm opacity-90">வணக்கம், {profile.display_name ?? ""} · {taDate(new Date(), true)}</p>
-        <h1 className="relative mt-1 text-2xl font-bold">{EXAM_LABEL[exam]}</h1>
-        {left != null && left >= 0 ? (
-          <p className="relative mt-1 pr-14 text-lg">தேர்வுக்கு இன்னும் <span className="text-3xl font-bold">{left}</span> நாட்கள் · {taDate(examDate!)}</p>
-        ) : (
-          <p className="mt-1 text-sm opacity-90"><Link href="/settings" className="underline">அமைப்புகளில்</Link> தேர்வு தேதியைச் சேர்க்கவும்</p>
-        )}
-        <div className="relative mt-3 mr-16 h-2 rounded-full bg-white/25"><div className="h-2 rounded-full bg-gold-400" style={{ width: `${pct(doneTopics, topicCount)}%` }} /></div>
-        <p className="relative mt-1 pr-16 text-sm opacity-90">பாடத்திட்டம்: {doneTopics}/{topicCount} தலைப்புகள் முடிந்தன ({pct(doneTopics, topicCount)}%) · {units?.length ?? 0} அலகுகள்</p>
+      <section className="relative overflow-hidden rounded-3xl bg-maroon-900 text-white shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/murugan/hero.webp" alt="முருகன்" className="absolute inset-y-0 right-0 h-full w-[58%] object-cover object-top" />
+        <div className="absolute inset-0 bg-gradient-to-r from-maroon-900 via-maroon-900/90 via-45% to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-maroon-900/80 to-transparent" />
+        <div className="relative p-4 pr-[38%]">
+          <p className="text-[12.5px] font-bold tracking-wide text-gold-400">{sloganOfDay()}</p>
+          <Tilak className="mt-2 h-3.5 w-12" />
+          <p className="mt-2 text-sm text-white/85">வணக்கம் சரண்யா 🙏</p>
+          <p className="text-xs text-white/60">{taDate(new Date(), true)}</p>
+          <h1 className="mt-2 text-2xl font-bold">{EXAM_LABEL[exam]}</h1>
+          {left != null && left >= 0 ? (
+            <p className="mt-0.5 leading-tight"><span className="text-4xl font-bold text-gold-400">{left}</span> <span className="text-sm">நாட்கள்</span><br /><span className="text-xs text-white/70">{taDate(examDate!)}</span></p>
+          ) : (
+            <p className="mt-1 text-sm opacity-90"><Link href="/settings" className="underline">அமைப்புகளில்</Link> தேர்வு தேதியைச் சேர்க்கவும்</p>
+          )}
+        </div>
+        <div className="relative px-4 pb-4">
+          <div className="h-2 rounded-full bg-white/20"><div className="h-2 rounded-full bg-gradient-to-r from-gold-400 to-saffron-400" style={{ width: `${pct(doneTopics, topicCount)}%` }} /></div>
+          <p className="mt-1 text-xs text-white/80">பாடத்திட்டம் {pct(doneTopics, topicCount)}% · {doneTopics}/{topicCount} தலைப்புகள்</p>
+        </div>
       </section>
+
+      <AbodeJourney pct={pct(doneTopics, topicCount)} />
 
       <section className="card flex items-center justify-between gap-3">
         <div>
           <h2 className="h2">இன்றைய பயிற்சி {doneToday ? "✓" : ""}</h2>
           <p className="muted">20 வினாக்கள்: திருப்புதல் + உங்கள் பலவீனமான அலகுகள் + நடப்பு நிகழ்வுகள் · தொடர் {streak} நாள்{streak === 1 ? "" : "கள்"} 🔥</p>
         </div>
-        <StartButton url="/api/daily" label={doneToday ? "மீண்டும்" : "தொடங்கு"} busyLabel="…" />
+        <div className="shrink-0"><StartButton url="/api/daily" label={doneToday ? "மீண்டும்" : "தொடங்கு"} busyLabel="…" className="btn whitespace-nowrap" /></div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">

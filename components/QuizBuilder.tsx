@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/lib/toast";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DIFFICULTY, SECTIONS } from "@/lib/chapter-labels";
@@ -60,7 +61,7 @@ export default function QuizBuilder({ chapters, onStart }: { chapters: C[]; onSt
     }
     const r = await fetch("/api/quiz-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chapterIds: [...picked], count, difficulty, title }) });
     const d = await r.json().catch(() => ({}));
-    if (r.ok) { if (d.notice) alert(d.notice); router.push(d.redirect); }
+    if (r.ok) { if (d.notice) toast(d.notice); router.push(d.redirect); }
     else { setMsg(d.error ?? "பிழை"); setBusy(false); }
   };
 
@@ -78,7 +79,7 @@ export default function QuizBuilder({ chapters, onStart }: { chapters: C[]; onSt
         {subject && unlabelled && sections.length <= 1 && !onStart && (
           <p className="text-xs text-stone-500">
             பிரிவுகள் (வரலாறு, புவியியல்…) இன்னும் வகைப்படுத்தப்படவில்லை — இரவுப் பணி செய்யும்.{" "}
-            <button className="underline" onClick={async () => { const r = await fetch("/api/quiz-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "classify" }) }); const d = await r.json(); alert(d.notice ?? d.error); router.refresh(); }}>இப்போதே வகைப்படுத்து</button>
+            <button className="underline" onClick={async () => { const r = await fetch("/api/quiz-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "classify" }) }); const d = await r.json(); toast(d.notice ?? d.error); router.refresh(); }}>இப்போதே வகைப்படுத்து</button>
           </p>
         )}
       </div>

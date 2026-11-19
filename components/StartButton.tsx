@@ -1,4 +1,6 @@
 "use client";
+import { toast } from "@/lib/toast";
+import { Vel } from "@/components/Murugan";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -34,7 +36,7 @@ export default function StartButton({
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || `பிழை ${res.status}`);
-            if (data.notice) window.alert(data.notice);
+            if (data.notice) toast(data.notice);
             if (data.redirect) router.push(data.redirect);
             else router.refresh();
           } catch (e) {
@@ -44,7 +46,7 @@ export default function StartButton({
           }
         }}
       >
-        {busy ? busyLabel : label}
+        {busy ? <><Vel className="h-5 animate-[velglow_1.2s_ease-in-out_infinite]" gold="#ffd76a" dark="#8a5a00" /> {busyLabel}</> : label}
       </button>
       {err && <span className="text-xs text-kumkum-500">{err}</span>}
     </div>

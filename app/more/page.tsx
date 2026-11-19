@@ -57,6 +57,14 @@ export default function More() {
           </div>
         </section>
       ))}
+      <div className="relative overflow-hidden rounded-2xl bg-maroon-900 text-center text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/murugan/sannidhi.webp" alt="முருகன் சந்நிதி" className="h-56 w-full object-cover object-top opacity-90" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-maroon-900 to-transparent p-3">
+          <p className="font-bold text-gold-400">ஆறுபடை வீடு கொண்டவனே போற்றி</p>
+          <p className="text-xs text-white/80">ஓம் சரவணபவ</p>
+        </div>
+      </div>
     </div>
   );
 }

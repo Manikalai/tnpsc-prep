@@ -4,6 +4,10 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: { sans: ["var(--font-tamil)", "system-ui", "sans-serif"] },
+      keyframes: {
+        velglow: { "0%,100%": { transform: "translateY(0) scale(1)", filter: "drop-shadow(0 0 2px #ffd76a)" }, "50%": { transform: "translateY(-3px) scale(1.06)", filter: "drop-shadow(0 0 10px #ffd76a)" } },
+        fadein: { from: { opacity: "0", transform: "translateY(6px)" }, to: { opacity: "1", transform: "none" } },
+      },
       colors: {
         ink: "#1f2328",
         paper: "#fcf6ec",

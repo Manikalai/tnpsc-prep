@@ -1,3 +1,5 @@
+import { Vel } from "@/components/Murugan";
+import { blessing } from "@/lib/murugan";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
@@ -25,6 +27,10 @@ export default async function Result({ params, searchParams }: { params: Promise
 
   return (
     <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-maroon-700 via-maroon-500 to-saffron-500 p-4 text-white shadow">
+        <Vel className="absolute -right-1 bottom-0 h-28 opacity-30" />
+        <p className="relative text-[17px] font-bold text-gold-400">{blessing((Number(test.score) / Math.max(1, Number(test.max_score))) * 100)}</p>
+      </div>
       <div className="card">
         <p className="muted">{test.title}</p>
         <div className="mt-1 flex flex-wrap items-end gap-x-6 gap-y-2">

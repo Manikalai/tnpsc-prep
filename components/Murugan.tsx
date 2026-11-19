@@ -35,3 +35,24 @@ export function PeacockFeather({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+/** Thiruneeru (three lines of holy ash) with a kumkum dot — small ornament. */
+export function Tilak({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 60 22" className={className} aria-hidden>
+      {[3, 9, 15].map((y) => <rect key={y} x="2" y={y} width="56" height="3.2" rx="1.6" fill="#fffaf0" opacity=".95" />)}
+      <circle cx="30" cy="10.6" r="4.2" fill="#c62828" stroke="#fffaf0" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** Six-sided star of Shanmukha (ஆறுமுகம்) — temple-gold ornament. */
+export function Shatkonam({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} aria-hidden>
+      <polygon points="50,6 88,72 12,72" fill="none" stroke="currentColor" strokeWidth="4" />
+      <polygon points="50,94 12,28 88,28" fill="none" stroke="currentColor" strokeWidth="4" />
+      <text x="50" y="60" textAnchor="middle" fontSize="26" fontWeight="700" fill="currentColor">ௐ</text>
+    </svg>
+  );
+}

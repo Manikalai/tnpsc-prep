@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/lib/toast";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OPT } from "@/lib/format";
@@ -80,7 +81,7 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) { store.del(key); router.replace(data.redirect); }
-    else { submitted.current = false; setBusy(false); alert(data.error ?? "சமர்ப்பிக்க முடியவில்லை — இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும். உங்கள் விடைகள் சேமிக்கப்பட்டுள்ளன."); }
+    else { submitted.current = false; setBusy(false); toast(data.error ?? "சமர்ப்பிக்க முடியவில்லை — இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும். உங்கள் விடைகள் சேமிக்கப்பட்டுள்ளன."); }
   };
 
   useEffect(() => { if (left === 0 && questions.length && !submitted.current) submit(true); }); // eslint-disable-line react-hooks/exhaustive-deps

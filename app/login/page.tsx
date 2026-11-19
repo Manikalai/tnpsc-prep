@@ -15,9 +15,14 @@ export default function Login() {
   const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   return (
-    <div className="mx-auto mt-10 max-w-sm">
+    <div className="mx-auto mt-4 max-w-sm">
+      <div className="relative mx-auto mb-4 h-64 w-52 overflow-hidden rounded-[2rem] border-4 border-gold-400 shadow-xl shadow-saffron-500/30">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/murugan/darshan.webp" alt="முருகன்" className="h-full w-full object-cover object-top" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-maroon-900/90 to-transparent p-2 text-center text-sm font-bold text-gold-400">யாமிருக்க பயமேன்</div>
+      </div>
       <h1 className="text-center"><Brand big /></h1>
-      <p className="mt-3 text-center font-semibold text-maroon-500">வெற்றிவேல் முருகனுக்கு அரோகரா!</p>
+      <p className="mt-3 text-center font-semibold text-maroon-500">வெற்றி வேல்! வீர வேல்!</p>
       <p className="mt-1 text-center text-stone-500">TNPSC தொகுதி 1 · 2 · 4 — தமிழ்வழிப் பயிற்சி</p>
       {!configured && (
         <p className="card mt-6 text-sm text-kumkum-500">Supabase அமைப்புகள் இன்னும் சேர்க்கப்படவில்லை. README-இல் உள்ள படிகளைப் பின்பற்றவும்.</p>
