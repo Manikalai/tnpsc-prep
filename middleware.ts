@@ -19,9 +19,9 @@ export async function middleware(req: NextRequest) {
       },
     },
   });
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
+  // getClaims() checks the login token locally (and refreshes it when it expires) instead of asking the auth server every time
+  const { data } = await sb.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const path = req.nextUrl.pathname;
   if (!user && !PUBLIC.some((p) => path.startsWith(p))) {

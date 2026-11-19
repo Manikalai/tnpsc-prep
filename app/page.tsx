@@ -12,7 +12,7 @@ export default async function Home() {
   const profile = await getProfile(sb, user.id);
   const today = todayIST();
   const exam = profile.target_exam;
-  const [{ data: examRow }, { count: due }, { data: units }, { data: progress }, { data: tests }, { data: profiles }, { count: caToday }, { count: cardsDue }] =
+  const [{ data: examRow }, { count: due }, { data: units }, { data: progress }, { data: tests }, { data: profiles }, { count: caToday }, { count: cardsDue }, { data: examTopics }, { data: dailies }] =
     await Promise.all([
       sb.from("exams").select("exam_date,name_ta").eq("code", exam).single(),
       sb.from("review_queue").select("*", { count: "exact", head: true }).eq("user_id", user.id).lte("due_date", today),
@@ -22,15 +22,15 @@ export default async function Home() {
       sb.from("profiles").select("id,display_name"),
       sb.from("current_affairs").select("*", { count: "exact", head: true }).eq("ca_date", today),
       sb.from("flashcards").select("*", { count: "exact", head: true }).eq("user_id", user.id).lte("due_date", today),
+      sb.from("topics").select("id,units!inner(exam_code)").eq("units.exam_code", exam).limit(5000),
+      sb.from("tests").select("submitted_at").eq("user_id", user.id).eq("kind", "daily").not("submitted_at", "is", null).gte("submitted_at", new Date(Date.now() - 60 * 864e5).toISOString()).limit(200),
     ]);
-  const { data: examTopics } = await sb.from("topics").select("id").in("unit_id", (units ?? []).map((u) => u.id));
   const topicIds = new Set((examTopics ?? []).map((t) => t.id));
   const topicCount = topicIds.size;
   const doneTopics = (progress ?? []).filter((p) => topicIds.has(p.topic_id) && (p.status === "done" || p.status === "revised")).length;
   const examDate = profile.exam_date ?? examRow?.exam_date ?? null;
   const left = examDate ? daysUntil(examDate) : null;
   const mine = (tests ?? []).filter((t) => t.user_id === user.id);
-  const { data: dailies } = await sb.from("tests").select("submitted_at").eq("user_id", user.id).eq("kind", "daily").not("submitted_at", "is", null).gte("submitted_at", new Date(Date.now() - 60 * 864e5).toISOString()).limit(200);
   const days = new Set((dailies ?? []).map((d) => new Date(new Date(d.submitted_at).getTime() + 5.5 * 3600e3).toISOString().slice(0, 10)));
   let streak = 0;
   for (let d = new Date(Date.now() + 5.5 * 3600e3); ; d = new Date(d.getTime() - 864e5)) {
