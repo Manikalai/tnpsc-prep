@@ -63,8 +63,13 @@ def garble_score(t: str) -> float:
 # "ெக" → "கெ" is safe; then ெ+ா → ொ, ே+ா → ோ, ெ+ௗ → ௌ.
 PREFIX_SIGN = re.compile(r"(?<![க-ஹ])([ெேை])([க-ஹ](?:்ஷ)?)")
 
+STRAY_LATIN = re.compile(r"(?<=[\u0B80-\u0BFF])[A-Z](?=[\u0B80-\u0BFF])")   # "பHொருட்கள்" → "பொருட்கள்"
+DOUBLED = re.compile(r"([க-ஹ])\1(?![்])")                                     # "ககாரங்கள்" → "காரங்கள்", "மாறுகிறறது" → "மாறுகிறது"
+
 def fix_order(t: str) -> str:
+    t = STRAY_LATIN.sub("", t)
     t = PREFIX_SIGN.sub(r"\2\1", t)
+    t = DOUBLED.sub(r"\1", t)
     return unicodedata.normalize("NFC", t)   # ெ+ா → ொ, ே+ா → ோ, ெ+ௗ → ௌ
 
 OCR_MODE = (os.environ.get("OCR") or "auto").lower()   # "off": use the PDF's own text (fast, no OCR); "auto": OCR broken pages
