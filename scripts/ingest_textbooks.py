@@ -207,9 +207,35 @@ def gemini_json(prompt: str):
             time.sleep(10 * (attempt + 1))
     raise RuntimeError(last)
 
+EXERCISE = re.compile(r"மதிப்பீடு|சரியான விடையை|கோடிட்ட இடத்தை|பொருத்துக|சரியா\s*\??\s*தவறா|குறுவினா|சிறுவினா|பெருவினா")
+squash = lambda t: re.sub(r"[\s\u200c\u200d·:.,\-–()]+", "", t)
+
+def refine_starts(pages, chs):
+    """Lesson starts from the AI can be a few pages off (e.g. a printed page number). Look a few pages around it for
+    the page whose top shows the lesson title and that is not an exercise page; keep starts in increasing order."""
+    by_no = {no: t for no, t in pages}
+    nos = [no for no, _ in pages]
+    out, prev = [], 0
+    for c in chs:
+        start, key = c["start_page"], squash(str(c.get("title", "")))[:12]
+        best = None
+        if len(key) >= 3:
+            for no in [n for n in nos if start - 3 <= n <= start + 8 and n > prev]:
+                head = by_no.get(no, "")[:500 if len(key) >= 6 else 140]   # short titles: only the very top of the page
+                if key in squash(head) and not EXERCISE.search(head[:200]):
+                    best = no
+                    break
+        if best and best != start:
+            print(f"    lesson {c.get('no')}: start p{start} → p{best} (title found there)")
+        c = {**c, "start_page": best or max(start, prev + 1)}
+        prev = c["start_page"]
+        out.append(c)
+    return out
+
 def detect_chapters(pages, title, subject):
     """Return [(chapter_no, title_ta, subject, page_from, page_to)] using the first lines of every page."""
-    index = "\n".join(f"[p{no}] " + re.sub(r"\s+", " ", t[:180]) for no, t in pages)
+    # printed page numbers ("77 ஒளி …") differ from PDF page numbers — strip them so only our [pN] ids are numbers
+    index = "\n".join(f"[p{no}] " + re.sub(r"^\s*\d{1,3}\s+", "", re.sub(r"\s+", " ", t[:220])) for no, t in pages)
     allowed = "science or social" if subject == "sciso" else subject
     prompt = (
         f"This is the first text of every page of the Tamil Nadu Samacheer Kalvi textbook \"{title}\". "
@@ -235,6 +261,7 @@ def detect_chapters(pages, title, subject):
     if not chs:
         return [(1, title, "social" if subject == "sciso" else subject, pages[0][0] if pages else 1, last_page)]
     chs.sort(key=lambda c: c["start_page"])
+    chs = refine_starts(pages, chs)
     out, seen = [], set()
     for i, c in enumerate(chs):
         subj = c.get("subject") if subject == "sciso" else subject
@@ -455,10 +482,41 @@ class Progress:
         except BaseException:
             pass
 
+def repair_chapters(doc, title, subject):
+    pages = [(i + 1, clean(page_text(page))) for i, page in enumerate(doc)]
+    pages = [(n, t) for n, t in pages if t.strip()]
+    found = detect_chapters(pages, title, subject)
+    old = sb_all("chapters", {"book": f"eq.{title}", "select": "id,subject,chapter_no,page_from,page_to,title_ta"})
+    by_key = {(c["subject"], c["chapter_no"]): c for c in old}
+    changed = 0
+    for no, ctitle, subj, a, b in found:
+        c = by_key.get((subj, no))
+        if not c:
+            continue
+        if (c["page_from"], c["page_to"]) == (a, b):
+            continue
+        changed += 1
+        print(f"    {subj} {no}. {c['title_ta'][:40]}: p{c['page_from']}–{c['page_to']} → p{a}–{b}")
+        sb("PATCH", "chapters", params={"id": f"eq.{c['id']}"}, data=json.dumps({"page_from": a, "page_to": b}), headers={"Prefer": "return=minimal"})
+        # passages and their questions follow the pages
+        sb("PATCH", "textbook_chunks", params={"book": f"eq.{title}", "page_from": f"gte.{a}", "and": f"(page_from.lte.{b})"},
+           data=json.dumps({"chapter_id": c["id"]}), headers={"Prefer": "return=minimal"})
+        sb("DELETE", "chapter_notes", params={"chapter_id": f"eq.{c['id']}"})
+    # questions follow their passage's (new) lesson
+    if changed:
+        for c in sb_all("chapters", {"book": f"eq.{title}", "select": "id,page_from,page_to"}):
+            ids = [x["id"] for x in sb_all("textbook_chunks", {"chapter_id": f"eq.{c['id']}", "select": "id"})]
+            for i in range(0, len(ids), 150):
+                sb("PATCH", "questions", params={"chunk_id": f"in.({','.join(map(str, ids[i:i + 150]))})"},
+                   data=json.dumps({"chapter_id": c["id"]}), headers={"Prefer": "return=minimal"})
+    print(f"  lesson pages fixed: {changed} of {len(old)} lessons changed")
+    return changed
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     check_only = "--check" in sys.argv
     pages_only = "--pages-only" in sys.argv          # only upload page images (books already loaded)
+    fix_pages = "--fix-chapters" in sys.argv         # only re-check lesson start pages of books already loaded
     only = os.environ.get("BOOK", "").strip()       # load just the books whose title contains this text
     manifest = args[0] if args else "textbooks/manifest.csv"
     if not check_only and not (URL and KEY and GEMINI):
@@ -481,8 +539,17 @@ def main():
         if prog:
             prog.update(force=True, done=bi, current=title, failed=len(failed))
         loaded = not check_only and already_loaded(title)
-        if pages_only and not loaded:
+        if (pages_only or fix_pages) and not loaded:
             print("  not loaded yet, skipping")
+            continue
+        if fix_pages:
+            try:
+                repair_chapters(fitz.open(get_pdf(row["source"].strip())), title, subject)
+            except BaseException as e:
+                print(f"  !! could not fix: {e}")
+                failed.append(title)
+            if prog:
+                prog.update(force=True, done=bi + 1, failed=len(failed))
             continue
         old_links = None
         if loaded and RELOAD and not pages_only:

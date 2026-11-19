@@ -6,6 +6,7 @@ on:
       ocr: { description: "OCR: off = use the PDF's own text (fast); auto = OCR pages whose text is broken (slow)", type: choice, options: ["off", "auto"], default: "off" }
       sample_pages: { description: "Check mode: print these PDF pages in full (e.g. 5,81,165)", required: false, default: "" }
       reload: { description: "Also reload the text of books already loaded (keeps lessons, notes and questions)", type: boolean, default: false }
+      fix_chapters: { description: "Only fix where each lesson starts (books already loaded)", type: boolean, default: false }
       pages_only: { description: "Only upload the page images (for books already loaded)", type: boolean, default: false }
       check_only: { description: "Only check text extraction (no upload)", type: boolean, default: false }
 env:
@@ -20,7 +21,7 @@ jobs:
         with: { python-version: "3.12" }
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-tam
       - run: pip install -r scripts/requirements.txt
-      - run: python scripts/ingest_textbooks.py textbooks/manifest.csv ${{ github.event.inputs.check_only == 'true' && '--check' || '' }} ${{ github.event.inputs.pages_only == 'true' && '--pages-only' || '' }}
+      - run: python scripts/ingest_textbooks.py textbooks/manifest.csv ${{ github.event.inputs.check_only == 'true' && '--check' || '' }} ${{ github.event.inputs.pages_only == 'true' && '--pages-only' || '' }} ${{ github.event.inputs.fix_chapters == 'true' && '--fix-chapters' || '' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
