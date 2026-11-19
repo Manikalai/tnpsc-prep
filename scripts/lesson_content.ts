@@ -12,7 +12,8 @@ const admin = supabaseAdmin();
 const budgetMs = Number(process.env.LESSON_MINUTES || 320) * 60e3;
 const maxStd = Number(process.env.LESSON_MAX_STD || 12);
 const only = (process.env.LESSON_ONLY || "").split(",").map((s) => s.trim()).filter(Boolean); // e.g. "bookback,clean"
-const want = (k: string) => !only.length || only.includes(k);
+// book-back answers now come from brainkart (teacher-written) — AI book-back only when asked for explicitly
+const want = (k: string) => (only.length ? only.includes(k) : k !== "bookback");
 const t0 = Date.now();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const timeLeft = () => Date.now() - t0 < budgetMs;
