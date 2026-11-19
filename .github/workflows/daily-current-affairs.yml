@@ -23,8 +23,17 @@ jobs:
           curl -sL -A "Mozilla/5.0" "${{ github.event.inputs.dump_url }}" -o dump/page.html
           curl -sL -A "Mozilla/5.0" "$(grep -o 'href="[^"]*currentaffairs-detail[^"]*"' dump/page.html | head -1 | sed 's/href="//;s/"$//' | sed 's#^/#https://www.tnpscthervupettagam.com/#')" -o dump/detail.html || true
           ls -la dump
-          echo "===== LIST SNIPPETS"; tr '\n' ' ' < dump/page.html | grep -o '.\{0,900\}currentaffairs-detail.\{0,400\}' | head -3
-          echo "===== DETAIL"; tr '\n' ' ' < dump/detail.html | sed 's/<script[^>]*>[^<]*<\/script>//g' | grep -o '<h1.\{0,3500\}' | head -1
+          python3 - <<'PY'
+          import re
+          h = open("dump/page.html", encoding="utf-8", errors="ignore").read()
+          print("===== LIST SNIPPETS", len(h))
+          for m in list(re.finditer("currentaffairs-detail", h))[:4]:
+              print("-----"); print(h[max(0, m.start() - 1200): m.start() + 400])
+          d = open("dump/detail.html", encoding="utf-8", errors="ignore").read()
+          d = re.sub(r"<script[\s\S]*?</script>|<style[\s\S]*?</style>", "", d)
+          i = d.find("<h1")
+          print("===== DETAIL", len(d)); print(d[i: i + 5000] if i >= 0 else d[:5000])
+          PY
       - if: ${{ github.event.inputs.dump_url != '' }}
         uses: actions/upload-artifact@v4
         with: { name: html-dump, path: dump }
