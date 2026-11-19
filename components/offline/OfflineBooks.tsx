@@ -7,6 +7,8 @@ import type { OQ } from "@/lib/offline-score";
 import type { Clean, Facts, Revision, Summary } from "@/lib/chapters";
 import BookPages from "@/components/BookPages";
 import { CleanView } from "@/components/CleanNotes";
+import { BookBackView } from "@/components/BookBack";
+import type { BookBack } from "@/lib/bookback";
 import Md from "@/components/Md";
 import RevealList from "@/components/RevealList";
 
@@ -55,7 +57,7 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
   useEffect(() => {
     (async () => {
       const n: Record<string, unknown> = {};
-      for (const k of ["clean", "summary", "facts", "revision"]) {
+      for (const k of ["clean", "bookback", "summary", "facts", "revision"]) {
         const v = await idb.getOne<{ content: unknown }>("chnotes", `${ch.id}:${k}`);
         if (v) n[k] = v.content;
       }
@@ -73,11 +75,12 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
       <button className="text-sm underline" onClick={onBack}>← பாடநூல்கள்</button>
       <div><p className="muted">{ch.book}{ch.term ? ` · பருவம் ${ch.term}` : ""}</p><h2 className="h1">பாடம் {ch.chapter_no}: {ch.title_ta}</h2></div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-        {[["text", "பாடநூல்"], ["clean", "எளிய குறிப்புகள்"], ["summary", "முக்கியக் குறிப்புகள்"], ["facts", "நாட்கள் · ஆளுமைகள்"], ["mcq", "வினாக்கள்"], ["revision", "திருப்புதல்"]].map(([k, l]) => (
+        {[["text", "பாடநூல்"], ["clean", "எளிய குறிப்புகள்"], ["bookback", "புத்தக வினாக்கள்"], ["summary", "முக்கியக் குறிப்புகள்"], ["facts", "நாட்கள் · ஆளுமைகள்"], ["mcq", "வினாக்கள்"], ["revision", "திருப்புதல்"]].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${tab === k ? "bg-brand-500 text-white" : "bg-white ring-1 ring-stone-200"}`}>{l}</button>
         ))}
       </div>
       {tab === "text" && <BookPages book={ch.book} from={ch.page_from} to={ch.page_to} />}
+      {tab === "bookback" && (notes.bookback ? <BookBackView data={notes.bookback as BookBack} /> : missing)}
       {tab === "clean" && (notes.clean ? <CleanView clean={notes.clean as Clean} /> : missing)}
       {tab === "summary" && (notes.summary ? (
         <>

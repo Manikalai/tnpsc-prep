@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/supabase/server";
 import { type Chapter, type Clean, type Facts, type Revision, type Summary } from "@/lib/chapters";
 import BookPages from "@/components/BookPages";
 import CleanNotes from "@/components/CleanNotes";
+import BookBackPanel from "@/components/BookBack";
+import type { BookBack } from "@/lib/bookback";
 import Md from "@/components/Md";
 import StartButton from "@/components/StartButton";
 import RevealList from "@/components/RevealList";
@@ -13,6 +15,7 @@ export const dynamic = "force-dynamic";
 const TABS = [
   ["text", "பாடநூல்"],
   ["clean", "எளிய குறிப்புகள்"],
+  ["bookback", "புத்தக வினாக்கள்"],
   ["summary", "முக்கியக் குறிப்புகள்"],
   ["facts", "நாட்கள் · ஆளுமைகள் · உண்மைகள்"],
   ["mcq", "வினாக்கள்"],
@@ -63,6 +66,8 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
       </div>
 
       {tab === "text" && <BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />}
+
+      {tab === "bookback" && <BookBackPanel chapterId={c.id} initial={(note("bookback") as BookBack | undefined) ?? null} />}
 
       {tab === "clean" && <CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />}
 

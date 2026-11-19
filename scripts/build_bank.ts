@@ -6,6 +6,7 @@ import { generateForUnit, qHash, type Unit } from "../lib/questions";
 import { maxStdFor } from "../lib/exam";
 import { drill, APT_TYPES } from "../lib/aptitude";
 import { verifyPending } from "../lib/verify";
+import { generateBookBack } from "../lib/bookback";
 import { classifyChapters, cleanDone, generateChapterMCQs, generateChapterNote, generateCleanPart, NOTE_KINDS, type Chapter, type Clean } from "../lib/chapters";
 
 const admin = supabaseAdmin();
@@ -123,6 +124,17 @@ let chapterCalls = 0;
         console.log(log.at(-1));
         await sleep(Number(process.env.BANK_SLEEP_MS || 7000));
       }
+    }
+    if (!have.has(`${ch.id}:bookback`) && chapterCalls < chapterBudget && process.uptime() < 40 * 60) {
+      chapterCalls++;
+      try {
+        const bb = await generateBookBack(admin, ch);
+        log.push(`chapter ${ch.id} bookback: ${bb.sections.reduce((n, s) => n + s.items.length, 0)} questions`);
+      } catch (e) {
+        log.push(`chapter ${ch.id} bookback: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`);
+      }
+      console.log(log.at(-1));
+      await sleep(Number(process.env.BANK_SLEEP_MS || 7000));
     }
     for (const kind of NOTE_KINDS) {
       if (have.has(`${ch.id}:${kind}`)) continue;

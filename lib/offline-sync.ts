@@ -154,7 +154,7 @@ export async function incrementalSync(progress: Progress = () => {}) {
   const missing = mine.filter((id) => !have.has(id));
   if (missing.length) await pullChapters(missing, progress, 50, 25);
   const notesHave = new Set((await idb.all<{ key: string }>("chnotes")).map((n) => n.key));
-  const notesMissing = mine.filter((id) => ["clean", "summary", "facts", "revision"].some((k) => !notesHave.has(`${id}:${k}`)));
+  const notesMissing = mine.filter((id) => ["clean", "bookback", "summary", "facts", "revision"].some((k) => !notesHave.has(`${id}:${k}`)));
   if (notesMissing.length) await pullChapters(notesMissing, progress, 75, 15, true);
   await pullExplanations(s.lastSync);
   await cachePages(meta.chapters.filter((c) => s.stds.includes(c.std)), progress, 92, 7);
