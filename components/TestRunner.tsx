@@ -100,6 +100,13 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
         <div className={`rounded-lg px-3 py-1 font-mono text-sm font-bold ${left < 300 ? "bg-kumkum-50 text-kumkum-500" : "bg-white text-ink"}`}>⏱ {fmtTime(left)}</div>
         <button className="btn btn-sm" onClick={() => submit()} disabled={busy}>{busy ? "…" : "Submit"}</button>
       </div>
+      {!onSubmit && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-stone-500">Print / offline:</span>
+          <a href={`/test/${testId}/print?part=paper&auto=1`} className="chip !py-1">📄 Question paper PDF</a>
+          <a href={`/test/${testId}/print?part=key&auto=1`} className="chip !py-1">🔑 Answer key PDF</a>
+        </div>
+      )}
 
       <div className="card">
         <div className="mb-2 flex items-center justify-between">

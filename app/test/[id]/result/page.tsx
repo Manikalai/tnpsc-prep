@@ -91,6 +91,7 @@ export default async function Result({ params, searchParams }: { params: Promise
         <Link className={only === "wrong" ? "btn-ghost btn-sm" : "btn btn-sm"} href={`/test/${id}/result`}>All questions</Link>
         <Link className={only === "wrong" ? "btn btn-sm" : "btn-ghost btn-sm"} href={`/test/${id}/result?only=wrong`}>Wrong / unanswered</Link>
         <Link className="btn-ghost btn-sm" href="/revision">Revision list</Link>
+        <Link className="btn-ghost btn-sm" href={`/test/${id}/print?part=both&auto=1`}>📄 Paper + key PDF</Link>
       </div>
 
       <div className="space-y-3">
