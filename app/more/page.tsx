@@ -9,6 +9,7 @@ const GROUPS: { title: string; items: [string, string, string, string][] }[] = [
       ["/syllabus", "🗂️", "Syllabus", "Progress by unit"],
       ["/timeline", "⏳", "Years & events", "Timeline across subjects, memory tricks"],
       ["/notes", "📝", "Memory notes", "Mnemonics, summaries, tables"],
+      ["/tamil", "அ", "General Tamil", "100 of 200 questions: grammar, Thirukkural, books & authors"],
       ["/aptitude", "🧮", "Aptitude", "10 topics, shortcuts"],
       ["/ask", "💬", "Ask the textbook", "Doubts answered from the textbook"],
     ],

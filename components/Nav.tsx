@@ -30,7 +30,7 @@ export function Brand({ big = false }: { big?: boolean }) {
 const ROOTS = ["/", "/quiz/new", "/mock", "/ca", "/more"];
 // short app-bar titles for sub-pages
 const TITLES: [RegExp, string][] = [
-  [/^\/aptitude\/shortcuts/, "Shortcuts"], [/^\/aptitude/, "Aptitude"], [/^\/books/, "Textbooks"], [/^\/chapter\//, "Lesson"],
+  [/^\/tamil\/kural/, "Thirukkural"], [/^\/tamil\/nool/, "Books & authors"], [/^\/tamil/, "General Tamil"], [/^\/aptitude\/shortcuts/, "Shortcuts"], [/^\/aptitude/, "Aptitude"], [/^\/books/, "Textbooks"], [/^\/chapter\//, "Lesson"],
   [/^\/ca\//, "Current affairs"], [/^\/papers/, "Previous papers"], [/^\/revision/, "Revision"], [/^\/notes/, "Memory notes"],
   [/^\/flashcards/, "Flashcards"], [/^\/analysis/, "Analysis"], [/^\/planner/, "Study plan"], [/^\/ask/, "Ask the textbook"],
   [/^\/mains/, "Mains"], [/^\/admin/, "Question bank"], [/^\/settings/, "Settings"], [/^\/syllabus/, "Syllabus"],
