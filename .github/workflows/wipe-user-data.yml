@@ -1,0 +1,16 @@
+name: Fresh start (wipe study activity)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm: { description: "Type WIPE to confirm", required: true }
+jobs:
+  run:
+    if: inputs.confirm == 'WIPE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install requests && python scripts/wipe_user_data.py
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
