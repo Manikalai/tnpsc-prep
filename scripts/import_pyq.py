@@ -195,8 +195,14 @@ def read_questions(doc):
                 print(f"  question page {i + 1}: failed ({e})")
         if not data:
             continue
-        for q in data.get("questions", []):
+        if isinstance(data, list):
+            data = {"questions": data}
+        for q in data.get("questions", []) if isinstance(data, dict) else []:
+            if not isinstance(q, dict):
+                continue
             no = q.get("no")
+            if isinstance(no, str) and no.strip().isdigit():
+                no = int(no.strip())
             if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out and all(str(o).strip() for o in q["options"]):
                 opts = [str(o).strip() for o in q["options"]]
                 # match-the-following code options must each be a permutation of 1–4
