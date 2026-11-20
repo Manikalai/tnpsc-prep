@@ -3,6 +3,7 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 import OfflineAutoSync from "@/components/OfflineAutoSync";
 import Toaster from "@/components/Toaster";
+import LaunchSplash from "@/components/LaunchSplash";
 
 export const metadata: Metadata = {
   title: "Saranya Prep",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen font-sans antialiased">
+        <LaunchSplash />
         <Nav />
         <OfflineAutoSync />
         <Toaster />
