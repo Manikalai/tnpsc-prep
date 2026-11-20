@@ -20,6 +20,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: sudo apt-get -qq update && sudo apt-get -qq install -y tesseract-ocr tesseract-ocr-tam > /dev/null
+      - run: |
+          mkdir -p tessbest && cd tessbest
+          curl -sSfL -o tam.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/tam.traineddata
+          curl -sSfL -o eng.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata
+          echo "TESSDATA_BEST=$PWD" >> $GITHUB_ENV
       - run: pip install -r scripts/requirements.txt
       - run: python scripts/import_pyq.py "${{ inputs.question_pdf }}" "${{ inputs.key_pdf }}" --exam ${{ inputs.exam }} --year ${{ inputs.year }} ${{ inputs.do_import && '--import' || '' }}
         env:

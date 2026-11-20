@@ -147,7 +147,10 @@ def ocr(page):
     import subprocess, tempfile
     f = tempfile.mktemp(suffix=".png")
     page.get_pixmap(dpi=300).save(f)
-    out = subprocess.run(["tesseract", f, "-", "-l", "tam+eng", "--psm", "4"], capture_output=True, text=True).stdout
+    cmd = ["tesseract", f, "-", "-l", "tam+eng", "--psm", "4"]
+    if os.environ.get("TESSDATA_BEST"):
+        cmd += ["--tessdata-dir", os.environ["TESSDATA_BEST"]]
+    out = subprocess.run(cmd, capture_output=True, text=True).stdout
     os.remove(f)
     return out
 
@@ -175,8 +178,10 @@ def read_questions(doc):
                   "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge.\n"
                   + ("The text below is OCR of a scanned page: option letters are often garbled (e.g. '(௫0', 'BY', 'fey', 'ம', 'VOY' stand for (A)/(B)/(C)/(D) in order) "
                      "and stray marks like '|', '':' appear — clean these up, but never change the words of a question or option. "
-                     "If a question or an option is unreadable, leave that question out.\n" if scanned else "")
-                  + 'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""]}]}\n\nPAGE TEXT:\n') % (i + 1) + layer
+                     "If a question or an option is unreadable, leave that question out. "
+                     "Set \"clean\": false if ANY word still looks garbled or misspelt by the OCR, or if match-the-following codes are not valid, "
+                     "otherwise true.\n" if scanned else "")
+                  + 'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""],"clean":true}]}\n\nPAGE TEXT:\n') % (i + 1) + layer
         data = None
         try:
             data = _groq(prompt, 0) if (scanned and GROQ) else gemini([img_part(page, 170), {"text": prompt}])
@@ -192,7 +197,11 @@ def read_questions(doc):
         for q in data.get("questions", []):
             no = q.get("no")
             if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out and all(str(o).strip() for o in q["options"]):
-                out[no] = {"stem": q["stem"].strip(), "options": [str(o).strip() for o in q["options"]]}
+                opts = [str(o).strip() for o in q["options"]]
+                # match-the-following code options must each be a permutation of 1–4
+                codes = [re.findall(r"\d", o) for o in opts]
+                bad_codes = all(len(c) >= 3 for c in codes) and any(sorted(c) != ["1", "2", "3", "4"] for c in codes)
+                out[no] = {"stem": q["stem"].strip(), "options": opts, "ocr_doubt": scanned and (q.get("clean") is False or bad_codes)}
         print(f"  question page {i + 1}/{len(doc)}{' (OCR)' if scanned else ''}: total {len(out)}")
         time.sleep(3)
     return out
@@ -305,8 +314,9 @@ def main():
             qs.setdefault(n, q)
     if os.environ.get("SKIP_KEY"):
         print(f"\nSKIP_KEY test: {len(qs)} questions read · groq tokens used {TOKENS[0]}")
-        for n in sorted(qs)[:6]:
-            print(f"\n[{n}] {qs[n]['stem']}\n   " + " | ".join(qs[n]['options']))
+        print(f"clean: {sum(1 for q in qs.values() if not q.get('ocr_doubt'))} · OCR doubt: {sum(1 for q in qs.values() if q.get('ocr_doubt'))}")
+        for n in sorted(qs)[:8]:
+            print(f"\n[{n}]{' (DOUBT)' if qs[n].get('ocr_doubt') else ''} {qs[n]['stem']}\n   " + " | ".join(qs[n]['options']))
         return
     if not small_key:
         print("\n== reading ticks in the answer key"); key = read_key(kdoc)
@@ -325,6 +335,7 @@ def main():
         if k.get("confidence") == "low": flags.append("tick unclear")
         if k.get("answer") is not None and x.get("ai") is not None and x["ai"] != k["answer"]: flags.append(f"AI would answer {L[x['ai']]}")
         if q and len({norm(o) for o in q["options"]}) < 4: flags.append("options not distinct")
+        if q and q.get("ocr_doubt"): flags.append("OCR text unclear")
         report.append({"no": n, "stem": (q or {}).get("stem", "")[:90], "answer": L[k["answer"]] if k.get("answer") is not None else None,
                        "confidence": k.get("confidence"), "ai": L[x["ai"]] if x.get("ai") is not None else None, "unit": x.get("unit_id"), "flags": flags})
         if q and k.get("answer") is not None and "options not distinct" not in flags:
