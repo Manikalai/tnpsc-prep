@@ -52,7 +52,7 @@ export default function Nav() {
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+      <header className="app-header sticky top-0 z-20 border-b border-stone-200/70 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="h-1 bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-2 px-3">
           {isRoot ? (
@@ -74,14 +74,15 @@ export default function Nav() {
           </nav>
         </div>
       </header>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200/80 bg-white/90 shadow-[0_-6px_20px_rgba(60,40,10,0.06)] pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-3xl grid-cols-5">
           {MAIN.map((m) => {
             const on = active(m.href);
             return (
-              <Link key={m.href} href={m.href} prefetch={true} className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[12px] font-medium ${on ? "text-brand-700" : "text-stone-500"}`}>
-                <span className={`grid h-7 w-12 place-items-center rounded-full transition ${on ? "bg-brand-100" : ""}`}>
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={on ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={m.icon} /></svg>
+              <Link key={m.href} href={m.href} prefetch={true} className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 text-[11.5px] ${on ? "font-bold text-maroon-700" : "font-medium text-stone-500"}`}>
+                {on && <span className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />}
+                <span key={on ? path : "off"} className={`grid h-8 w-14 place-items-center rounded-full transition-colors ${on ? "animate-[navpop_.35s_ease] bg-gradient-to-br from-saffron-100 to-amber-50" : ""}`}>
+                  <svg viewBox="0 0 24 24" className="h-[22px] w-[22px]" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.14 : 0} stroke="currentColor" strokeWidth={on ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={m.icon} /></svg>
                 </span>
                 <span className="leading-none">{m.label}</span>
               </Link>

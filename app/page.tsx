@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { EXAM_LABEL, getProfile, todayIST } from "@/lib/data";
 import { daysUntil, pct, taDate } from "@/lib/format";
 import StartButton from "@/components/StartButton";
+import Stories from "@/components/Stories";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,20 @@ export default async function Home() {
 
   return (
     <div className="space-y-4">
+      <Stories
+        items={[
+          { href: `/ca/${today}`, label: "Today's CA", icon: "📰", badge: caToday ?? 0, live: (caToday ?? 0) > 0 },
+          { href: "/revision", label: "Revision", icon: "🔁", badge: due ?? 0, live: (due ?? 0) > 0 },
+          { href: "/flashcards", label: "Flashcards", icon: "🃏", badge: cardsDue ?? 0, live: (cardsDue ?? 0) > 0 },
+          { href: "/mock", label: "Mock test", icon: "⏱️", live: true },
+          { href: "/books", label: "Textbooks", icon: "📖", live: true },
+          { href: "/aptitude", label: "Aptitude", icon: "🧮", live: true },
+          { href: "/timeline", label: "Years", icon: "🗓️", live: true },
+          { href: "/papers", label: "Past papers", icon: "📝", live: true },
+          { href: "/ask", label: "Ask", icon: "💬", live: true },
+          { href: "/offline", label: "Offline", icon: "📴" },
+        ]}
+      />
       <section className="relative overflow-hidden rounded-3xl bg-maroon-900 text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/murugan/hero.webp" alt="முருகன்" className="absolute inset-y-0 right-0 h-full w-[58%] object-cover object-top" />

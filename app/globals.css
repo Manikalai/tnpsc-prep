@@ -6,7 +6,14 @@
   --font-tamil: "Mukta Malar", "Noto Sans Tamil", system-ui, sans-serif;
   --font-read: "Noto Serif Tamil", "Mukta Malar", serif;
 }
-html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+body { overscroll-behavior-x: none; }
+/* top bar tucks away on scroll down (phones), comes back on scroll up */
+@media (max-width: 767px) {
+  .app-header { transition: transform .25s ease; }
+  html[data-scroll="down"] .app-header { transform: translateY(calc(-100% - 2px)); }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 /* feel like an app on phones */
 button, a, summary, label { touch-action: manipulation; }
 button, .btn, .btn-ghost, nav a, summary { -webkit-user-select: none; user-select: none; }
