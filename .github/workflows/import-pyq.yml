@@ -7,6 +7,7 @@ on:
       exam: { description: "Exam", type: choice, options: [G4, G2, G1], default: G4 }
       year: { description: "Exam year", required: true }
       do_import: { description: "Store in the database (leave off for a preview)", type: boolean, default: false }
+      test_pages: { description: "TEST ONLY: read just these pages (e.g. 3-8), skip the key, store nothing", required: false, default: "" }
       key_subject: { description: "Answer-key page to use (TAMIL = Tamil-medium paper; empty = all pages)", required: false, default: "TAMIL" }
 env:
   PYTHONUNBUFFERED: "1"
@@ -30,6 +31,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TIME_BUDGET_MIN: "165"
           KEY_SUBJECT: ${{ inputs.key_subject }}
+          PAGES: ${{ inputs.test_pages }}
+          SKIP_KEY: ${{ inputs.test_pages }}
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
       - uses: actions/upload-artifact@v4
         if: always()

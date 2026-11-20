@@ -59,6 +59,9 @@ class OutOfTime(Exception):
 GROQ_MODELS = [m.strip() for m in (os.environ.get("GROQ_MODELS") or f"{GROQ_MODEL},qwen/qwen3.8-27b,openai/gpt-oss-20b").split(",") if m.strip()]
 
 
+TOKENS = [0]
+
+
 def _groq(text, temperature):
     """Groq (free): tries each model; waits on per-minute limits."""
     last = None
@@ -72,6 +75,8 @@ def _groq(text, temperature):
                               timeout=180)
             if r.status_code == 200:
                 try:
+                    u = r.json().get("usage", {})
+                    TOKENS[0] += u.get("total_tokens", 0)
                     return json.loads(r.json()["choices"][0]["message"]["content"])
                 except Exception as e:
                     last = f"groq {model}: bad JSON {e}"
@@ -151,7 +156,11 @@ def read_questions(doc):
     """{no: {stem, options}} from the question paper. Scanned pages: OCR text tidied by a text AI (Groq first,
     Gemini only as a fallback) so Gemini's small daily quota is kept for the answer-key ticks."""
     out = {}
+    rng = os.environ.get("PAGES", "")
+    lo, hi = (int(x) for x in rng.split("-")) if rng else (1, len(doc))
     for i, page in enumerate(doc):
+        if not (lo <= i + 1 <= hi):
+            continue
         layer = page.get_text("text").strip()
         scanned = len(layer) < 200
         if scanned:
@@ -283,7 +292,7 @@ def main():
     kdoc = qdoc if a.key_url == a.question_url else download(a.key_url, f"{a.exam}-{a.year}-key.pdf")
     print(f"question paper: {len(qdoc)} pages · answer key: {len(kdoc)} pages")
 
-    small_key = len(kdoc) <= 6 and kdoc is not qdoc
+    small_key = len(kdoc) <= 6 and kdoc is not qdoc and not os.environ.get("SKIP_KEY")
     key = {}
     if small_key:  # separate answer-key table: read it first (a few Gemini calls) — no key, no import
         print("\n== reading the answer key"); key = read_key(kdoc)
@@ -294,6 +303,11 @@ def main():
         print("\n== few questions in the paper; reading questions from the answer-key booklet too")
         for n, q in read_questions(kdoc).items():
             qs.setdefault(n, q)
+    if os.environ.get("SKIP_KEY"):
+        print(f"\nSKIP_KEY test: {len(qs)} questions read · groq tokens used {TOKENS[0]}")
+        for n in sorted(qs)[:6]:
+            print(f"\n[{n}] {qs[n]['stem']}\n   " + " | ".join(qs[n]['options']))
+        return
     if not small_key:
         print("\n== reading ticks in the answer key"); key = read_key(kdoc)
     print("\n== independent check + syllabus units"); extra = solve_and_tag(qs, a.exam)
