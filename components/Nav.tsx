@@ -1,20 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { IconHome, IconHomeFilled, IconClipboardCheck, IconClipboardCheckFilled, IconClock, IconClockFilled, IconNews, IconLayoutGrid, IconLayoutGridFilled, IconChevronLeft, type Icon } from "@tabler/icons-react";
+import Emoji, { type EmojiName } from "@/components/Emoji";
 
-const I = {
-  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
-  quiz: "M9 4h6M9 4a2 2 0 0 0-2 2H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1a2 2 0 0 0-2-2M9 12l2 2 4-4M9 17h6",
-  mock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
-  ca: "M4 5h13a1 1 0 0 1 1 1v12a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2zM18 9h2v9a2 2 0 0 1-2 2M8 9h6M8 13h6M8 17h3",
-  more: "M4 6h16M4 12h16M4 18h16",
-};
-const MAIN = [
-  { href: "/", label: "Home", full: "Home", icon: I.home },
-  { href: "/quiz/new", label: "Quiz", full: "Quiz", icon: I.quiz },
-  { href: "/mock", label: "Mock", full: "Mock test", icon: I.mock },
-  { href: "/ca", label: "Current", full: "Current affairs", icon: I.ca },
-  { href: "/more", label: "More", full: "More", icon: I.more },
+const MAIN: { href: string; label: string; full: string; icon: Icon; on: Icon }[] = [
+  { href: "/", label: "Home", full: "Home", icon: IconHome, on: IconHomeFilled },
+  { href: "/quiz/new", label: "Quiz", full: "Quiz", icon: IconClipboardCheck, on: IconClipboardCheckFilled },
+  { href: "/mock", label: "Mock", full: "Mock test", icon: IconClock, on: IconClockFilled },
+  { href: "/ca", label: "Current", full: "Current affairs", icon: IconNews, on: IconNews },
+  { href: "/more", label: "More", full: "More", icon: IconLayoutGrid, on: IconLayoutGridFilled },
 ];
 
 export function Brand({ big = false }: { big?: boolean }) {
@@ -29,19 +24,21 @@ export function Brand({ big = false }: { big?: boolean }) {
 
 const ROOTS = ["/", "/quiz/new", "/mock", "/ca", "/more"];
 // short app-bar titles for sub-pages
-const TITLES: [RegExp, string][] = [
-  [/^\/tamil\/kural/, "Thirukkural"], [/^\/tamil\/nool/, "Books & authors"], [/^\/tamil/, "General Tamil"], [/^\/aptitude\/shortcuts/, "Shortcuts"], [/^\/aptitude/, "Aptitude"], [/^\/books/, "Textbooks"], [/^\/chapter\//, "Lesson"],
-  [/^\/ca\//, "Current affairs"], [/^\/papers/, "Previous papers"], [/^\/revision/, "Revision"], [/^\/notes/, "Memory notes"],
-  [/^\/flashcards/, "Flashcards"], [/^\/analysis/, "Analysis"], [/^\/planner/, "Study plan"], [/^\/ask/, "Ask the textbook"],
-  [/^\/mains/, "Mains"], [/^\/admin/, "Question bank"], [/^\/settings/, "Settings"], [/^\/syllabus/, "Syllabus"],
-  [/^\/offline/, "Offline"], [/^\/timeline/, "Years & events"], [/^\/test\/.*\/result/, "Results"],
+const TITLES: [RegExp, string, EmojiName?][] = [
+  [/^\/tamil\/kural/, "Thirukkural", "scroll"], [/^\/tamil\/nool/, "Books & authors", "writing"], [/^\/tamil/, "General Tamil"],
+  [/^\/aptitude\/shortcuts/, "Shortcuts", "bulb"], [/^\/aptitude/, "Aptitude", "abacus"], [/^\/books/, "Textbooks", "books"], [/^\/chapter\//, "Lesson", "book"],
+  [/^\/ca\//, "Current affairs", "news"], [/^\/papers/, "Previous papers", "memo"], [/^\/revision/, "Revision", "repeat"], [/^\/notes/, "Memory notes", "notebook"],
+  [/^\/flashcards/, "Flashcards", "cards"], [/^\/analysis/, "Analysis", "chart"], [/^\/planner/, "Study plan", "calendar"], [/^\/ask/, "Ask the textbook", "bulb"],
+  [/^\/mains/, "Mains", "writing"], [/^\/admin/, "Question bank", "clipboard"], [/^\/settings/, "Settings", "gear"], [/^\/syllabus/, "Syllabus", "bookmark"],
+  [/^\/offline/, "Offline", "offline"], [/^\/timeline/, "Years & events", "hourglass"], [/^\/test\/.*\/result/, "Results", "trophy"],
 ];
 
 export default function Nav() {
   const path = usePathname();
   const router = useRouter();
   const isRoot = ROOTS.includes(path);
-  const title = TITLES.find(([rx]) => rx.test(path))?.[1];
+  const hit = TITLES.find(([rx]) => rx.test(path));
+  const title = hit?.[1], titleEmoji = hit?.[2];
   const back = () => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
     else router.push(path.split("/").slice(0, -1).join("/") || "/");
@@ -58,8 +55,9 @@ export default function Nav() {
           ) : (
             <div className="flex min-w-0 items-center gap-1">
               <button onClick={back} aria-label="Back" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-maroon-700 active:bg-stone-200/70">
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                <IconChevronLeft size={26} stroke={2.4} />
               </button>
+              {titleEmoji ? <Emoji name={titleEmoji} size={24} /> : title === "General Tamil" ? <span className="text-lg font-bold text-maroon-700">அ</span> : null}
               <span className="truncate text-[17px] font-bold text-maroon-700">{title ?? "Saranya Prep"}</span>
             </div>
           )}
@@ -80,7 +78,7 @@ export default function Nav() {
               <Link key={m.href} href={m.href} prefetch={true} className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 text-[11.5px] ${on ? "font-bold text-maroon-700" : "font-medium text-stone-500"}`}>
                 {on && <span className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-gradient-to-r from-maroon-500 via-saffron-500 to-gold-400" />}
                 <span key={on ? path : "off"} className={`grid h-8 w-14 place-items-center rounded-full transition-colors ${on ? "animate-[navpop_.35s_ease] bg-gradient-to-br from-saffron-100 to-amber-50" : ""}`}>
-                  <svg viewBox="0 0 24 24" className="h-[22px] w-[22px]" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.14 : 0} stroke="currentColor" strokeWidth={on ? 2.3 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={m.icon} /></svg>
+                  {(() => { const I = on ? m.on : m.icon; return <I size={23} stroke={on ? 2.2 : 1.7} />; })()}
                 </span>
                 <span className="leading-none">{m.label}</span>
               </Link>

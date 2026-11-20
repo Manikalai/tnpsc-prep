@@ -5,6 +5,7 @@ import { taDate } from "@/lib/format";
 import StartButton from "@/components/StartButton";
 import CaAddForm from "@/components/CaAddForm";
 import DateJump from "@/components/DateJump";
+import Emoji from "@/components/Emoji";
 import { sloganOfDay } from "@/lib/murugan";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">நடப்பு நிகழ்வுகள்</h1>
+      <h1 className="h1 flex items-center gap-2"><Emoji name="news" size={30} />நடப்பு நிகழ்வுகள்</h1>
       <p className="muted">தமிழ்நாடு, இந்தியா — தினமும் காலை 6 மணிக்குத் தானாகத் தயாராகும். <span className="font-semibold text-maroon-500">{sloganOfDay(3)}</span></p>
       <div className="grid grid-cols-2 gap-2 text-[15px]">
         <Link href={`/ca/${todayIST()}`} className="btn col-span-2">Today's notes</Link>

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode, type TouchEvent } from "react";
 
 /** Lesson tabs switch on the phone itself: no server round trip per tap.
@@ -58,8 +59,8 @@ export default function LessonTabs({ tabs, panels, initial, prev, next }: {
         ))}
       </div>
       <div className="flex justify-between gap-2 pt-1">
-        {prev ? <Link className="pill-nav" href={`${prev.href}?tab=${tab}`}>{prev.label}</Link> : <span />}
-        {next ? <Link className="pill-nav" href={`${next.href}?tab=${tab}`}>{next.label}</Link> : <span />}
+        {prev ? <Link className="pill-nav" href={`${prev.href}?tab=${tab}`}><IconChevronLeft size={18} stroke={2.4} />{prev.label.replace("‹ ", "")}</Link> : <span />}
+        {next ? <Link className="pill-nav" href={`${next.href}?tab=${tab}`}>{next.label.replace(" ›", "")}<IconChevronRight size={18} stroke={2.4} /></Link> : <span />}
       </div>
     </>
   );

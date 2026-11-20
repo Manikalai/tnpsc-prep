@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { OPT, pct } from "@/lib/format";
 import ReportButton from "@/components/ReportButton";
+import Emoji from "@/components/Emoji";
 import ExplainButton from "@/components/ExplainButton";
 
 type Row = { id: string; name: string; correct: number; total: number; attempted: number; marks?: number; max?: number; gate?: number | null };
@@ -29,7 +30,15 @@ export default async function Result({ params, searchParams }: { params: Promise
     <div className="space-y-4">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-maroon-700 via-maroon-500 to-saffron-500 p-4 text-white shadow">
         <Vel className="absolute -right-1 bottom-0 h-28 opacity-30" />
-        <p className="relative text-[17px] font-bold text-gold-400">{blessing((Number(test.score) / Math.max(1, Number(test.max_score))) * 100)}</p>
+        {(() => {
+          const pc = (Number(test.score) / Math.max(1, Number(test.max_score))) * 100;
+          return (
+            <div className="relative flex items-center gap-3">
+              <Emoji name={pc >= 80 ? "trophy" : pc >= 60 ? "star" : pc >= 40 ? "muscle" : "diya"} size={52} />
+              <p className="text-[17px] font-bold text-gold-400">{blessing(pc)}</p>
+            </div>
+          );
+        })()}
       </div>
       <div className="card">
         <p className="muted">{test.title}</p>

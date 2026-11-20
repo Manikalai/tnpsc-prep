@@ -4,6 +4,7 @@ import { EXAM_LABEL, getProfile } from "@/lib/data";
 import { loadExam } from "@/lib/exam";
 import { taDate } from "@/lib/format";
 import ExamTabs from "@/components/ExamTabs";
+import Emoji from "@/components/Emoji";
 import StartButton from "@/components/StartButton";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function Mock({ searchParams }: { searchParams: Promise<{ e
 
   return (
     <div className="space-y-4">
-      <h1 className="h1">மாதிரித் தேர்வு</h1>
+      <h1 className="h1 flex items-center gap-2"><Emoji name="stopwatch" size={30} />மாதிரித் தேர்வு</h1>
       <ExamTabs base="/mock" current={code} />
       {exam && (
         <div className="card">

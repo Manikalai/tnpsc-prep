@@ -7,6 +7,7 @@ import { todayIST } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import CaList, { type CA } from "@/components/CaList";
 
 export default async function CaDay({ params }: { params: Promise<{ date: string }> }) {
@@ -21,9 +22,9 @@ export default async function CaDay({ params }: { params: Promise<{ date: string
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="Previous day">‹</Link>
+        <Link href={`/ca/${prev.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0" aria-label="Previous day"><IconChevronLeft size={22} stroke={2.4} /></Link>
         <h1 className="text-center text-[17px] font-bold leading-tight text-brand-700">{taDate(date, true)}</h1>
-        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0 text-lg" aria-label="Next day">›</Link>
+        <Link href={`/ca/${next.toISOString().slice(0, 10)}`} className="pill-nav h-10 w-10 justify-center px-0" aria-label="Next day"><IconChevronRight size={22} stroke={2.4} /></Link>
       </div>
       <div className="card flex flex-wrap items-center justify-between gap-3">
         <DateJump value={date} max={todayIST()} />
