@@ -147,7 +147,7 @@ def ocr(page):
     import subprocess, tempfile
     f = tempfile.mktemp(suffix=".png")
     page.get_pixmap(dpi=300).save(f)
-    cmd = ["tesseract", f, "-", "-l", "tam+eng", "--psm", "4"]
+    cmd = ["tesseract", f, "-", "-l", os.environ.get("OCR_LANG", "tam"), "--psm", "4"]
     if os.environ.get("TESSDATA_BEST"):
         cmd += ["--tessdata-dir", os.environ["TESSDATA_BEST"]]
     out = subprocess.run(cmd, capture_output=True, text=True).stdout
@@ -177,10 +177,11 @@ def read_questions(doc):
                   "If a question exists only in English (e.g. an English-language section) give it as printed. Keep match-the-following lists and "
                   "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge.\n"
                   + ("The text below is OCR of a scanned page: option letters are often garbled (e.g. '(௫0', 'BY', 'fey', 'ம', 'VOY' stand for (A)/(B)/(C)/(D) in order) "
-                     "and stray marks like '|', '':' appear — clean these up, but never change the words of a question or option. "
+                     "and stray marks like '|', '':' appear — remove these. Fix a misspelt Tamil word ONLY when the correct word is certain from the "
+                     "sentence (e.g. 'விளைமுற்றின்னக்' → 'வினைமுற்றைக்'); never change meaning, names, numbers or the options' content. "
                      "If a question or an option is unreadable, leave that question out. "
-                     "Set \"clean\": false if ANY word still looks garbled or misspelt by the OCR, or if match-the-following codes are not valid, "
-                     "otherwise true.\n" if scanned else "")
+                     "Set \"clean\": false only if some word is still garbled after your fixes (you could not be sure what it says) or "
+                     "match-the-following codes are not valid permutations of 1–4; otherwise true.\n" if scanned else "")
                   + 'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""],"clean":true}]}\n\nPAGE TEXT:\n') % (i + 1) + layer
         data = None
         try:
