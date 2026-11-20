@@ -7,9 +7,15 @@
 const CACHE = "tnpsc-v4"; // pages + app code; textbook page images live in "tnpsc-pages"
 const PAGES = "tnpsc-pages";
 
+// pictures and data the app shows everywhere: saved on the phone so they appear offline too
+const ASSETS = ["/emoji/abacus.webp", "/emoji/bell.webp", "/emoji/book.webp", "/emoji/bookmark.webp", "/emoji/books.webp", "/emoji/brain.webp", "/emoji/bulb.webp", "/emoji/calendar.webp", "/emoji/calendar2.webp", "/emoji/cards.webp", "/emoji/chart.webp", "/emoji/clipboard.webp", "/emoji/diya.webp", "/emoji/fire.webp", "/emoji/gear.webp", "/emoji/globe.webp", "/emoji/graduation.webp", "/emoji/hourglass.webp", "/emoji/lotus.webp", "/emoji/magnifier.webp", "/emoji/memo.webp", "/emoji/muscle.webp", "/emoji/news.webp", "/emoji/notebook.webp", "/emoji/offline.webp", "/emoji/peacock.webp", "/emoji/pencil.webp", "/emoji/puzzle.webp", "/emoji/question.webp", "/emoji/repeat.webp", "/emoji/scroll.webp", "/emoji/sparkles.webp", "/emoji/speech.webp", "/emoji/star.webp", "/emoji/stopwatch.webp", "/emoji/target.webp", "/emoji/trophy.webp", "/emoji/writing.webp", "/murugan/darshan.webp", "/murugan/hero.webp", "/murugan/sannidhi.webp", "/logo-128.webp", "/icon-192.png", "/favicon-64.png", "/data/kural.json", "/manifest.webmanifest"];
+const isAsset = (u) => u.origin === location.origin && /^\/(emoji|murugan|data)\/|^\/(logo-128\.webp|icon-192\.png|favicon-64\.png)$/.test(u.pathname);
+const isFont = (u) => u.hostname === "fonts.googleapis.com" || u.hostname === "fonts.gstatic.com";
+
 async function warm() {
   try {
     const c = await caches.open(CACHE);
+    await Promise.all(ASSETS.map(async (a) => { if (!(await c.match(a))) await c.add(a).catch(() => {}); }));
     for (const url of ["/offline", "/"]) {
       const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
       if (!res.ok || new URL(res.url).pathname.startsWith("/login")) continue; // not signed in yet
@@ -57,6 +63,15 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   const url = new URL(req.url);
+  // pictures, Thirukkural data and Tamil fonts: phone copy first, refreshed in the background
+  if (req.method === "GET" && (isAsset(url) || isFont(url))) {
+    e.respondWith(caches.open(CACHE).then(async (c) => {
+      const hit = await c.match(req);
+      const fresh = fetch(req).then((res) => { if (res.ok || res.type === "opaque") c.put(req, res.clone()); return res; }).catch(() => hit);
+      return hit || fresh;
+    }));
+    return;
+  }
   if (req.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
 
   // app code never changes under the same name: phone copy first
