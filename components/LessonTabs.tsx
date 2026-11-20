@@ -1,11 +1,13 @@
 "use client";
 import Link from "next/link";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import ReportButton from "@/components/ReportButton";
 import { useRef, useState, type ReactNode, type TouchEvent } from "react";
 
 /** Lesson tabs switch on the phone itself: no server round trip per tap.
  *  A panel is mounted the first time it is opened and kept afterwards. */
-export default function LessonTabs({ tabs, panels, initial, prev, next }: {
+export default function LessonTabs({ tabs, panels, initial, prev, next, chapterId }: {
+  chapterId?: number;
   tabs: readonly (readonly [string, string])[];
   panels: Record<string, ReactNode>;
   initial: string;
@@ -55,7 +57,10 @@ export default function LessonTabs({ tabs, panels, initial, prev, next }: {
       </div>
       <div onTouchStart={onStart} onTouchEnd={onEnd} className="min-h-[50vh]">
         {tabs.map(([k]) => seen.has(k) && (
-          <div key={k} hidden={tab !== k} className={`space-y-4 ${tab === k ? "animate-[fadein_.22s_ease]" : ""}`}>{panels[k]}</div>
+          <div key={k} hidden={tab !== k} className={`space-y-4 ${tab === k ? "animate-[fadein_.22s_ease]" : ""}`}>
+            {panels[k]}
+            {chapterId && k !== "text" && k !== "mcq" && <div className="flex justify-end"><ReportButton chapterId={chapterId} kind={k} /></div>}
+          </div>
         ))}
       </div>
       <div className="flex justify-between gap-2 pt-1">

@@ -10,6 +10,7 @@ import Md from "@/components/Md";
 import StartButton from "@/components/StartButton";
 import RevealList from "@/components/RevealList";
 import LessonTabs from "@/components/LessonTabs";
+import ListenButton from "@/components/ListenButton";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,7 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         </div>
       </div>
       <LessonTabs
+        chapterId={c.id}
         tabs={TABS}
         initial={TABS.some(([k]) => k === tab) ? tab : "text"}
         prev={prev ? { href: `/chapter/${prev.id}`, label: `‹ Lesson ${prev.chapter_no}` } : undefined}
@@ -73,17 +75,18 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
         panels={{
         text: (<BookPages book={c.book} from={c.page_from} to={c.page_to} pdf={pdf} />),
         bookback: (<BookBackPanel chapterId={c.id} title={c.title_ta} initial={(note("bookback") as BookBack | undefined) ?? null} />),
-        clean: (<CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} />),
+        clean: (<><ListenButton target="ln-clean" /><div id="ln-clean"><CleanNotes chapterId={c.id} initial={(note("clean") as Clean | undefined) ?? null} /></div></>),
         summary: ((note("summary") ? (
         <>
-          <div className="card">
+          <ListenButton target="ln-summary" />
+          <div id="ln-summary" className="space-y-4"><div className="card">
             <h2 className="h2 mb-2">முக்கியக் குறிப்புகள்</h2>
             <ol className="list-decimal space-y-1 pl-5">{(note("summary") as Summary).points.map((p, k) => <li key={k}>{p}</li>)}</ol>
           </div>
-          <div className="card"><h2 className="h2 mb-2">சுருக்கம்</h2><Md text={(note("summary") as Summary).summary} /></div>
+          <div className="card"><h2 className="h2 mb-2">சுருக்கம்</h2><Md text={(note("summary") as Summary).summary} /></div></div>
         </>
       ) : <Generate kind="summary" label="இந்தப் பாடத்தின் சுருக்கமும் முக்கியக் குறிப்புகளும் இன்னும் உருவாக்கப்படவில்லை." />)),
-        facts: ((note("facts") ? <FactsView f={note("facts") as Facts} /> : <Generate kind="facts" label="நாட்கள், ஆளுமைகள், உண்மைகள், கலைச்சொற்கள் பட்டியல் இன்னும் உருவாக்கப்படவில்லை." />)),
+        facts: ((note("facts") ? <><ListenButton target="ln-facts" /><div id="ln-facts" className="space-y-4"><FactsView f={note("facts") as Facts} /></div></> : <Generate kind="facts" label="நாட்கள், ஆளுமைகள், உண்மைகள், கலைச்சொற்கள் பட்டியல் இன்னும் உருவாக்கப்படவில்லை." />)),
         mcq: ((
         <div className="card space-y-2 text-center">
           <p>இந்தப் பாடத்தில் {qs?.length ?? 0} வினாக்கள் உள்ளன{attempts?.length ? ` · நீங்கள் ${right}/${attempts.length} சரி` : ""}.</p>

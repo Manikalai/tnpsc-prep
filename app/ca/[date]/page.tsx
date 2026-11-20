@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import CaList, { type CA } from "@/components/CaList";
+import ListenButton from "@/components/ListenButton";
 
 export default async function CaDay({ params }: { params: Promise<{ date: string }> }) {
   const { date } = await params;
@@ -41,7 +42,8 @@ export default async function CaDay({ params }: { params: Promise<{ date: string
         </div>
       ) : (
         <>
-          <CaList items={data as CA[]} />
+          <ListenButton target="ln-ca" />
+          <div id="ln-ca" className="space-y-4"><CaList items={data as CA[]} /></div>
         </>
       )}
     </div>

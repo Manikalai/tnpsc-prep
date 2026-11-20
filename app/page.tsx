@@ -9,6 +9,7 @@ import { daysUntil, pct, taDate } from "@/lib/format";
 import StartButton from "@/components/StartButton";
 import Stories from "@/components/Stories";
 import Emoji from "@/components/Emoji";
+import { buildPlan } from "@/lib/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function Home() {
   const profile = await getProfile(sb, user.id);
   const today = todayIST();
   const exam = profile.target_exam;
+  const planP = buildPlan(sb, user.id, exam, profile.exam_date ?? null).catch(() => null);
   const [{ data: examRow }, { count: due }, { data: units }, { data: progress }, { data: tests }, { data: profiles }, { count: caToday }, { count: cardsDue }, { data: examTopics }, { data: dailies }] =
     await Promise.all([
       sb.from("exams").select("exam_date,name_ta").eq("code", exam).single(),
@@ -30,6 +32,8 @@ export default async function Home() {
       sb.from("topics").select("id,units!inner(exam_code)").eq("units.exam_code", exam).limit(5000),
       sb.from("tests").select("submitted_at").eq("user_id", user.id).eq("kind", "daily").not("submitted_at", "is", null).gte("submitted_at", new Date(Date.now() - 60 * 864e5).toISOString()).limit(200),
     ]);
+  const plan = await planP;
+  const todayPlan = plan?.days[0];
   const topicIds = new Set((examTopics ?? []).map((t) => t.id));
   const topicCount = topicIds.size;
   const doneTopics = (progress ?? []).filter((p) => topicIds.has(p.topic_id) && (p.status === "done" || p.status === "revised")).length;
@@ -96,6 +100,24 @@ export default async function Home() {
 
       <AbodeJourney pct={pct(doneTopics, topicCount)} />
 
+      {todayPlan && (
+        <Link href="/planner" className="card block !bg-gradient-to-br from-amber-50 to-white ring-1 ring-saffron-400/40 transition active:scale-[0.99]">
+          <div className="flex items-center gap-2">
+            <Emoji name="calendar" size={28} />
+            <h2 className="h2 flex-1">Today&apos;s plan</h2>
+            <span className="text-sm font-semibold text-saffron-500">Open ›</span>
+          </div>
+          {todayPlan.kind === "study" ? (
+            <ul className="mt-2 space-y-1">
+              {todayPlan.topics.slice(0, 3).map((t) => <li key={t.id} className="truncate text-[15px]">• {t.name} <span className="text-xs text-stone-500">· {t.unit}</span></li>)}
+              {todayPlan.topics.length > 3 && <li className="text-xs text-stone-500">+ {todayPlan.topics.length - 3} more</li>}
+              {!todayPlan.topics.length && <li className="text-[15px]">எல்லாத் தலைப்புகளும் முடிந்தன — திருப்புதல் 🎉</li>}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[15px]">{todayPlan.kind === "mock" ? "ஞாயிறு: முழு மாதிரித் தேர்வு + திருப்புதல்" : "திருப்புதல் நாள்: திருப்புதல் பட்டியல் + மாதிரித் தேர்வு"}</p>
+          )}
+        </Link>
+      )}
       <section className="card flex items-center justify-between gap-3">
         <div>
           <h2 className="h2">Today's practice {doneToday ? "✓" : ""}</h2>

@@ -15,11 +15,12 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const profile = await getProfile(sb, user.id);
   const code = sp.exam ?? profile.target_exam;
   const { units } = await loadExam(sb, code);
-  const [{ data: counts }, { data: flagged }, { data: runs }, { count: chunks }] = await Promise.all([
+  const [{ data: counts }, { data: flagged }, { data: runs }, { count: chunks }, { data: noteReports }] = await Promise.all([
     sb.from("bank_counts").select("*"),
     sb.from("questions").select("id,stem,options,answer_index,explanation,source_ref,verify_note,origin,pyq_year").eq("status", "flagged").limit(60),
     sb.from("job_runs").select("*").order("ran_at", { ascending: false }).limit(8),
     sb.from("textbook_chunks").select("*", { count: "exact", head: true }),
+    sb.from("job_runs").select("ran_at,detail").eq("job", "note_report").order("ran_at", { ascending: false }).limit(40),
   ]);
   const { data: reports } = flagged?.length ? await sb.from("question_reports").select("question_id,reason").in("question_id", flagged.map((f) => f.id)) : { data: [] };
   const per = new Map<string, Record<string, number>>();
@@ -83,6 +84,17 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         ))}
       </div>
 
+      {!!noteReports?.length && (
+        <div className="card">
+          <h2 className="h2 mb-2">Reported lesson notes ({noteReports.length})</h2>
+          <ul className="divide-y divide-stone-100 text-sm">
+            {noteReports.map((r, k) => {
+              const d = r.detail as { chapter_id: number; kind: string; reason: string };
+              return <li key={k} className="py-2"><a className="font-semibold underline" href={`/chapter/${d.chapter_id}?tab=${d.kind}`}>Lesson {d.chapter_id} · {d.kind}</a> — {d.reason}</li>;
+            })}
+          </ul>
+        </div>
+      )}
       <div className="card text-sm">
         <h2 className="h2 mb-2">தானியங்கிப் பணிகள்</h2>
         {(runs ?? []).map((r) => (
