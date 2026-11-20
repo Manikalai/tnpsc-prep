@@ -50,7 +50,7 @@ function timeout(p, ms) {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   // textbook page images (Supabase Storage): saved on the phone, served from there first
-  if (req.method === "GET" && req.url.includes("/storage/v1/object/public/pages/")) {
+  if (req.method === "GET" && (req.url.includes("/storage/v1/object/public/pages/") || req.url.includes("/storage/v1/object/public/tts/"))) {
     e.respondWith(
       caches.open(PAGES).then(async (c) => {
         const hit = await c.match(req.url);

@@ -57,6 +57,7 @@ vercel.com → **Sign up with GitHub** → **Add New → Project** → import `t
 | `GROQ_API_KEY` | Groq key (optional) |
 | `OPENROUTER_API_KEY` | OpenRouter key (optional) |
 | `GEMINI_API_KEY_2` | (optional) a second Gemini key from a **new AI Studio project** — its own free daily limit, used when the first runs out |
+| `GOOGLE_TTS_KEY` | (optional) Google Cloud Text-to-Speech API key — natural Tamil voice (Chirp 3 HD) for 🔊 Listen. Free up to 1M characters/month; the app stays under `TTS_MONTHLY_LIMIT` (default 950000) and falls back to the phone voice. Optional `GOOGLE_TTS_VOICE` (default `ta-IN-Chirp3-HD-Kore`). |
 | `SARVAM_API_KEY` | (optional) Sarvam AI key (dashboard.sarvam.ai, ₹100 free credit) — good Tamil, used right after Gemini |
 | `CRON_SECRET` | any long random text |
 | `GH_DISPATCH_TOKEN` | (optional) GitHub fine-grained token, repo `tnpsc-prep`, permission **Actions: Read and write** — lets "இப்போதே புதுப்பி" start the current-affairs job on GitHub |
