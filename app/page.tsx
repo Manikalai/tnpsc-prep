@@ -8,6 +8,7 @@ import { EXAM_LABEL, getProfile, todayIST } from "@/lib/data";
 import { daysUntil, pct, taDate } from "@/lib/format";
 import StartButton from "@/components/StartButton";
 import Stories from "@/components/Stories";
+import Emoji from "@/components/Emoji";
 
 export const dynamic = "force-dynamic";
 
@@ -54,17 +55,17 @@ export default async function Home() {
     <div className="space-y-4">
       <Stories
         items={[
-          { href: `/ca/${today}`, label: "Today's CA", icon: "📰", badge: caToday ?? 0, live: (caToday ?? 0) > 0 },
-          { href: "/revision", label: "Revision", icon: "🔁", badge: due ?? 0, live: (due ?? 0) > 0 },
-          { href: "/flashcards", label: "Flashcards", icon: "🃏", badge: cardsDue ?? 0, live: (cardsDue ?? 0) > 0 },
+          { href: `/ca/${today}`, label: "Today's CA", icon: "news", badge: caToday ?? 0, live: (caToday ?? 0) > 0 },
+          { href: "/revision", label: "Revision", icon: "repeat", badge: due ?? 0, live: (due ?? 0) > 0 },
+          { href: "/flashcards", label: "Flashcards", icon: "cards", badge: cardsDue ?? 0, live: (cardsDue ?? 0) > 0 },
           { href: "/tamil", label: "Tamil", icon: "அ", live: true },
-          { href: "/mock", label: "Mock test", icon: "⏱️", live: true },
-          { href: "/books", label: "Textbooks", icon: "📖", live: true },
-          { href: "/aptitude", label: "Aptitude", icon: "🧮", live: true },
-          { href: "/timeline", label: "Years", icon: "🗓️", live: true },
-          { href: "/papers", label: "Past papers", icon: "📝", live: true },
-          { href: "/ask", label: "Ask", icon: "💬", live: true },
-          { href: "/offline", label: "Offline", icon: "📴" },
+          { href: "/mock", label: "Mock test", icon: "stopwatch", live: true },
+          { href: "/books", label: "Textbooks", icon: "books", live: true },
+          { href: "/aptitude", label: "Aptitude", icon: "abacus", live: true },
+          { href: "/timeline", label: "Years", icon: "hourglass", live: true },
+          { href: "/papers", label: "Past papers", icon: "memo", live: true },
+          { href: "/ask", label: "Ask", icon: "bulb", live: true },
+          { href: "/offline", label: "Offline", icon: "offline" },
         ]}
       />
       <section className="relative overflow-hidden rounded-3xl bg-maroon-900 text-white shadow-lg">
@@ -98,26 +99,26 @@ export default async function Home() {
       <section className="card flex items-center justify-between gap-3">
         <div>
           <h2 className="h2">Today's practice {doneToday ? "✓" : ""}</h2>
-          <p className="muted">20 questions: revision + weak units + current affairs · streak {streak} day{streak === 1 ? "" : "s"} 🔥</p>
+          <p className="muted">20 questions: revision + weak units + current affairs · streak {streak} day{streak === 1 ? "" : "s"} <Emoji name="fire" size={18} className="-mt-1" /></p>
         </div>
         <div className="shrink-0"><StartButton url="/api/daily" label={doneToday ? "Again" : "Start"} busyLabel="…" className="btn whitespace-nowrap" /></div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
         <Link href="/revision" className="card hover:border-brand-500">
-          <p className="text-3xl font-bold text-kumkum-500">{due ?? 0}</p>
+          <div className="flex items-center justify-between"><p className="text-3xl font-bold text-kumkum-500">{due ?? 0}</p><Emoji name="repeat" size={30} /></div>
           <p className="text-sm">Revision due today</p>
         </Link>
         <Link href={`/ca/${today}`} className="card hover:border-brand-500">
-          <p className="text-3xl font-bold text-brand-600">{caToday ?? 0}</p>
+          <div className="flex items-center justify-between"><p className="text-3xl font-bold text-brand-600">{caToday ?? 0}</p><Emoji name="news" size={30} /></div>
           <p className="text-sm">Today's current affairs</p>
         </Link>
         <Link href="/flashcards" className="card hover:border-brand-500">
-          <p className="text-3xl font-bold text-turmeric-500">{cardsDue ?? 0}</p>
+          <div className="flex items-center justify-between"><p className="text-3xl font-bold text-turmeric-500">{cardsDue ?? 0}</p><Emoji name="cards" size={30} /></div>
           <p className="text-sm">Flashcards due</p>
         </Link>
         <Link href="/planner" className="card hover:border-brand-500">
-          <p className="text-3xl font-bold text-ink">{mine.length}</p>
+          <div className="flex items-center justify-between"><p className="text-3xl font-bold text-ink">{mine.length}</p><Emoji name="chart" size={30} /></div>
           <p className="text-sm">Tests this week · Plan →</p>
         </Link>
       </section>
@@ -128,18 +129,21 @@ export default async function Home() {
           <StartButton url="/api/mock" body={{ exam }} label={`${EXAM_LABEL[exam]} full mock test`} busyLabel="Preparing paper…" className="btn w-full" />
           <div className="grid grid-cols-2 gap-2">
             {([
-              ["/quiz/new", "Create quiz", "✚"],
-              ["/books", "Textbooks", "📖"],
-              ["/papers", "Previous papers", "📝"],
-              ["/syllabus", "Unit quiz", "🎯"],
-              ["/tamil", "General Tamil", "அ"],
-              ["/aptitude", "Aptitude", "🧮"],
-              ["/ask", "Ask the textbook", "💬"],
-              ["/offline", "Offline practice", "📴"],
-              ["/revision", "Revision", "🔁"],
-            ] as const).map(([href, label, icon]) => (
-              <Link key={href} href={href} className="flex min-h-[64px] items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 text-[15px] font-semibold leading-snug active:bg-brand-50">
-                <span className="text-xl" aria-hidden>{icon}</span>
+              ["/quiz/new", "Create quiz", "pencil", "from-violet-100 to-fuchsia-50"],
+              ["/books", "Textbooks", "books", "from-sky-100 to-blue-50"],
+              ["/papers", "Previous papers", "memo", "from-amber-100 to-yellow-50"],
+              ["/syllabus", "Unit quiz", "target", "from-rose-100 to-pink-50"],
+              ["/tamil", "General Tamil", "அ", "from-orange-100 to-amber-50"],
+              ["/aptitude", "Aptitude", "abacus", "from-emerald-100 to-green-50"],
+              ["/ask", "Ask the textbook", "bulb", "from-indigo-100 to-violet-50"],
+              ["/offline", "Offline practice", "offline", "from-stone-200 to-stone-50"],
+              ["/revision", "Revision", "repeat", "from-orange-100 to-orange-50"],
+              ["/timeline", "Years & events", "hourglass", "from-yellow-100 to-amber-50"],
+            ] as const).map(([href, label, icon, tint]) => (
+              <Link key={href} href={href} className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-stone-200/70 bg-white px-3 py-2.5 text-[15px] font-semibold leading-snug shadow-[0_1px_2px_rgba(60,40,10,0.05)] transition active:scale-[0.97] active:bg-amber-50">
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${tint}`} aria-hidden>
+                  {icon === "அ" ? <span className="text-[22px] font-bold text-maroon-700">அ</span> : <Emoji name={icon} size={30} />}
+                </span>
                 <span>{label}</span>
               </Link>
             ))}

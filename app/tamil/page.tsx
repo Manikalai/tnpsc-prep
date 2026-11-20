@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import StartButton from "@/components/StartButton";
 import { GT_TOPICS } from "@/lib/tamil";
+import Emoji from "@/components/Emoji";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,10 @@ export default async function TamilPage() {
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/tamil/kural" className="card !bg-gradient-to-br from-amber-50 to-white">
-          <p className="text-2xl">📜</p><p className="mt-1 font-bold">திருக்குறள்</p><p className="muted">1330 குறள்கள் · வினாடி வினா</p>
+          <Emoji name="scroll" size={40} /><p className="mt-1 font-bold">திருக்குறள்</p><p className="muted">1330 குறள்கள் · வினாடி வினா</p>
         </Link>
         <Link href="/tamil/nool" className="card !bg-gradient-to-br from-amber-50 to-white">
-          <p className="text-2xl">✍️</p><p className="mt-1 font-bold">நூல் – ஆசிரியர்</p><p className="muted">பாடநூல் நூல்வெளி</p>
+          <Emoji name="writing" size={40} /><p className="mt-1 font-bold">நூல் – ஆசிரியர்</p><p className="muted">பாடநூல் நூல்வெளி</p>
         </Link>
       </div>
 
