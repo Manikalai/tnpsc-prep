@@ -25,9 +25,11 @@ function chunks(text: string, max: number) {
 }
 
 type Src = { url?: string; audio?: string; fallback?: boolean };
-async function cloud(text: string): Promise<string | null> {
+export async function cloud(text: string, voice?: string): Promise<string | null> {
   try {
-    const r = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    let v = voice;
+    if (!v) try { v = localStorage.getItem("ttsVoice") || undefined; } catch {}
+    const r = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice: v }) });
     const j = (await r.json()) as Src;
     if (j.url) return j.url;
     if (j.audio) return `data:audio/mpeg;base64,${j.audio}`;

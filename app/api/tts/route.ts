@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { route, ok, fail } from "@/lib/api";
+import { PICKABLE } from "@/lib/voices";
 
 // Natural Tamil voice (Google Cloud Text-to-Speech, Chirp 3 HD) for the Listen button.
 // Each piece of text is turned into audio once, saved in Supabase Storage (bucket "tts") and reused for free after that.
@@ -8,6 +9,7 @@ import { route, ok, fail } from "@/lib/api";
 export const maxDuration = 30;
 
 const VOICES = (process.env.GOOGLE_TTS_VOICE || "ta-IN-Chirp3-HD-Kore,ta-IN-Chirp3-HD-Aoede,ta-IN-Wavenet-A").split(",").map((v) => v.trim()).filter(Boolean);
+
 const LIMIT = Number(process.env.TTS_MONTHLY_LIMIT || 950000);
 const SB = () => ({ url: process.env.NEXT_PUBLIC_SUPABASE_URL!, key: process.env.SUPABASE_SERVICE_ROLE_KEY! });
 const H = (k: string) => ({ apikey: k, Authorization: `Bearer ${k}` });
@@ -20,9 +22,9 @@ async function usedThisMonth() {
   return Array.isArray(rows) ? rows.reduce((n, x) => n + (x.detail?.chars ?? 0), 0) : 0;
 }
 
-async function synth(text: string, gkey: string): Promise<Buffer> {
+async function synth(text: string, gkey: string, voices: string[]): Promise<Buffer> {
   let last = "";
-  for (const name of VOICES) {
+  for (const name of voices) {
     const r = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(gkey)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,20 +41,22 @@ async function synth(text: string, gkey: string): Promise<Buffer> {
   throw new Error(last);
 }
 
-export const POST = route<{ text: string }>(async (_ctx, b) => {
+export const POST = route<{ text: string; voice?: string }>(async (_ctx, b) => {
   const gkey = process.env.GOOGLE_TTS_KEY;
   const text = (b.text ?? "").replace(/\s+/g, " ").trim().slice(0, 1500);
   if (!text) return fail("no text");
   if (!gkey) return ok({ fallback: true, reason: "no key" });
   const { url, key } = SB();
-  const hash = createHash("sha1").update(`${VOICES[0]}|${text}`).digest("hex");
+  const chosen = b.voice && (PICKABLE as readonly string[]).includes(b.voice) ? `ta-IN-Chirp3-HD-${b.voice}` : null;
+  const voices = chosen ? [chosen, ...VOICES.filter((v) => v !== chosen)] : VOICES;
+  const hash = createHash("sha1").update(`${voices[0]}|${text}`).digest("hex");
   const pub = `${url}/storage/v1/object/public/tts/${hash.slice(0, 2)}/${hash}.mp3`;
   // already made once → reuse
   const head = await fetch(pub, { method: "HEAD", cache: "no-store" }).catch(() => null);
   if (head?.ok) return ok({ url: pub });
   if ((await usedThisMonth()) + text.length > LIMIT) return ok({ fallback: true, reason: "monthly free limit reached" });
   let audio: Buffer;
-  try { audio = await synth(text, gkey); } catch (e) { console.error("tts", e); return ok({ fallback: true, reason: "voice service error" }); }
+  try { audio = await synth(text, gkey, voices); } catch (e) { console.error("tts", e); return ok({ fallback: true, reason: "voice service error" }); }
   const put = () => fetch(`${url}/storage/v1/object/tts/${hash.slice(0, 2)}/${hash}.mp3`, {
     method: "POST", headers: { ...H(key), "Content-Type": "audio/mpeg", "x-upsert": "true", "Cache-Control": "max-age=31536000" }, body: new Uint8Array(audio),
   });
