@@ -156,44 +156,31 @@ def ocr(page):
 
 
 def read_questions(doc):
-    """{no: {stem, options}} from the question paper. Scanned pages: OCR text tidied by a text AI (Groq first,
-    Gemini only as a fallback) so Gemini's small daily quota is kept for the answer-key ticks."""
+    """{no: {stem, options}} from the question paper. Pages are read as images by Gemini (exact Tamil spelling matters
+    for grammar questions, so no OCR), several pages per request to fit the free daily quota."""
     out = {}
+    per = int(os.environ.get("PAGES_PER_CALL", "3"))
     rng = os.environ.get("PAGES", "")
     lo, hi = (int(x) for x in rng.split("-")) if rng else (1, len(doc))
-    for i, page in enumerate(doc):
-        if not (lo <= i + 1 <= hi):
-            continue
-        layer = page.get_text("text").strip()
-        scanned = len(layer) < 200
-        if scanned:
-            layer = ocr(page)
-        layer = layer[:9000]
-        if len(layer.strip()) < 40:
-            continue
-        prompt = ("This is page %d of a TNPSC question paper (it may be bilingual Tamil/English). Extract EVERY complete question on this page. "
-                  "For each: its printed number, the question in TAMIL exactly as printed, and its four options (A)(B)(C)(D) in TAMIL exactly as printed. "
-                  "Ignore option (E) 'விடை தெரியவில்லை / Answer not known'. "
+    idx = [i for i in range(len(doc)) if lo <= i + 1 <= hi]
+    for b in range(0, len(idx), per):
+        group = idx[b:b + per]
+        layers = "\n\n".join(f"--- page {i + 1} ---\n" + re.sub(r"\s+", " ", doc[i].get_text("text"))[:5000] for i in group)
+        prompt = ("These are pages %s of a TNPSC question paper (it may be bilingual Tamil/English). Extract EVERY complete question on these pages. "
+                  "For each: its printed number, the question in TAMIL exactly as printed (letter for letter — spelling matters, these may be grammar/error questions), "
+                  "and its four options (A)(B)(C)(D) in TAMIL exactly as printed. Ignore option (E) 'விடை தெரியவில்லை'. "
                   "If a question exists only in English (e.g. an English-language section) give it as printed. Keep match-the-following lists and "
-                  "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge.\n"
-                  + ("The text below is OCR of a scanned page: option letters are often garbled (e.g. '(௫0', 'BY', 'fey', 'ம', 'VOY' stand for (A)/(B)/(C)/(D) in order) "
-                     "and stray marks like '|', '':' appear — remove these. Fix a misspelt Tamil word ONLY when the correct word is certain from the "
-                     "sentence (e.g. 'விளைமுற்றின்னக்' → 'வினைமுற்றைக்'); never change meaning, names, numbers or the options' content. "
-                     "If a question or an option is unreadable, leave that question out. "
-                     "Set \"clean\": false only if some word is still garbled after your fixes (you could not be sure what it says) or "
-                     "match-the-following codes are not valid permutations of 1–4; otherwise true.\n" if scanned else "")
-                  + 'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""],"clean":true}]}\n\nPAGE TEXT:\n') % (i + 1) + layer
-        data = None
+                  "statements inside the question text, one per line; copy match codes exactly. Skip instructions and questions cut off at the edge of the last page. "
+                  "If a page has a text layer it is given below; use it where it is correct, but trust the images.\n"
+                  'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""]}]}\n\nTEXT LAYER:\n') % ", ".join(str(i + 1) for i in group) + layers
         try:
-            data = _groq(prompt, 0) if (scanned and GROQ) else gemini([img_part(page, 170), {"text": prompt}])
+            data = gemini([*(img_part(doc[i], 160) for i in group), {"text": prompt}])
+        except OutOfTime:
+            raise
         except Exception as e:
-            try:
-                data = gemini([{"text": prompt}]) if scanned else None
-            except Exception as e2:
-                print(f"  question page {i + 1}: failed ({e} | {e2})")
-            if data is None and not scanned:
-                print(f"  question page {i + 1}: failed ({e})")
-        if not data:
+            print(f"  pages {group[0] + 1}–{group[-1] + 1}: failed ({str(e)[:160]})")
+            if "quota" in str(e).lower() or "429" in str(e):
+                raise SystemExit("Gemini daily limit reached while reading questions — the next daily run continues")
             continue
         if isinstance(data, list):
             data = {"questions": data}
@@ -204,13 +191,9 @@ def read_questions(doc):
             if isinstance(no, str) and no.strip().isdigit():
                 no = int(no.strip())
             if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out and all(str(o).strip() for o in q["options"]):
-                opts = [str(o).strip() for o in q["options"]]
-                # match-the-following code options must each be a permutation of 1–4
-                codes = [re.findall(r"\d", o) for o in opts]
-                bad_codes = all(len(c) >= 3 for c in codes) and any(sorted(c) != ["1", "2", "3", "4"] for c in codes)
-                out[no] = {"stem": q["stem"].strip(), "options": opts, "ocr_doubt": scanned and (q.get("clean") is False or bad_codes)}
-        print(f"  question page {i + 1}/{len(doc)}{' (OCR)' if scanned else ''}: total {len(out)}")
-        time.sleep(3)
+                out[no] = {"stem": q["stem"].strip(), "options": [str(o).strip() for o in q["options"]]}
+        print(f"  pages {group[0] + 1}–{group[-1] + 1}/{len(doc)}: total {len(out)}")
+        time.sleep(4)
     return out
 
 
@@ -374,14 +357,14 @@ def main():
     if not a.do_import:
         print("\nPreview only — nothing stored. Run again with import ticked to store these questions.")
         return
-    if len(qs) < 150:
+    if len(qs) < int(os.environ.get("MIN_QUESTIONS", "150")):
         raise SystemExit("too few questions were read — not importing. Check the report.")
     if not (URL and KEY):
         raise SystemExit("set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
     for i in range(0, len(rows), 100):
         sb("POST", "questions", params={"on_conflict": "hash"}, data=json.dumps(rows[i:i + 100]),
            headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
-    sb("POST", "job_runs", data=json.dumps({"job": "import_pyq", "ok": True, "detail": {"exam": a.exam, "year": a.year, "stored": len(rows), "flagged": len(flagged)}}),
+    sb("POST", "job_runs", data=json.dumps({"job": "import_pyq", "ok": True, "detail": {"exam": a.exam, "year": a.year, "tag": os.environ.get("PAPER_TAG", ""), "stored": len(rows), "flagged": len(flagged)}}),
        headers={"Prefer": "return=minimal"})
     print(f"\nStored {len(rows)} questions ({sum(1 for r in rows if r['status'] == 'flagged')} flagged — check them in வினா வங்கி).")
 
