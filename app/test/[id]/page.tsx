@@ -14,5 +14,6 @@ export default async function TestPage({ params }: { params: Promise<{ id: strin
     .map((qid) => map.get(qid))
     .filter(Boolean)
     .map((q) => ({ id: q!.id, stem: q!.stem as string, options: q!.options as string[], unverified: q!.origin === "ai" && !q!.source_ref }));
-  return <TestRunner testId={test.id} title={test.title} kind={test.kind} durationSec={test.duration_sec ?? questions.length * 54} startedAt={test.started_at} questions={questions} />;
+  const pausedLeft = (test.result as { paused_left?: number } | null)?.paused_left ?? null;
+  return <TestRunner testId={test.id} title={test.title} kind={test.kind} durationSec={test.duration_sec ?? questions.length * 54} startedAt={test.started_at} questions={questions} pausedLeft={pausedLeft} />;
 }

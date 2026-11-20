@@ -16,8 +16,10 @@ const store = {
   del(k: string) { try { localStorage.removeItem(k); } catch { /* storage off */ } },
 };
 
-export default function TestRunner({ testId, title, durationSec, startedAt, questions, onSubmit }: {
+export default function TestRunner({ testId, title, durationSec, startedAt: startedAt0, questions, onSubmit, pausedLeft = null }: {
   testId: string; title: string; kind: string; durationSec: number; startedAt: string; questions: Q[];
+  /** time left when the test was paused (online tests) */
+  pausedLeft?: number | null;
   /** offline mode: handle the answers locally instead of posting to the server */
   onSubmit?: (r: { answers: Record<string, number | null>; times: Record<string, number>; elapsedSec: number }) => Promise<void>;
 }) {
@@ -32,6 +34,9 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
   const times = useRef<Record<string, number>>({});
   const enteredAt = useRef(Date.now());
   const submitted = useRef(false);
+  const [startedAt, setStartedAt] = useState(startedAt0);
+  const [paused, setPaused] = useState<number | null>(pausedLeft); // seconds left while paused
+  const pausedRef = useRef(paused); pausedRef.current = paused;
 
   useEffect(() => {
     const saved = store.get(key);
@@ -42,7 +47,41 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
   useEffect(() => { store.set(key, { answers, flags, i, times: times.current }); }, [answers, flags, i, key]);
 
   const endAt = new Date(startedAt).getTime() + durationSec * 1000;
-  const left = Math.max(0, Math.round((endAt - now) / 1000));
+  const left = paused != null ? paused : Math.max(0, Math.round((endAt - now) / 1000));
+  const leftRef = useRef(left); leftRef.current = left;
+  const online = !onSubmit;
+  const post = (action: string, extra: Record<string, unknown> = {}) =>
+    fetch("/api/test/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ testId, action, ...extra }) }).then((r) => r.json()).catch(() => ({}));
+
+  const pause = () => { if (paused != null) return; setPaused(left); if (online) void post("pause", { left }); };
+  const resume = async () => {
+    if (paused == null) return;
+    if (online) {
+      const r = await post("resume");
+      if (r.startedAt) setStartedAt(r.startedAt);
+      else setStartedAt(new Date(Date.now() - (durationSec - paused) * 1000).toISOString());
+    } else setStartedAt(new Date(Date.now() - (durationSec - paused) * 1000).toISOString());
+    enteredAt.current = Date.now();
+    setPaused(null);
+  };
+  const exitTest = async () => { if (paused == null && online) await post("pause", { left }); router.push("/"); };
+  const discard = async () => {
+    if (!window.confirm("இந்தத் தேர்வை நீக்கவா? இது மதிப்பெண்ணில் சேராது.")) return;
+    submitted.current = true;
+    store.del(key);
+    if (online) await post("discard");
+    router.replace("/");
+  };
+  // leaving the test (back, home, closing the app) pauses it, so the clock never runs while she is away
+  useEffect(() => {
+    if (!online) return;
+    const away = () => {
+      if (submitted.current || pausedRef.current != null) return;
+      try { navigator.sendBeacon("/api/test/state", new Blob([JSON.stringify({ testId, action: "pause", left: leftRef.current })], { type: "application/json" })); } catch {}
+    };
+    window.addEventListener("pagehide", away);
+    return () => { window.removeEventListener("pagehide", away); away(); };
+  }, [online, testId]);
   const answered = useMemo(() => Object.values(answers).filter((v) => v != null).length, [answers]);
 
   const go = (n: number) => {
@@ -84,7 +123,7 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
     else { submitted.current = false; setBusy(false); toast(data.error ?? "சமர்ப்பிக்க முடியவில்லை — இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும். உங்கள் விடைகள் சேமிக்கப்பட்டுள்ளன."); }
   };
 
-  useEffect(() => { if (left === 0 && questions.length && !submitted.current) submit(true); }); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (left === 0 && paused == null && questions.length && !submitted.current) submit(true); }); // eslint-disable-line react-hooks/exhaustive-deps
 
   const q = questions[i];
   if (!q) return <p className="card">இந்தத் தேர்வில் வினாக்கள் இல்லை.</p>;
@@ -97,9 +136,21 @@ export default function TestRunner({ testId, title, durationSec, startedAt, ques
           <p className="truncate text-sm font-semibold text-brand-700">{title}</p>
           <p className="text-xs text-stone-500">விடையளித்தவை {answered}/{questions.length}</p>
         </div>
-        <div className={`rounded-lg px-3 py-1 font-mono text-sm font-bold ${left < 300 ? "bg-kumkum-50 text-kumkum-500" : "bg-white text-ink"}`}>⏱ {fmtTime(left)}</div>
+        <button onClick={pause} aria-label="Pause" className={`flex items-center gap-1 rounded-lg px-3 py-1 font-mono text-sm font-bold active:scale-95 ${left < 300 ? "bg-kumkum-50 text-kumkum-500" : "bg-white text-ink"}`}>⏸ {fmtTime(left)}</button>
         <button className="btn btn-sm" onClick={() => submit()} disabled={busy}>{busy ? "…" : "Submit"}</button>
       </div>
+      {paused != null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-6 text-center shadow-2xl">
+            <p className="text-4xl">⏸</p>
+            <p className="text-lg font-bold">தேர்வு இடைநிறுத்தப்பட்டது</p>
+            <p className="text-sm text-stone-600">மீதமுள்ள நேரம் <b className="font-mono">{fmtTime(paused)}</b> · விடையளித்தவை {answered}/{questions.length}</p>
+            <button onClick={resume} className="btn w-full !py-3">▶ Resume</button>
+            {online && <button onClick={exitTest} className="btn-ghost w-full">Save &amp; exit (resume later)</button>}
+            {online && <button onClick={discard} className="w-full rounded-xl py-2 text-sm font-semibold text-kumkum-500 active:bg-kumkum-50">Discard this test</button>}
+          </div>
+        </div>
+      )}
       {!onSubmit && (
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <span className="text-stone-500">Print / offline:</span>

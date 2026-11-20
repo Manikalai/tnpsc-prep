@@ -10,6 +10,7 @@ import StartButton from "@/components/StartButton";
 import Stories from "@/components/Stories";
 import Emoji from "@/components/Emoji";
 import { buildPlan } from "@/lib/plan";
+import DiscardTest from "@/components/DiscardTest";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function Home() {
   const today = todayIST();
   const exam = profile.target_exam;
   const planP = buildPlan(sb, user.id, exam, profile.exam_date ?? null).catch(() => null);
-  const [{ data: examRow }, { count: due }, { data: units }, { data: progress }, { data: tests }, { data: profiles }, { count: caToday }, { count: cardsDue }, { data: examTopics }, { data: dailies }] =
+  const [{ data: examRow }, { count: due }, { data: units }, { data: progress }, { data: tests }, { data: profiles }, { count: caToday }, { count: cardsDue }, { data: examTopics }, { data: dailies }, { data: unfinished }] =
     await Promise.all([
       sb.from("exams").select("exam_date,name_ta").eq("code", exam).single(),
       sb.from("review_queue").select("*", { count: "exact", head: true }).eq("user_id", user.id).lte("due_date", today),
@@ -31,6 +32,7 @@ export default async function Home() {
       sb.from("flashcards").select("*", { count: "exact", head: true }).eq("user_id", user.id).lte("due_date", today),
       sb.from("topics").select("id,units!inner(exam_code)").eq("units.exam_code", exam).limit(5000),
       sb.from("tests").select("submitted_at").eq("user_id", user.id).eq("kind", "daily").not("submitted_at", "is", null).gte("submitted_at", new Date(Date.now() - 60 * 864e5).toISOString()).limit(200),
+      sb.from("tests").select("id,title,question_ids,started_at,result").eq("user_id", user.id).is("submitted_at", null).gte("started_at", new Date(Date.now() - 14 * 864e5).toISOString()).order("started_at", { ascending: false }).limit(3),
     ]);
   const plan = await planP;
   const todayPlan = plan?.days[0];
@@ -100,6 +102,23 @@ export default async function Home() {
 
       <AbodeJourney pct={pct(doneTopics, topicCount)} />
 
+      {!!unfinished?.length && (
+        <section className="card ring-1 ring-kumkum-500/30">
+          <div className="mb-1 flex items-center gap-2"><Emoji name="hourglass" size={26} /><h2 className="h2">Unfinished tests</h2></div>
+          <ul className="divide-y divide-stone-100">
+            {unfinished.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold">{t.title}</span>
+                  <span className="block text-xs text-stone-500">{(t.question_ids as string[]).length} வினாக்கள்{(t.result as { paused_left?: number } | null)?.paused_left != null ? " · இடைநிறுத்தம்" : ""}</span>
+                </span>
+                <Link href={`/test/${t.id}`} className="btn btn-sm shrink-0">Resume</Link>
+                <DiscardTest testId={t.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {todayPlan && (
         <Link href="/planner" className="card block !bg-gradient-to-br from-amber-50 to-white ring-1 ring-saffron-400/40 transition active:scale-[0.99]">
           <div className="flex items-center gap-2">
