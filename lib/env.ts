@@ -29,7 +29,7 @@ export function serverEnv() {
     groqKey: (process.env.GROQ_API_KEY ?? "").trim(),
     groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
     /** Groq limits are per model, so a second model (Qwen) adds free capacity */
-    groqModels: (process.env.GROQ_MODELS || `${process.env.GROQ_MODEL || "openai/gpt-oss-120b"},qwen/qwen3-32b`).split(",").map((s) => s.trim()).filter(Boolean),
+    groqModels: (process.env.GROQ_MODELS || `${process.env.GROQ_MODEL || "openai/gpt-oss-120b"},openai/gpt-oss-20b`).split(",").map((s) => s.trim()).filter(Boolean),
     openrouterKey: (process.env.OPENROUTER_API_KEY ?? "").trim(),
     openrouterModels: (process.env.OPENROUTER_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     cronSecret: process.env.CRON_SECRET ?? "",

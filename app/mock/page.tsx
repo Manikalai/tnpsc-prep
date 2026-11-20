@@ -13,12 +13,14 @@ export default async function Mock({ searchParams }: { searchParams: Promise<{ e
   const { sb, user } = await requireUser();
   const profile = await getProfile(sb, user.id);
   const code = sp.exam ?? profile.target_exam;
-  const { exam, parts, units } = await loadExam(sb, code);
-  const { data: counts } = await sb.from("bank_counts").select("*");
+  const [{ exam, parts, units }, { data: counts }, { data: past }] = await Promise.all([
+    loadExam(sb, code),
+    sb.from("bank_counts").select("*"),
+    sb.from("tests").select("id,title,score,max_score,started_at,submitted_at,result").eq("user_id", user.id).eq("kind", "mock").eq("exam_code", code).order("started_at", { ascending: false }).limit(20),
+  ]);
   const have = new Map<string, number>();
   for (const c of counts ?? []) if (c.unit_id) have.set(c.unit_id, (have.get(c.unit_id) ?? 0) + c.n);
   const ready = units.reduce((s, u) => s + Math.min(have.get(u.id) ?? 0, u.questions), 0);
-  const { data: past } = await sb.from("tests").select("id,title,score,max_score,started_at,submitted_at,result").eq("user_id", user.id).eq("kind", "mock").eq("exam_code", code).order("started_at", { ascending: false }).limit(20);
 
   return (
     <div className="space-y-4">

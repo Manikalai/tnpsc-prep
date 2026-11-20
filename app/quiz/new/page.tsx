@@ -1,17 +1,13 @@
-import { fetchAll } from "@/lib/db";
+import { chapterList, questionCounts } from "@/lib/cached";
 import { requireUser } from "@/lib/supabase/server";
 import QuizBuilder from "@/components/QuizBuilder";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewQuiz() {
-  const { sb } = await requireUser();
-  const data = await fetchAll((a, b) => sb.from("chapters").select("*").order("std").order("term").order("chapter_no").order("id").range(a, b));
-  const qs = await fetchAll<{ chapter_id: number }>((a, b) => sb.from("questions").select("chapter_id").not("chapter_id", "is", null).eq("status", "active").order("id").range(a, b));
-  const counts: Record<number, number> = {};
-  for (const q of qs ?? []) counts[q.chapter_id] = (counts[q.chapter_id] ?? 0) + 1;
-  type Row = { id: number; book: string; std: number; term: string | null; subject: string; section?: string | null; chapter_no: number; title_ta: string };
-  const chapters = ((data ?? []) as Row[]).map((c) => ({
+  await requireUser();
+  const [rows, counts] = await Promise.all([chapterList(), questionCounts()]);
+  const chapters = rows.map((c) => ({
     id: c.id, book: c.book, std: c.std, term: c.term, subject: c.subject, section: c.section ?? null, no: c.chapter_no, title: c.title_ta, n: counts[c.id] ?? 0,
   }));
   return (

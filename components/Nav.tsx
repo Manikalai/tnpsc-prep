@@ -79,7 +79,7 @@ export default function Nav() {
           {MAIN.map((m) => {
             const on = active(m.href);
             return (
-              <Link key={m.href} href={m.href} className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[12px] font-medium ${on ? "text-brand-700" : "text-stone-500"}`}>
+              <Link key={m.href} href={m.href} prefetch={true} className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[12px] font-medium ${on ? "text-brand-700" : "text-stone-500"}`}>
                 <span className={`grid h-7 w-12 place-items-center rounded-full transition ${on ? "bg-brand-100" : ""}`}>
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={on ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round"><path d={m.icon} /></svg>
                 </span>

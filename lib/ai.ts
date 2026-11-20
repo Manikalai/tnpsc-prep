@@ -230,7 +230,17 @@ export async function pingProviders() {
   out.gemini_key_2 = env.geminiKeys.length > 1 ? "set" : "NOT SET";
   if (env.sarvamKey) await show(`sarvam ${env.sarvamModel}`, () => callProvider("sarvam", o));
   else out.sarvam = "NOT SET";
-  if (env.groqKey) await show(`groq ${env.groqModel}`, () => callProvider("groq", o));
+  if (env.groqKey) {
+    for (const m of env.groqModels)
+      await show(`groq ${m}`, () => callOpenAICompatible("https://api.groq.com/openai/v1/chat/completions", env.groqKey, m, { ...o, maxTokens: 1024 }));
+    try {
+      const r = await fetch("https://api.groq.com/openai/v1/models", { headers: { Authorization: `Bearer ${env.groqKey}` }, signal: AbortSignal.timeout(15000) });
+      const j = (await r.json()) as { data?: { id: string }[] };
+      out.groq_models_available = (j.data ?? []).map((x) => x.id).sort().join(", ");
+    } catch (e) {
+      out.groq_models_available = `ERROR: ${String(e).slice(0, 80)}`;
+    }
+  }
   out.order = env.providers.join(" → ");
   return out;
 }

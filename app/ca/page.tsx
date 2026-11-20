@@ -17,17 +17,19 @@ export default async function CaIndex({ searchParams }: { searchParams: Promise<
   const next = new Date(start + "T00:00:00Z");
   next.setUTCMonth(next.getUTCMonth() + 1);
   const end = next.toISOString().slice(0, 10);
-  const { data } = await sb.from("current_affairs").select("ca_date,region").gte("ca_date", start).lt("ca_date", end).order("ca_date", { ascending: false });
+  const [{ data }, { data: qs }, { data: lastRun }] = await Promise.all([
+    sb.from("current_affairs").select("ca_date,region").gte("ca_date", start).lt("ca_date", end).order("ca_date", { ascending: false }).limit(5000),
+    sb.from("questions").select("ca_date").eq("origin", "ca").eq("status", "active").gte("ca_date", start).lt("ca_date", end).limit(5000),
+    sb.from("job_runs").select("ran_at,ok,detail").eq("job", "daily_ca").order("ran_at", { ascending: false }).limit(1),
+  ]);
   const days = new Map<string, { tn: number; india: number }>();
   for (const r of data ?? []) {
     const d = days.get(r.ca_date) ?? { tn: 0, india: 0 };
     d[r.region as "tn" | "india"]++;
     days.set(r.ca_date, d);
   }
-  const { data: qs } = await sb.from("questions").select("ca_date").eq("origin", "ca").eq("status", "active").gte("ca_date", start).lt("ca_date", end).limit(3000);
   const qCount = new Map<string, number>();
   for (const q of qs ?? []) qCount.set(q.ca_date, (qCount.get(q.ca_date) ?? 0) + 1);
-  const { data: lastRun } = await sb.from("job_runs").select("ran_at,ok,detail").eq("job", "daily_ca").order("ran_at", { ascending: false }).limit(1);
   const prev = new Date(start + "T00:00:00Z");
   prev.setUTCMonth(prev.getUTCMonth() - 1);
 

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { route, ok, fail } from "@/lib/api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateChapterMCQs, generateChapterNote, generateCleanPart, NOTE_KINDS, type Chapter, type NoteKind, type Revision } from "@/lib/chapters";
@@ -15,15 +16,20 @@ export const POST = route<{ action: "notes" | "quiz" | "cards" | "clean" | "book
   if (b.action === "notes") {
     if (!b.kind || !NOTE_KINDS.includes(b.kind)) return fail("bad kind");
     await generateChapterNote(admin, chapter, b.kind, 50000);
+    revalidateTag("notes");
     return ok();
   }
 
   if (b.action === "bookback") {
-    return ok(await generateBookBack(admin, chapter, 55000));
+    const r = await generateBookBack(admin, chapter, 55000);
+    revalidateTag("notes");
+    return ok(r);
   }
 
   if (b.action === "clean") {
-    return ok(await generateCleanPart(admin, chapter, Math.max(0, Number(b.part) || 0), 52000));
+    const r = await generateCleanPart(admin, chapter, Math.max(0, Number(b.part) || 0), 52000);
+    revalidateTag("notes");
+    return ok(r);
   }
 
   if (b.action === "cards") {

@@ -1,4 +1,4 @@
-import { fetchAll } from "@/lib/db";
+import { chapterList, notesReady } from "@/lib/cached";
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 
@@ -10,16 +10,12 @@ type Ch = { id: number; book: string; std: number; term: string | null; subject:
 
 export default async function Books({ searchParams }: { searchParams: Promise<{ std?: string }> }) {
   const { std } = await searchParams;
-  const { sb } = await requireUser();
-  const data = await fetchAll((a, b) => sb.from("chapters").select("id,book,std,term,subject,chapter_no,title_ta").order("std").order("term").order("chapter_no").order("id").range(a, b));
-  const chapters = (data ?? []) as Ch[];
+  const [, chapters, readyAll] = await Promise.all([requireUser(), chapterList() as Promise<Ch[]>, notesReady()]);
   const stds = [...new Set(chapters.map((c) => c.std))].sort((a, b) => a - b);
   const current = Number(std ?? stds[0] ?? 6);
   const inStd = chapters.filter((c) => c.std === current);
   const terms = [...new Set(inStd.map((c) => c.term ?? ""))].sort();
-  const { data: notes } = await sb.from("chapter_notes").select("chapter_id,kind").in("chapter_id", inStd.map((c) => c.id));
-  const ready = new Map<number, number>();
-  for (const n of notes ?? []) ready.set(n.chapter_id, (ready.get(n.chapter_id) ?? 0) + 1);
+  const ready = new Map<number, number>(inStd.map((c) => [c.id, readyAll[c.id] ?? 0]));
 
   return (
     <div className="space-y-4">
@@ -48,7 +44,7 @@ export default async function Books({ searchParams }: { searchParams: Promise<{ 
                     <li key={c.id}>
                       <Link href={`/chapter/${c.id}`} className="flex items-center justify-between gap-2 py-2 hover:text-brand-600">
                         <span>{c.chapter_no}. {c.title_ta}</span>
-                        <span className="shrink-0 text-xs text-stone-400">{ready.get(c.id) ? `${ready.get(c.id)}/3 தயார்` : ""} ›</span>
+                        <span className="shrink-0 text-xs text-stone-400">{ready.get(c.id) ? `${ready.get(c.id)}/6 ready` : ""} ›</span>
                       </Link>
                     </li>
                   ))}
