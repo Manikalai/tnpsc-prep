@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       months: { description: "How many months back", default: "12" }
-      providers: { description: "AI order", default: "gemini,sarvam,groq" }
+      providers: { description: "AI order (Sarvam is kept for lessons)", default: "gemini,groq" }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -19,7 +19,7 @@ jobs:
         env:
           CA_MONTHS: ${{ github.event.inputs.months || '12' }}
           CA_MINUTES: "310"
-          AI_PROVIDERS: ${{ github.event.inputs.providers || 'gemini,sarvam,groq' }}
+          AI_PROVIDERS: ${{ github.event.inputs.providers || 'gemini,groq' }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

@@ -25,5 +25,5 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
           GROQ_MODEL: ${{ vars.GROQ_MODEL }}
-          AI_PROVIDERS: ${{ vars.AI_PROVIDERS }}
+          AI_PROVIDERS: gemini,groq   # Sarvam credit is kept for lessons
           BANK_EXAMS: ${{ vars.BANK_EXAMS }}
