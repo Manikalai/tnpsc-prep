@@ -6,6 +6,7 @@ on:
     inputs:
       only: { description: "Only these (comma separated: bookback, clean, summary, facts, revision, mcq). Empty = everything", required: false, default: "" }
       max_std: { description: "Up to which class (10 = Group 4 books only)", required: false, default: "12" }
+      count_only: { description: "Only count what is missing (no AI)", type: boolean, default: false }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -28,4 +29,5 @@ jobs:
           AI_PROVIDERS: ${{ vars.AI_PROVIDERS }}
           LESSON_ONLY: ${{ github.event.inputs.only }}
           LESSON_MAX_STD: ${{ github.event.inputs.max_std }}
+          LESSON_COUNT_ONLY: ${{ github.event.inputs.count_only == 'true' && '1' || '' }}
           LESSON_MINUTES: ${{ github.event_name == 'schedule' && '150' || '320' }}

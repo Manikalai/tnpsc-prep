@@ -64,6 +64,28 @@ const [shardK, shardN] = (process.env.LESSON_SHARD || "0/1").split("/").map(Numb
 const minStd = Number(process.env.LESSON_MIN_STD || 1);
 const list = ((chs ?? []) as Chapter[]).filter((c) => hasText.has(c.id) && c.std >= minStd).filter((_, i) => i % (shardN || 1) === (shardK || 0));
 console.log(`${list.length} lessons with text (std ≤ ${maxStd})`);
+if (process.env.LESSON_COUNT_ONLY === "1") {
+  // report what is missing, no AI calls
+  const rows: Record<number, { lessons: number; complete: number; missing: Record<string, number> }> = {};
+  for (const ch of list) {
+    const r = (rows[ch.std] ??= { lessons: 0, complete: 0, missing: {} });
+    r.lessons++;
+    const miss: string[] = [];
+    if (!have.has(`${ch.id}:bookback`)) miss.push("bookback");
+    if (!cleanDone(clean.get(ch.id))) miss.push("clean");
+    for (const k of NOTE_KINDS) if (!have.has(`${ch.id}:${k}`)) miss.push(k);
+    if ((mcqCount.get(ch.id) ?? 0) < 10) miss.push("mcq");
+    if (!miss.length) r.complete++;
+    for (const m of miss) r.missing[m] = (r.missing[m] ?? 0) + 1;
+  }
+  let L = 0, C = 0, P = 0;
+  for (const [std, r] of Object.entries(rows)) {
+    L += r.lessons; C += r.complete; P += Object.values(r.missing).reduce((a, b) => a + b, 0);
+    console.log(`COUNT std ${std}: ${r.complete}/${r.lessons} lessons complete · missing ${JSON.stringify(r.missing)}`);
+  }
+  console.log(`COUNT total: ${C}/${L} lessons complete · ${P} parts missing`);
+  process.exit(0);
+}
 const prog = await startProgress(admin, process.env.LESSON_SHARD ? `lessons-${shardK + 1}` : "lessons", `பாடங்கள் தயாரிப்பு${process.env.LESSON_SHARD ? ` · பகுதி ${shardK + 1}/${shardN}` : ""} (குறிப்புகள், புத்தக வினாக்கள், MCQ)`, list.length);
 let idx = 0;
 
