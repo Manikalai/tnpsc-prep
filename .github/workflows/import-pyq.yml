@@ -7,6 +7,7 @@ on:
       exam: { description: "Exam", type: choice, options: [G4, G2, G1], default: G4 }
       year: { description: "Exam year", required: true }
       do_import: { description: "Store in the database (leave off for a preview)", type: boolean, default: false }
+      key_subject: { description: "Answer-key page to use (TAMIL = Tamil-medium paper; empty = all pages)", required: false, default: "TAMIL" }
 env:
   PYTHONUNBUFFERED: "1"
 jobs:
@@ -17,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
+      - run: sudo apt-get -qq update && sudo apt-get -qq install -y tesseract-ocr tesseract-ocr-tam > /dev/null
       - run: pip install -r scripts/requirements.txt
       - run: python scripts/import_pyq.py "${{ inputs.question_pdf }}" "${{ inputs.key_pdf }}" --exam ${{ inputs.exam }} --year ${{ inputs.year }} ${{ inputs.do_import && '--import' || '' }}
         env:
@@ -27,6 +29,7 @@ jobs:
           SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TIME_BUDGET_MIN: "165"
+          KEY_SUBJECT: ${{ inputs.key_subject }}
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
       - uses: actions/upload-artifact@v4
         if: always()

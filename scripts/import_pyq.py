@@ -56,15 +56,32 @@ class OutOfTime(Exception):
     pass
 
 
+GROQ_MODELS = [m.strip() for m in (os.environ.get("GROQ_MODELS") or f"{GROQ_MODEL},qwen/qwen3.8-27b,openai/gpt-oss-20b").split(",") if m.strip()]
+
+
 def _groq(text, temperature):
-    r = requests.post("https://api.groq.com/openai/v1/chat/completions",
-                      headers={"Authorization": f"Bearer {GROQ}", "Content-Type": "application/json"},
-                      data=json.dumps({"model": GROQ_MODEL, "temperature": temperature, "response_format": {"type": "json_object"},
-                                       "messages": [{"role": "user", "content": text + "\nReply with JSON only."}]}),
-                      timeout=120)
-    if r.status_code != 200:
-        raise RuntimeError(f"groq {r.status_code}: {r.text[:150]}")
-    return json.loads(r.json()["choices"][0]["message"]["content"])
+    """Groq (free): tries each model; waits on per-minute limits."""
+    last = None
+    for model in GROQ_MODELS:
+        for attempt in range(4):
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                              headers={"Authorization": f"Bearer {GROQ}", "Content-Type": "application/json"},
+                              data=json.dumps({"model": model, "temperature": temperature, "response_format": {"type": "json_object"},
+                                               "max_tokens": 8000,
+                                               "messages": [{"role": "user", "content": text + "\nReply with JSON only."}]}),
+                              timeout=180)
+            if r.status_code == 200:
+                try:
+                    return json.loads(r.json()["choices"][0]["message"]["content"])
+                except Exception as e:
+                    last = f"groq {model}: bad JSON {e}"
+                    break
+            last = f"groq {model} {r.status_code}: {r.text[:150]}"
+            if r.status_code == 429 and "per day" not in r.text.lower():
+                time.sleep(min(60, 15 * (attempt + 1)))
+                continue
+            break
+    raise RuntimeError(last)
 
 
 def gemini(parts, temperature=0.0):
@@ -120,28 +137,55 @@ def download(url, name):
     return fitz.open(p)
 
 
+def ocr(page):
+    """Free Tamil+English OCR (Tesseract) for scanned pages."""
+    import subprocess, tempfile
+    f = tempfile.mktemp(suffix=".png")
+    page.get_pixmap(dpi=300).save(f)
+    out = subprocess.run(["tesseract", f, "-", "-l", "tam+eng", "--psm", "4"], capture_output=True, text=True).stdout
+    os.remove(f)
+    return out
+
+
 def read_questions(doc):
-    """{no: {stem, options}} from the question paper (image + text layer of each page)."""
+    """{no: {stem, options}} from the question paper. Scanned pages: OCR text tidied by a text AI (Groq first,
+    Gemini only as a fallback) so Gemini's small daily quota is kept for the answer-key ticks."""
     out = {}
     for i, page in enumerate(doc):
-        layer = re.sub(r"\s+", " ", page.get_text("text"))[:6000]
+        layer = page.get_text("text").strip()
+        scanned = len(layer) < 200
+        if scanned:
+            layer = ocr(page)
+        layer = layer[:9000]
+        if len(layer.strip()) < 40:
+            continue
         prompt = ("This is page %d of a TNPSC question paper (it may be bilingual Tamil/English). Extract EVERY complete question on this page. "
                   "For each: its printed number, the question in TAMIL exactly as printed, and its four options (A)(B)(C)(D) in TAMIL exactly as printed. "
+                  "Ignore option (E) 'விடை தெரியவில்லை / Answer not known'. "
                   "If a question exists only in English (e.g. an English-language section) give it as printed. Keep match-the-following lists and "
-                  "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge. "
-                  "The page's text layer is given below; use it for exact wording where it is correct, but trust the image where the text layer is garbled.\n"
-                  'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""]}]}\n\nTEXT LAYER:\n' % (i + 1)) + layer
+                  "statements inside the question text, one per line. Skip instructions and partial questions cut off at the page edge.\n"
+                  + ("The text below is OCR of a scanned page: option letters are often garbled (e.g. '(௫0', 'BY', 'fey', 'ம', 'VOY' stand for (A)/(B)/(C)/(D) in order) "
+                     "and stray marks like '|', '':' appear — clean these up, but never change the words of a question or option. "
+                     "If a question or an option is unreadable, leave that question out.\n" if scanned else "")
+                  + 'Return JSON {"questions":[{"no":1,"stem":"","options":["","","",""]}]}\n\nPAGE TEXT:\n') % (i + 1) + layer
+        data = None
         try:
-            data = gemini([img_part(page, 170), {"text": prompt}])
+            data = _groq(prompt, 0) if (scanned and GROQ) else gemini([img_part(page, 170), {"text": prompt}])
         except Exception as e:
-            print(f"  question page {i + 1}: failed ({e})")
+            try:
+                data = gemini([{"text": prompt}]) if scanned else None
+            except Exception as e2:
+                print(f"  question page {i + 1}: failed ({e} | {e2})")
+            if data is None and not scanned:
+                print(f"  question page {i + 1}: failed ({e})")
+        if not data:
             continue
         for q in data.get("questions", []):
             no = q.get("no")
-            if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out:
-                out[no] = {"stem": q["stem"].strip(), "options": [o.strip() for o in q["options"]]}
-        print(f"  question page {i + 1}/{len(doc)}: total {len(out)}")
-        time.sleep(4)
+            if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out and all(str(o).strip() for o in q["options"]):
+                out[no] = {"stem": q["stem"].strip(), "options": [str(o).strip() for o in q["options"]]}
+        print(f"  question page {i + 1}/{len(doc)}{' (OCR)' if scanned else ''}: total {len(out)}")
+        time.sleep(3)
     return out
 
 
@@ -154,11 +198,17 @@ def read_key(doc):
                   "A page with only questions and no marks/answers: return an empty list. For EVERY question number with an answer on the page, report which ONE option is "
                   "marked. confidence = \"high\" if the mark is clear and unambiguous, \"low\" if faint, between two options, or more than one option looks marked. "
                   "If a question is marked deleted / cancelled / 'all answers correct' / has no mark, set answer to null and explain in note.\n"
-                  'Return JSON {"answers":[{"no":1,"answer":"A","confidence":"high","note":""}]}')
+                  'Also give "subject": the paper / subject name printed at the top of the page (e.g. "GENERAL TAMIL WITH GENERAL STUDIES"), or "" if none.\n'
+                  'Return JSON {"subject":"","answers":[{"no":1,"answer":"A","confidence":"high","note":""}]}')
         try:
             data = gemini([img_part(page, 200), {"text": prompt}])
         except Exception as e:
             print(f"  key page {i + 1}: failed ({e})")
+            continue
+        subj = str(data.get("subject") or "").upper()
+        want = os.environ.get("KEY_SUBJECT", "TAMIL").upper()
+        if subj and want and want not in subj:
+            print(f"  key page {i + 1}: '{subj}' — not this paper, skipped")
             continue
         for a in data.get("answers", []):
             no = a.get("no")
@@ -192,7 +242,10 @@ def solve_and_tag(qs, exam):
                   + ". (3) ONLY for aptitude / mental ability / reasoning questions, apt_topic = one of: " + "; ".join(f"{k} = {v}" for k, v in APT_TOPICS.items())
                   + ' (empty for other questions). Return JSON {"items":[{"no":1,"answer":"A","unit_id":"","apt_topic":""}]}\n\n' + text)
         try:
-            data = gemini([{"text": prompt}])
+            try:
+                data = _groq(prompt, 0) if GROQ else gemini([{"text": prompt}])
+            except Exception:
+                data = gemini([{"text": prompt}])
             for it in data.get("items", []):
                 if isinstance(it.get("no"), int):
                     res[it["no"]] = {"ai": L.index(it["answer"]) if it.get("answer") in L else None,
@@ -230,12 +283,19 @@ def main():
     kdoc = qdoc if a.key_url == a.question_url else download(a.key_url, f"{a.exam}-{a.year}-key.pdf")
     print(f"question paper: {len(qdoc)} pages · answer key: {len(kdoc)} pages")
 
+    small_key = len(kdoc) <= 6 and kdoc is not qdoc
+    key = {}
+    if small_key:  # separate answer-key table: read it first (a few Gemini calls) — no key, no import
+        print("\n== reading the answer key"); key = read_key(kdoc)
+        if len(key) < 50:
+            raise SystemExit(f"answer key could not be read ({len(key)} answers) — Gemini's daily limit is probably used up; run again after 1:30 PM IST")
     print("\n== reading questions"); qs = read_questions(qdoc)
-    if len(qs) < 150:  # the key booklet also contains the questions — use it as a second source
+    if len(qs) < 150 and kdoc is not qdoc and not small_key:  # the key booklet also contains the questions — use it as a second source
         print("\n== few questions in the paper; reading questions from the answer-key booklet too")
         for n, q in read_questions(kdoc).items():
             qs.setdefault(n, q)
-    print("\n== reading ticks in the answer key"); key = read_key(kdoc)
+    if not small_key:
+        print("\n== reading ticks in the answer key"); key = read_key(kdoc)
     print("\n== independent check + syllabus units"); extra = solve_and_tag(qs, a.exam)
 
     if time.time() - STARTED > BUDGET:
