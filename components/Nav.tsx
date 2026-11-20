@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Vel } from "@/components/Murugan";
 
 const I = {
   home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
@@ -21,9 +20,8 @@ const MAIN = [
 export function Brand({ big = false }: { big?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2 font-bold ${big ? "text-3xl" : "text-lg"}`}>
-      <span className={`grid place-items-center rounded-xl bg-gradient-to-br from-maroon-500 to-saffron-500 shadow-sm ${big ? "h-14 w-14" : "h-8 w-8"}`}>
-        <Vel className={big ? "h-11" : "h-6"} gold="#ffd76a" dark="#8a5a00" />
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo-128.webp" alt="" width={big ? 56 : 34} height={big ? 56 : 34} className={`rounded-xl shadow-sm ring-1 ring-gold-400/60 ${big ? "h-14 w-14" : "h-[34px] w-[34px]"}`} />
       <span className="text-maroon-700">Saranya <span className="text-saffron-500">Prep</span></span>
     </span>
   );

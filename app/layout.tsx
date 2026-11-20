@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Saranya Prep",
   description: "தொகுதி 1, 2, 4 தேர்வுகளுக்கான தமிழ்வழிப் பயிற்சி",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon-192.png" },
+  icons: { icon: [{ url: "/favicon-64.png", type: "image/png" }], apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Saranya Prep", statusBarStyle: "default" },
 };
 export const viewport: Viewport = { themeColor: "#7a1414", width: "device-width", initialScale: 1, viewportFit: "cover" };

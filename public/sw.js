@@ -4,7 +4,7 @@
 //   from the pack downloaded on the phone (books, notes, quizzes, current affairs).
 // - Pages she has opened are kept; with no connection they open from the phone.
 // - On a weak signal a page waits up to 6 seconds for the network, then shows its saved copy (if it has one).
-const CACHE = "tnpsc-v3"; // pages + app code; textbook page images live in "tnpsc-pages"
+const CACHE = "tnpsc-v4"; // pages + app code; textbook page images live in "tnpsc-pages"
 const PAGES = "tnpsc-pages";
 
 async function warm() {

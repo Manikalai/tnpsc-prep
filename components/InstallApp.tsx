@@ -1,7 +1,6 @@
 "use client";
 // "செயலியாக நிறுவு" — install the app from inside it (Android Chrome install prompt; iPhone instructions).
 import { useEffect, useState } from "react";
-import { Vel } from "@/components/Murugan";
 
 type BIP = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
@@ -38,7 +37,8 @@ export default function InstallApp({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`overflow-hidden rounded-2xl bg-gradient-to-r from-maroon-700 to-saffron-500 text-white shadow ${compact ? "" : ""}`}>
       <div className="flex items-center gap-3 p-3.5">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/15"><Vel className="h-8" gold="#ffd76a" dark="#8a5a00" /></span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-128.webp" alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl shadow-md ring-2 ring-white/40" />
         <span className="min-w-0 flex-1">
           <span className="block font-bold">Saranya Prep செயலியாக நிறுவு</span>
           <span className="block text-[13px] text-white/85">முகப்புத் திரையில் ஐகான் · முழுத் திரை · இணையமின்றியும்</span>
