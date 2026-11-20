@@ -145,6 +145,7 @@ export async function generateJSON<T = unknown>(o: GenOpts): Promise<{ data: T; 
   const attempts: string[] = [];
   const deadline = o.timeoutMs ? Date.now() + o.timeoutMs : Infinity;
   for (const p of order) {
+    if (exhausted.has(`provider:${p}`)) continue;
     for (let i = 0; i < 2; i++) {
       if (Date.now() > deadline - 5000) break;
       try {
@@ -154,6 +155,7 @@ export async function generateJSON<T = unknown>(o: GenOpts): Promise<{ data: T; 
         const msg = e instanceof Error ? e.message : String(e);
         attempts.push(`${p}: ${msg}`);
         if (/missing|not configured/.test(msg)) break; // no point retrying
+        if (/ 402:|insufficient_quota|No credits/i.test(msg)) { exhausted.add(`provider:${p}`); break; } // out of credits: skip for the rest of the run
         await sleep(i === 0 ? 1500 : 0);
       }
     }
