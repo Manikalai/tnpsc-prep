@@ -5,6 +5,7 @@ on:
       max_std: { description: "Up to which class (10 = Group 4 books)", required: false, default: "10" }
       min_std: { description: "From which class", required: false, default: "1" }
       providers: { description: "AI order for this run", required: false, default: "sarvam,gemini,groq" }
+      only: { description: "Only these parts (e.g. hacks or summary,facts); empty = everything missing", required: false, default: "" }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -30,6 +31,7 @@ jobs:
           AI_PROVIDERS: ${{ github.event.inputs.providers }}
           LESSON_MAX_STD: ${{ github.event.inputs.max_std }}
           LESSON_MIN_STD: ${{ github.event.inputs.min_std }}
+          LESSON_ONLY: ${{ github.event.inputs.only }}
           LESSON_SHARD: ${{ matrix.shard }}/8
           LESSON_MINUTES: "320"
           LESSON_SLEEP_MS: "1500"
