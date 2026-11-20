@@ -1,0 +1,12 @@
+name: Probe question page
+on:
+  workflow_dispatch:
+    inputs:
+      url: { description: "Page", required: true }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install requests && python scripts/clear_probe.py "${{ inputs.url }}"
