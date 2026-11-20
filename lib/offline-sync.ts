@@ -130,7 +130,7 @@ export async function fullDownload(stds: number[], progress: Progress) {
   await idb.set("settings", s);
   if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
   try {
-    const c = await caches.open("tnpsc-v1");
+    const c = await caches.open("tnpsc-v4");
     await c.addAll(["/offline"]);
   } catch {
     /* ignore */
