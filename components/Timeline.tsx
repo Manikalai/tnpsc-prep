@@ -2,7 +2,7 @@
 // Years & events across all subjects: one timeline with eras and anchor years, "same year" links, and a computed quiz.
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ANCHORS, ERAS, fmtYear, nearestAnchor, type TEvent } from "@/lib/timeline";
+import { ANCHORS, ERAS, fmtYear, nearestAnchor, yearHook, type TEvent } from "@/lib/timeline";
 import AddCards from "@/components/AddCards";
 
 const SUBJ: Record<string, string> = { history: "வரலாறு", civics: "குடிமையியல்", geography: "புவியியல்", economics: "பொருளியல்", physics: "இயற்பியல்", chemistry: "வேதியியல்", biology: "உயிரியல்", tamil: "தமிழ்", social: "சமூக அறிவியல்", science: "அறிவியல்" };
@@ -74,6 +74,7 @@ function Line({ list }: { list: TEvent[] }) {
                       <Link href={`/chapter/${e.chapterId}?tab=facts`} className="text-xs text-stone-500 underline">{e.lesson}</Link>
                     </div>
                     {near && !near.text.startsWith(String(e.year) + " —") && <p className="mt-0.5 text-xs text-maroon-500">⚓ {near.text}</p>}
+                    {!e.approx && <p className="mt-0.5 text-xs text-stone-500">🧠 {yearHook(e.year)}</p>}
                   </li>
                 );
               })}

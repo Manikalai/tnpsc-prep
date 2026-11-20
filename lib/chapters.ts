@@ -44,7 +44,8 @@ Return JSON {"items":[{"id":0,"section":""}]}`,
 export type Summary = { summary: string; points: string[] };
 export type Facts = { dates: { date: string; event: string }[]; persons: { name: string; about: string }[]; facts: string[]; terms: { term: string; meaning: string }[] };
 export type Revision = { items: { q: string; a: string }[] };
-export const NOTE_KINDS = ["summary", "facts", "revision"] as const;
+export type Hacks = { items: { fact: string; hack: string; type: string }[]; checked?: boolean };
+export const NOTE_KINDS = ["summary", "facts", "revision", "hacks"] as const;
 export type NoteKind = (typeof NOTE_KINDS)[number];
 
 export async function chapterText(sb: SupabaseClient, chapterId: number, maxChars = 60000) {
@@ -69,6 +70,12 @@ Return JSON {"summary":"","points":[""]}`,
 "facts": other one-line facts likely to be asked (numbers, firsts, places, articles, laws, scientific facts).
 "terms": key terms (கலைச்சொற்கள்) with their meaning, including the English term in brackets where the book gives it.
 Only include what is in the text. Return JSON {"dates":[{"date":"","event":""}],"persons":[{"name":"","about":""}],"facts":[""],"terms":[{"term":"","meaning":""}]}`,
+  hacks: `Make நினைவு உத்திகள் (memory hacks) in Tamil for the 10–15 facts of this chapter that are hardest to remember and most likely in TNPSC: lists (rivers, works, features, articles, causes), years and dates, numbers, names and their pairs.
+For each item:
+"fact": the fact itself, copied exactly from the text (names, years and numbers unchanged).
+"hack": a short memory device in Tamil: முதல் எழுத்துக் குறியீடு (first letters of the list items, in order, joined into a word or a funny phrase — the letters MUST really be the first letters), கதை (a tiny vivid story linking the items), எண் குறிப்பு (a number pattern or link to a famous year, e.g. "1919 → 19 இரண்டு முறை"), ஒப்பீடு / இணைப்பு (link to something familiar), or சந்தம் (a rhyme). Keep it 1–2 lines; it must not change or add any fact.
+"type": one of acronym, story, number, link, rhyme.
+Return JSON {"items":[{"fact":"","hack":"","type":""}]}`,
   revision: `Write 15–20 short revision questions in Tamil (one-line answers) that test recall of this chapter — the kind a student answers from memory before the exam.
 Return JSON {"items":[{"q":"","a":""}]}`,
 };
@@ -77,7 +84,7 @@ export async function generateChapterNote(admin: SupabaseClient, ch: Chapter, ki
   const { text } = await chapterText(admin, ch.id, kind === "facts" ? 60000 : 45000);
   if (!text.trim()) throw new Error("இந்தப் பாடத்தின் உரை இன்னும் ஏற்றப்படவில்லை");
   const glossary = await loadGlossary(admin);
-  const { data } = await generateJSON<Summary | Facts | Revision>({
+  const { data } = await generateJSON<Summary | Facts | Revision | Hacks>({
     system: `You prepare TNPSC study material in correct formal Tamil (Tamil medium, Samacheer Kalvi wording). Official terms: ${glossaryText(glossary)}.
 Use ONLY the chapter text given. Do not add facts, dates or names that are not in it.
 ${PROMPTS[kind]}`,
@@ -86,6 +93,20 @@ ${PROMPTS[kind]}`,
     maxTokens: 8192,
     timeoutMs,
   });
+  if (kind === "hacks") {
+    const items = ((data as Hacks).items ?? []).filter((x) => x?.fact && x?.hack).slice(0, 18);
+    const { data: chk } = await generateJSON<{ ok: number[] }>({
+      system: `You check memory hacks for a Tamil exam app, using ONLY the chapter text. Keep an item only if: (1) its "fact" is stated in the text with the same names, years and numbers; (2) the hack does not change or add any fact; (3) for a first-letter hack, the letters really are the first letters of the listed items. Return JSON {"ok":[indexes of items to keep]}`,
+      user: `=== பாடம் ===\n${text}\n\n=== உத்திகள் ===\n${items.map((x, i) => `[${i}] உண்மை: ${x.fact}\n    உத்தி: ${x.hack}`).join("\n")}`,
+      temperature: 0,
+      maxTokens: 2048,
+      timeoutMs,
+    });
+    const keep = new Set((chk.ok ?? []).filter((i) => Number.isInteger(i)));
+    const out: Hacks = { items: items.filter((_, i) => keep.has(i)), checked: true };
+    await admin.from("chapter_notes").upsert({ chapter_id: ch.id, kind, content: out });
+    return out;
+  }
   await admin.from("chapter_notes").upsert({ chapter_id: ch.id, kind, content: data });
   return data;
 }

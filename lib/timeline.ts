@@ -57,3 +57,29 @@ export function nearestAnchor(y: number) {
   if (d === 0) return { anchor: best, text: `${best[0]} — ${best[1]}` };
   return { anchor: best, text: `${best[0]}-க்கு ${Math.abs(d)} ஆண்டுகள் ${d < 0 ? "முன்" : "பின்"} (${best[1]})` };
 }
+
+/** A memory hook for a year, worked out from its digits and the anchor years (no AI, always correct). */
+export function yearHook(y: number): string | null {
+  const hooks: string[] = [];
+  const cent = y > 0 ? Math.floor((y - 1) / 100) + 1 : Math.floor((-y - 1) / 100) + 1;
+  if (y > 0 && y < 2100) {
+    const s = String(y);
+    if (s.length === 4) {
+      const [a, b] = [s.slice(0, 2), s.slice(2)];
+      if (a === b) hooks.push(`${a} இரண்டு முறை (${a}|${b})`);
+      else if (s === [...s].reverse().join("")) hooks.push("முன்னும் பின்னும் ஒரே எண் (பாலிண்ட்ரோம்)");
+      if (b[0] === b[1] && b !== "00" && a !== b) hooks.push(`கடைசி இரு இலக்கம் ஒன்றே: ${b}`);
+      const d = [...s].map(Number);
+      if (d[1] + 1 === d[2] && d[2] + 1 === d[3]) hooks.push(`${d[1]}-${d[2]}-${d[3]} வரிசை`);
+      if (b === "00") hooks.push(`${cent}ஆம் நூற்றாண்டின் கடைசி ஆண்டு`);
+      else if (b === "01") hooks.push(`${cent}ஆம் நூற்றாண்டின் முதல் ஆண்டு`);
+    }
+    const round = ANCHORS.map(([ay, at]) => ({ ay, at, diff: y - ay }))
+      .filter((a) => a.diff !== 0 && [10, 25, 50, 100, 150, 200, 250, 300].includes(Math.abs(a.diff)))
+      .sort((p, q) => Math.abs(p.diff) - Math.abs(q.diff) || (Math.abs(q.diff) % 100 === 0 ? 1 : 0) - (Math.abs(p.diff) % 100 === 0 ? 1 : 0));
+    const best = round.find((a) => Math.abs(a.diff) === 100) ?? round[0];
+    if (best) hooks.push(`${best.ay}-க்கு (${best.at}) சரியாக ${Math.abs(best.diff)} ஆண்டுகள் ${best.diff > 0 ? "பின்" : "முன்"}`);
+  }
+  if (!hooks.some((h) => h.includes("நூற்றாண்டின்"))) hooks.push(`${y < 0 ? "கி.மு. " : ""}${cent}ஆம் நூற்றாண்டு`);
+  return hooks.join(" · ");
+}
