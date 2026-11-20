@@ -1,6 +1,6 @@
 // Offline support: pages you have opened are kept for offline reading; with no connection, unknown pages open the
 // offline practice page (/offline), which works from the pack saved on the phone.
-const CACHE = "tnpsc-v1"; // pages of the app; textbook page images live in "tnpsc-pages"
+const CACHE = "tnpsc-v2"; // pages of the app; textbook page images live in "tnpsc-pages"
 self.addEventListener("install", (e) => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (e) => {
