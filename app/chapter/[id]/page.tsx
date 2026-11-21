@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
-import { type Chapter, type Clean, type Facts, type Hacks, type MindMap as MM, type Revision, type Summary } from "@/lib/chapters";
-import MindMap, { mindMapCards } from "@/components/MindMap";
+import { mindMapCards, type Chapter, type Clean, type Facts, type Hacks, type MindMap as MM, type Revision, type Summary } from "@/lib/chapters";
+import MindMap from "@/components/MindMap";
 import AddCards from "@/components/AddCards";
 import Emoji from "@/components/Emoji";
 import BookPages from "@/components/BookPages";

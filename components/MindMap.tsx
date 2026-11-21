@@ -68,7 +68,3 @@ export default function MindMap({ m }: { m: MM }) {
   );
 }
 
-/** flat text for Listen / flashcards */
-export function mindMapCards(m: MM) {
-  return m.branches.map((b) => ({ front: `${m.root} → ${b.t}`, back: (b.c ?? []).map((n) => `• ${n.t}${n.c?.length ? ` (${n.c.map((g) => g.t).join(", ")})` : ""}`).join("\n") }));
-}

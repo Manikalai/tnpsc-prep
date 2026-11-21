@@ -243,3 +243,8 @@ Return JSON {"questions":[{"stem":"","options":["","","",""],"answer_index":0,"e
   const { data: ins } = await admin.from("questions").upsert(out, { onConflict: "hash", ignoreDuplicates: true }).select("id");
   return (ins ?? []).map((r: { id: string }) => r.id);
 }
+
+/** flat text for Listen / flashcards */
+export function mindMapCards(m: MindMap) {
+  return m.branches.map((b) => ({ front: `${m.root} → ${b.t}`, back: (b.c ?? []).map((n) => `• ${n.t}${n.c?.length ? ` (${n.c.map((g) => g.t).join(", ")})` : ""}`).join("\n") }));
+}
