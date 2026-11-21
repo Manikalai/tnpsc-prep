@@ -36,7 +36,7 @@ console.log("lesson subjects:", [...new Set(chapters.map((c) => c.subject))].joi
 
 const maxStd = Object.fromEntries(EXAMS.map((e) => [e.code, e.maxStd]));
 const out: { exams: Record<string, Record<string, number[]>>; lessons: Record<number, [number, string, number, string]>; made: string } = { exams: {}, lessons: {}, made: new Date().toISOString() };
-const BATCH = Number(process.env.MAP_BATCH ?? 15);
+const BATCH = Number(process.env.MAP_BATCH ?? 25);
 const ONLY = (process.env.MAP_EXAMS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
 
 // keep what earlier runs already linked (only re-do the exams asked for)
@@ -65,43 +65,45 @@ for (const exam of Object.keys(maxStd).filter((e) => !ONLY.length || ONLY.includ
   const exUnits = units.filter((u) => u.exam_code === exam && u.subject !== "current" && u.subject !== "aptitude" && u.subject !== "reasoning");
   for (const g of ["social", "science", "tamil"]) {
     const gUnits = exUnits.filter((u) => (u.source_subjects ?? []).includes(g));
-    const gTopics = topics.filter((t) => gUnits.some((u) => u.id === t.unit_id));
-    if (!gTopics.length) continue;
     const lessons = chapters.filter((c) => c.std <= maxStd[exam] && group(c.subject) === g);
-    const unitName = new Map(gUnits.map((u) => [u.id, u.name_ta]));
-    const topicList = gTopics.map((t, i) => `T${i}: ${t.name_ta} (${unitName.get(t.unit_id)})`).join("\n");
-    for (let b = 0; b < lessons.length; b += BATCH) {
-      const batch = lessons.slice(b, b + BATCH);
-      const lessonList = batch.map((c) => `L${c.id}: ${c.std}ஆம் வகுப்பு ${c.subject} · ${c.title_ta}${summaries.get(c.id) ? ` — ${summaries.get(c.id)}` : ""}`).join("\n");
-      try {
-        type Row = { lesson: string | number; topics: (string | number)[] };
-        const { data } = await generateJSON<{ map: Row[] } | Row[]>({
-          system: `You match Tamil Nadu school textbook lessons to TNPSC syllabus topics. For each lesson, list the topics it substantially TEACHES (a main subject of the lesson, not a passing mention). A lesson may teach 0–3 topics. Be strict: if unsure, leave it out. Return JSON {"map":[{"lesson":"L123","topics":["T4","T9"]}]} — include only lessons with at least one topic.`,
-          user: `=== TOPICS (${exam}) ===\n${topicList}\n\n=== LESSONS ===\n${lessonList}`,
-          temperature: 0,
-          maxTokens: 4096,
-        });
-        calls++; fails = 0;
-        const rows: Row[] = Array.isArray(data) ? data : Array.isArray(data?.map) ? data.map : [];
-        for (const m of rows) {
-          if (!m || typeof m !== "object") continue;
-          const lid = Number(String(m.lesson).replace(/\D/g, ""));
-          if (!batch.some((c) => c.id === lid)) continue;
-          for (const t of Array.isArray(m.topics) ? m.topics : []) {
-            const ti = Number(String(t).replace(/\D/g, ""));
-            const topic = gTopics[ti];
-            if (!topic) continue;
-            (map[topic.id] ??= []).includes(lid) || map[topic.id].push(lid);
+    // one syllabus unit at a time (5–10 topics) so each request stays small enough for the free AI limits
+    for (const unit of gUnits) {
+      const gTopics = topics.filter((t) => t.unit_id === unit.id);
+      if (!gTopics.length) continue;
+      const topicList = gTopics.map((t, i) => `T${i}: ${t.name_ta}`).join("\n");
+      for (let b = 0; b < lessons.length; b += BATCH) {
+        const batch = lessons.slice(b, b + BATCH);
+        const lessonList = batch.map((c) => `L${c.id}: ${c.std}ஆம் வகுப்பு · ${c.title_ta}${summaries.get(c.id) ? ` — ${summaries.get(c.id)!.slice(0, 120)}` : ""}`).join("\n");
+        try {
+          type Row = { lesson: string | number; topics: (string | number)[] };
+          const { data } = await generateJSON<{ map: Row[] } | Row[]>({
+            system: `You match Tamil Nadu school textbook lessons to TNPSC syllabus topics of ONE unit ("${unit.name_ta}"). For each lesson, list the topics it substantially TEACHES (a main subject of the lesson, not a passing mention). Most lessons will match none. Be strict: if unsure, leave it out. Return JSON {"map":[{"lesson":"L123","topics":["T2"]}]} with only lessons that match.`,
+            user: `=== TOPICS ===\n${topicList}\n\n=== LESSONS ===\n${lessonList}`,
+            temperature: 0,
+            maxTokens: 1500,
+          });
+          calls++; fails = 0;
+          const rows: Row[] = Array.isArray(data) ? data : Array.isArray(data?.map) ? data.map : [];
+          for (const m of rows) {
+            if (!m || typeof m !== "object") continue;
+            const lid = Number(String(m.lesson).replace(/\D/g, ""));
+            if (!batch.some((c) => c.id === lid)) continue;
+            for (const t of Array.isArray(m.topics) ? m.topics : []) {
+              const topic = gTopics[Number(String(t).replace(/\D/g, ""))];
+              if (!topic) continue;
+              (map[topic.id] ??= []).includes(lid) || map[topic.id].push(lid);
+            }
           }
+        } catch (e) {
+          fails++;
+          console.log(`${exam} · ${unit.id} · lessons ${b + 1}–${b + batch.length}: failed (${String(e).slice(0, 140)})`);
+          if (fails >= 6) { await save(); throw new Error("AI kept failing — saved what was done; run again later"); }
+          await sleep(45000); b -= BATCH; continue;
         }
-        console.log(`${exam} · ${g} · lessons ${b + 1}–${b + batch.length}/${lessons.length}: ok`);
-      } catch (e) {
-        fails++;
-        console.log(`${exam} · ${g} · lessons ${b + 1}–${b + batch.length}: failed (${String(e).slice(0, 140)})`);
-        if (fails >= 6) { await save(); throw new Error("AI kept failing — saved what was done; run again later"); }
-        await sleep(45000); b -= BATCH; continue; // wait out the per-minute limit, retry this batch
+        await sleep(Number(process.env.MAP_SLEEP_MS ?? 6000));
       }
-      await sleep(Number(process.env.MAP_SLEEP_MS ?? 12000));
+      console.log(`${exam} · ${unit.id} (${unit.name_ta}): ${gTopics.filter((t) => map[t.id]?.length).length}/${gTopics.length} topics linked`);
+      await save();
     }
   }
   for (const ids of Object.values(map)) ids.sort((a, b) => (chapters.find((c) => c.id === a)?.std ?? 0) - (chapters.find((c) => c.id === b)?.std ?? 0));
