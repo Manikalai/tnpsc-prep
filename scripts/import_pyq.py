@@ -227,7 +227,7 @@ def read_questions_sarvam(doc):
                 print(f"  parse pages {g[0] + 1}–{g[-1] + 1}: {str(e)[:160]}")
                 time.sleep(10)
         return ""
-    with ThreadPoolExecutor(6) as ex:
+    with ThreadPoolExecutor(3) as ex:
         texts = list(ex.map(parse, groups))
     print(f"  Sarvam read {SPENT['pages']} pages")
     out = {}
@@ -425,7 +425,7 @@ def solve_and_tag(qs, exam):
                   + ' (empty for other questions). Return JSON {"items":[{"no":1,"answer":"A","unit_id":"","apt_topic":""}]}\n\n' + text)
         try:
             try:
-                data = sarvam_chat(prompt) if READER == "sarvam" else (_groq(prompt, 0) if GROQ else gemini([{"text": prompt}]))
+                data = _groq(prompt, 0) if GROQ else (sarvam_chat(prompt) if READER == "sarvam" else gemini([{"text": prompt}]))
             except Exception:
                 data = gemini([{"text": prompt}])
             for it in data.get("items", []):
