@@ -1,0 +1,20 @@
+name: Voice samples
+on:
+  workflow_dispatch:
+    inputs:
+      voices: { description: "model/speaker list", default: "" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/tts_sample.ts
+        env:
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          VOICES: ${{ inputs.voices }}
+      - uses: actions/upload-artifact@v4
+        with: { name: samples, path: samples/ }
