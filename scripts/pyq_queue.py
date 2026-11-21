@@ -5,7 +5,7 @@ URL = os.environ["NEXT_PUBLIC_SUPABASE_URL"].rstrip("/"); KEY = os.environ["SUPA
 h = {"apikey": KEY, "Authorization": f"Bearer {KEY}"}
 done = {((r.get("detail") or {}).get("tag")) for r in requests.get(f"{URL}/rest/v1/job_runs", headers=h, params={"job": "eq.import_pyq", "select": "detail", "limit": "500"}, timeout=60).json()}
 papers = json.load(open("data/pyq/papers.json"))
-todo = [p for p in papers if p["tag"] not in done]
+todo = [p for p in papers if p["tag"] not in done and not p.get("done")]
 print(f"{len(papers)} papers · {len(papers) - len(todo)} done · {len(todo)} to do: {[p['tag'] for p in todo]}")
 for p in todo:
     print(f"\n################ {p['tag']}", flush=True)
