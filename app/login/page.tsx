@@ -1,7 +1,7 @@
 "use client";
 import { Brand } from "@/components/Nav";
 import InstallApp from "@/components/InstallApp";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -14,6 +14,14 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // signed in, but the email is not in ALLOWED_EMAILS (Vercel setting): say so instead of silently coming back here
+  useEffect(() => {
+    const denied = new URLSearchParams(window.location.search).get("denied");
+    if (denied != null) {
+      setMsg(`${denied || "இந்தக் கணக்கு"} — உள்நுழைவு சரி, ஆனால் இந்த மின்னஞ்சல் அனுமதிப் பட்டியலில் இல்லை. Vercel → Settings → Environment Variables → ALLOWED_EMAILS-இல் சேர்த்து Redeploy செய்யவும்.`);
+      void supabaseBrowser().auth.signOut();
+    }
+  }, []);
 
   return (
     <div className="mx-auto mt-4 max-w-sm">

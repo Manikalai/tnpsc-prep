@@ -35,7 +35,8 @@ const currentUser = cache(async () => {
 /** Returns the signed-in user and a client acting as them, or redirects to /login. */
 export async function requireUser() {
   const { sb, user } = await currentUser();
-  if (!user || !isAllowed(user.email)) redirect("/login");
+  if (!user) redirect("/login");
+  if (!isAllowed(user.email)) redirect(`/login?denied=${encodeURIComponent(user.email ?? "")}`);
   return { sb, user };
 }
 
