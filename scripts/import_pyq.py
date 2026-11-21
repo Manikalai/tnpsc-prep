@@ -280,7 +280,7 @@ def read_key_sarvam(doc):
             print(f"  key page {i + 1}: failed ({str(e)[:160]})")
             continue
         subj = str(data.get("subject") or "").upper()
-        if subj and want and want not in subj:
+        if subj and want and not any(w and w in subj for w in want.split("|")):
             print(f"  key page {i + 1}: '{subj}' — not this paper, skipped")
             continue
         for a in data.get("answers", []):
@@ -389,7 +389,7 @@ def read_key(doc):
             continue
         subj = str(data.get("subject") or "").upper()
         want = os.environ.get("KEY_SUBJECT", "TAMIL").upper()
-        if subj and want and want not in subj:
+        if subj and want and not any(w and w in subj for w in want.split("|")):
             print(f"  key page {i + 1}: '{subj}' — not this paper, skipped")
             continue
         for a in data.get("answers", []):
