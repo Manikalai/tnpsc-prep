@@ -1,0 +1,101 @@
+// Links every syllabus topic to the textbook lessons that teach it (6th–12th, within each exam's class limit).
+// Per exam and textbook subject, lessons go to the AI in batches of 40 (title + the start of the lesson's summary)
+// together with that exam's topics for the subject; it returns which topics each lesson really teaches.
+// Result: Supabase Storage meta/topic-lessons.json  →  { exam: { topicId: [chapterId, …] }, lessons: { id: [std, subject, no, title] } }
+import "./env";
+import { supabaseAdmin } from "../lib/supabase/admin";
+import { generateJSON } from "../lib/ai";
+import { EXAMS } from "../data/syllabus";
+
+const admin = supabaseAdmin();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function all<T>(q: (a: number, b: number) => PromiseLike<{ data: unknown[] | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let f = 0; ; f += 1000) { const { data } = await q(f, f + 999); out.push(...((data ?? []) as T[])); if (!data || data.length < 1000) break; }
+  return out;
+}
+
+type Ch = { id: number; book: string; std: number; subject: string; chapter_no: number; title_ta: string };
+const chapters = await all<Ch>((a, b) => admin.from("chapters").select("id,book,std,subject,chapter_no,title_ta").order("id").range(a, b));
+const summaries = new Map<number, string>();
+for (const r of await all<{ chapter_id: number; content: { summary?: string } }>((a, b) => admin.from("chapter_notes").select("chapter_id,content").eq("kind", "summary").order("chapter_id").range(a, b)))
+  summaries.set(r.chapter_id, String(r.content?.summary ?? "").replace(/[#*_>\n]+/g, " ").replace(/\s+/g, " ").slice(0, 200));
+const units = await all<{ id: string; exam_code: string; name_ta: string; subject: string; source_subjects: string[] }>((a, b) => admin.from("units").select("id,exam_code,name_ta,subject,source_subjects").order("id").range(a, b));
+const topics = await all<{ id: string; unit_id: string; name_ta: string }>((a, b) => admin.from("topics").select("id,unit_id,name_ta").order("unit_id").order("sort").range(a, b));
+
+// textbook subject → the syllabus "source" group it belongs to
+const group = (s: string) => {
+  const x = s.toLowerCase();
+  if (x === "tamil") return "tamil";
+  if (x === "maths" || x === "mathematics") return "maths";
+  if (["science", "physics", "chemistry", "botany", "zoology", "biology", "bio-botany", "bio-zoology"].includes(x)) return "science";
+  if (x === "english") return "english";
+  return "social"; // social, history, geography, economics, political science, ethics, …
+};
+console.log("lesson subjects:", [...new Set(chapters.map((c) => c.subject))].join(", "));
+
+const maxStd = Object.fromEntries(EXAMS.map((e) => [e.code, e.maxStd]));
+const out: { exams: Record<string, Record<string, number[]>>; lessons: Record<number, [number, string, number, string]>; made: string } = { exams: {}, lessons: {}, made: new Date().toISOString() };
+const BATCH = Number(process.env.MAP_BATCH ?? 40);
+let calls = 0, fails = 0;
+
+for (const exam of Object.keys(maxStd)) {
+  const map: Record<string, number[]> = {};
+  const exUnits = units.filter((u) => u.exam_code === exam && u.subject !== "current" && u.subject !== "aptitude" && u.subject !== "reasoning");
+  for (const g of ["social", "science", "tamil"]) {
+    const gUnits = exUnits.filter((u) => (u.source_subjects ?? []).includes(g));
+    const gTopics = topics.filter((t) => gUnits.some((u) => u.id === t.unit_id));
+    if (!gTopics.length) continue;
+    const lessons = chapters.filter((c) => c.std <= maxStd[exam] && group(c.subject) === g);
+    const unitName = new Map(gUnits.map((u) => [u.id, u.name_ta]));
+    const topicList = gTopics.map((t, i) => `T${i}: ${t.name_ta} (${unitName.get(t.unit_id)})`).join("\n");
+    for (let b = 0; b < lessons.length; b += BATCH) {
+      const batch = lessons.slice(b, b + BATCH);
+      const lessonList = batch.map((c) => `L${c.id}: ${c.std}ஆம் வகுப்பு ${c.subject} · ${c.title_ta}${summaries.get(c.id) ? ` — ${summaries.get(c.id)}` : ""}`).join("\n");
+      try {
+        const { data } = await generateJSON<{ map: { lesson: string | number; topics: (string | number)[] }[] }>({
+          system: `You match Tamil Nadu school textbook lessons to TNPSC syllabus topics. For each lesson, list the topics it substantially TEACHES (a main subject of the lesson, not a passing mention). A lesson may teach 0–3 topics. Be strict: if unsure, leave it out. Return JSON {"map":[{"lesson":"L123","topics":["T4","T9"]}]} — include only lessons with at least one topic.`,
+          user: `=== TOPICS (${exam}) ===\n${topicList}\n\n=== LESSONS ===\n${lessonList}`,
+          temperature: 0,
+          maxTokens: 4096,
+        });
+        calls++; fails = 0;
+        for (const m of data.map ?? []) {
+          const lid = Number(String(m.lesson).replace(/\D/g, ""));
+          if (!batch.some((c) => c.id === lid)) continue;
+          for (const t of m.topics ?? []) {
+            const ti = Number(String(t).replace(/\D/g, ""));
+            const topic = gTopics[ti];
+            if (!topic) continue;
+            (map[topic.id] ??= []).includes(lid) || map[topic.id].push(lid);
+          }
+        }
+        console.log(`${exam} · ${g} · lessons ${b + 1}–${b + batch.length}/${lessons.length}: ok`);
+      } catch (e) {
+        fails++;
+        console.log(`${exam} · ${g} · lessons ${b + 1}–${b + batch.length}: failed (${String(e).slice(0, 140)})`);
+        if (fails >= 4) throw new Error("AI kept failing — run again later");
+        await sleep(20000); b -= BATCH; continue; // retry this batch
+      }
+      await sleep(Number(process.env.MAP_SLEEP_MS ?? 4000));
+    }
+  }
+  for (const ids of Object.values(map)) ids.sort((a, b) => (chapters.find((c) => c.id === a)?.std ?? 0) - (chapters.find((c) => c.id === b)?.std ?? 0));
+  out.exams[exam] = map;
+  console.log(`${exam}: ${Object.keys(map).length}/${topics.filter((t) => exUnits.some((u) => u.id === t.unit_id)).length} topics have lessons`);
+}
+for (const ids of Object.values(out.exams).flatMap((m) => Object.values(m))) for (const id of ids) {
+  const c = chapters.find((x) => x.id === id)!;
+  out.lessons[id] = [c.std, c.subject, c.chapter_no, c.title_ta];
+}
+
+// save to Storage (public bucket "meta")
+const body = new Blob([JSON.stringify(out)], { type: "application/json" });
+let up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
+if (up.error) {
+  await admin.storage.createBucket("meta", { public: true });
+  up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
+}
+if (up.error) throw up.error;
+await admin.from("job_runs").insert({ job: "map_topics", ok: true, detail: { calls, exams: Object.fromEntries(Object.entries(out.exams).map(([k, v]) => [k, Object.keys(v).length])), lessons: Object.keys(out.lessons).length } });
+console.log(`DONE · ${calls} AI calls · ${Object.keys(out.lessons).length} lessons linked`);
