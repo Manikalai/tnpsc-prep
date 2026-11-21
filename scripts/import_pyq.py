@@ -257,7 +257,7 @@ def read_questions_sarvam(doc):
             if isinstance(no, str) and no.strip().isdigit():
                 no = int(no.strip())
             if isinstance(no, int) and len(q.get("options", [])) == 4 and q.get("stem") and no not in out and all(str(o).strip() for o in q["options"]):
-                out[no] = {"stem": str(q["stem"]).strip(), "options": [str(o).strip() for o in q["options"]]}
+                out[no] = {"stem": str(q["stem"]).strip(), "options": [re.sub(r"^\s*\(?[A-Dஅஆஇஈ]\)\s*", "", str(o)).strip() for o in q["options"]]}
         print(f"  pages {g[0] + 1}–{g[-1] + 1}/{len(doc)}: total {len(out)}")
     return out
 
