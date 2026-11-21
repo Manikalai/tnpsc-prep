@@ -45,7 +45,9 @@ export type Summary = { summary: string; points: string[] };
 export type Facts = { dates: { date: string; event: string }[]; persons: { name: string; about: string }[]; facts: string[]; terms: { term: string; meaning: string }[] };
 export type Revision = { items: { q: string; a: string }[] };
 export type Hacks = { items: { fact: string; hack: string; type: string }[]; checked?: boolean };
-export const NOTE_KINDS = ["summary", "facts", "revision", "hacks"] as const;
+export type MindNode = { t: string; c?: MindNode[] };
+export type MindMap = { root: string; branches: MindNode[] };
+export const NOTE_KINDS = ["summary", "facts", "revision", "hacks", "mindmap"] as const;
 export type NoteKind = (typeof NOTE_KINDS)[number];
 
 export async function chapterText(sb: SupabaseClient, chapterId: number, maxChars = 60000) {
@@ -70,6 +72,12 @@ Return JSON {"summary":"","points":[""]}`,
 "facts": other one-line facts likely to be asked (numbers, firsts, places, articles, laws, scientific facts).
 "terms": key terms (கலைச்சொற்கள்) with their meaning, including the English term in brackets where the book gives it.
 Only include what is in the text. Return JSON {"dates":[{"date":"","event":""}],"persons":[{"name":"","about":""}],"facts":[""],"terms":[{"term":"","meaning":""}]}`,
+  mindmap: `Make a மன வரைபடம் (mind map) of this chapter in Tamil for quick revision.
+"root": the chapter topic in 2–5 words.
+"branches": 4–7 main branches that together cover the whole chapter (e.g. அறிமுகம், காரணங்கள், முக்கிய நபர்கள், ஆண்டுகள், விளைவுகள், சிறப்புகள் — choose what fits this chapter). Each branch: {"t": "branch name (1–4 words)", "c": [ 3–6 children ]}.
+Each child: {"t": "a short keyword phrase, max 8 words", "c": [optional 1–4 grandchildren, same format, no deeper]}.
+Use ONLY facts from the text; keep every name, year and number exactly as in the text. Keywords, not sentences.
+Return JSON {"root":"","branches":[{"t":"","c":[{"t":"","c":[{"t":""}]}]}]}`,
   hacks: `Make நினைவு உத்திகள் (memory hacks) in Tamil for the 10–15 facts of this chapter that are hardest to remember and most likely in TNPSC: lists (rivers, works, features, articles, causes), years and dates, numbers, names and their pairs.
 For each item:
 "fact": the fact itself, copied exactly from the text (names, years and numbers unchanged).
@@ -84,7 +92,7 @@ export async function generateChapterNote(admin: SupabaseClient, ch: Chapter, ki
   const { text } = await chapterText(admin, ch.id, kind === "facts" ? 60000 : 45000);
   if (!text.trim()) throw new Error("இந்தப் பாடத்தின் உரை இன்னும் ஏற்றப்படவில்லை");
   const glossary = await loadGlossary(admin);
-  const { data } = await generateJSON<Summary | Facts | Revision | Hacks>({
+  const { data } = await generateJSON<Summary | Facts | Revision | Hacks | MindMap>({
     system: `You prepare TNPSC study material in correct formal Tamil (Tamil medium, Samacheer Kalvi wording). Official terms: ${glossaryText(glossary)}.
 Use ONLY the chapter text given. Do not add facts, dates or names that are not in it.
 ${PROMPTS[kind]}`,
@@ -93,6 +101,17 @@ ${PROMPTS[kind]}`,
     maxTokens: 8192,
     timeoutMs,
   });
+  if (kind === "mindmap") {
+    // any year/number on the map must appear in the chapter text, else that node (and its children) is dropped
+    const nums = (x: string) => x.match(/\d[\d,.]*/g) ?? [];
+    const okNode = (n: MindNode): boolean => !!n?.t && nums(n.t).every((d) => text.includes(d.replace(/[.,]$/, "")));
+    const clean = (ns: MindNode[] | undefined, depth: number): MindNode[] =>
+      (ns ?? []).filter(okNode).slice(0, depth === 0 ? 7 : 6).map((n) => ({ t: String(n.t).trim().slice(0, 80), ...(depth < 2 && n.c?.length ? { c: clean(n.c, depth + 1) } : {}) }));
+    const m = data as MindMap;
+    const out: MindMap = { root: String(m.root ?? ch.title_ta).slice(0, 60), branches: clean(m.branches, 0).filter((b) => b.c?.length) };
+    await admin.from("chapter_notes").upsert({ chapter_id: ch.id, kind, content: out });
+    return out;
+  }
   if (kind === "hacks") {
     const items = ((data as Hacks).items ?? []).filter((x) => x?.fact && x?.hack).slice(0, 18);
     const { data: chk } = await generateJSON<{ ok: number[] }>({

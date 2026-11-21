@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
-import { type Chapter, type Clean, type Facts, type Hacks, type Revision, type Summary } from "@/lib/chapters";
+import { type Chapter, type Clean, type Facts, type Hacks, type MindMap as MM, type Revision, type Summary } from "@/lib/chapters";
+import MindMap, { mindMapCards } from "@/components/MindMap";
 import AddCards from "@/components/AddCards";
 import Emoji from "@/components/Emoji";
 import BookPages from "@/components/BookPages";
@@ -22,6 +23,7 @@ const TABS = [
   ["bookback", "Book-back"],
   ["summary", "Key points"],
   ["facts", "Dates · People · Facts"],
+  ["mindmap", "🗺️ Mind map"],
   ["hacks", "🧠 Memory hacks"],
   ["mcq", "MCQs"],
   ["revision", "Revision Q&A"],
@@ -97,6 +99,14 @@ export default async function ChapterPage({ params, searchParams }: { params: Pr
           <p className="muted">வினாக்கள் இந்தப் பாடத்தின் உரையிலிருந்து மட்டுமே; விடைகளில் பக்க எண் தரப்படும். தவறியவை திருப்புதல் பட்டியலில் சேரும்.</p>
         </div>
       )),
+        mindmap: ((note("mindmap") && (note("mindmap") as MM).branches?.length ? (
+          <>
+            <ListenButton target="ln-mindmap-text" />
+            <MindMap m={note("mindmap") as MM} />
+            <div id="ln-mindmap-text" className="hidden">{(note("mindmap") as MM).root}. {(note("mindmap") as MM).branches.map((b) => `${b.t}: ${(b.c ?? []).map((n) => n.t).join(", ")}.`).join(" ")}</div>
+            <AddCards cards={mindMapCards(note("mindmap") as MM)} label="Add branches as flashcards" />
+          </>
+        ) : <Generate kind="mindmap" label="இந்தப் பாடத்தின் மன வரைபடம் இன்னும் உருவாக்கப்படவில்லை." />)),
         hacks: ((note("hacks") ? <HacksView h={note("hacks") as Hacks} /> : <Generate kind="hacks" label="இந்தப் பாடத்தின் நினைவு உத்திகள் (முதல் எழுத்துக் குறியீடு, கதை, எண் குறிப்பு) இன்னும் உருவாக்கப்படவில்லை." />)),
         revision: ((note("revision") ? (
         <div className="space-y-3">

@@ -10,6 +10,8 @@ import { CleanView } from "@/components/CleanNotes";
 import { BookBackView } from "@/components/BookBack";
 import type { BookBack } from "@/lib/bookback";
 import Md from "@/components/Md";
+import MindMap from "@/components/MindMap";
+import type { MindMap as MM } from "@/lib/chapters";
 import RevealList from "@/components/RevealList";
 
 const SUBJECT: Record<string, string> = { tamil: "தமிழ்", social: "சமூக அறிவியல்", science: "அறிவியல்" };
@@ -75,7 +77,7 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
       <button className="text-sm underline" onClick={onBack}>← Textbooks</button>
       <div><p className="muted">{ch.book}{ch.term ? ` · பருவம் ${ch.term}` : ""}</p><h2 className="h1">பாடம் {ch.chapter_no}: {ch.title_ta}</h2></div>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-        {[["text", "Textbook"], ["clean", "Easy notes"], ["bookback", "Book-back"], ["summary", "Key points"], ["facts", "Dates · People"], ["hacks", "🧠 Memory hacks"], ["mcq", "MCQs"], ["revision", "Revision Q&A"]].map(([k, l]) => (
+        {[["text", "Textbook"], ["clean", "Easy notes"], ["bookback", "Book-back"], ["summary", "Key points"], ["facts", "Dates · People"], ["mindmap", "🗺️ Mind map"], ["hacks", "🧠 Memory hacks"], ["mcq", "MCQs"], ["revision", "Revision Q&A"]].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${tab === k ? "bg-brand-500 text-white" : "bg-white ring-1 ring-stone-200"}`}>{l}</button>
         ))}
       </div>
@@ -103,6 +105,7 @@ function Lesson({ ch, meta, questions, onBack, onOpen, onQuiz }: { ch: Ch; meta:
         </div>
       )}
       {tab === "revision" && (notes.revision ? <RevealList items={(notes.revision as Revision).items} /> : missing)}
+      {tab === "mindmap" && ((notes.mindmap as MM | undefined)?.branches?.length ? <MindMap m={notes.mindmap as MM} /> : missing)}
       {tab === "hacks" && ((notes.hacks as { items?: { fact: string; hack: string }[] } | undefined)?.items?.length ? (
         <div className="space-y-2.5">
           {(notes.hacks as { items: { fact: string; hack: string }[] }).items.map((x, k) => (
