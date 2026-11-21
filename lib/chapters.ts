@@ -234,6 +234,7 @@ Return JSON {"questions":[{"stem":"","options":["","","",""],"answer_index":0,"e
       source_ref: textbookRef({ book: ch.book, page_from: src.page_from }, ch),
       chunk_id: src.id,
       origin: "ai",
+      status: "unchecked", // shown only after the answer-key check passes (scripts/audit_questions.ts)
       style: q.style ?? null,
       difficulty: difficulty !== "mixed" && q.difficulty === "medium" && !raw.difficulty ? difficulty : q.difficulty,
       hash: qHash(q.stem, q.options),

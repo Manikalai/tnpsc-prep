@@ -67,7 +67,7 @@ Return JSON {"q":[{"id":0,"ok":true}],"n":[{"id":0,"ok":true}]}`,
       exam_code: "G4", unit_id: t.unit, chapter_id: ch.id,
       stem: q!.stem, options: q!.options, answer_index: q!.answer_index, explanation: q!.explanation,
       source_ref: textbookRef({ book: ch.book, page_from: src.page_from }, ch), chunk_id: src.id,
-      origin: "ai", style: `gt:${t.key}`, difficulty: q!.difficulty, hash: qHash(q!.stem, q!.options),
+      origin: "ai", status: "unchecked", style: `gt:${t.key}`, difficulty: q!.difficulty, hash: qHash(q!.stem, q!.options),
     };
   });
   if (out.length) await admin.from("questions").upsert(out, { onConflict: "hash", ignoreDuplicates: true });

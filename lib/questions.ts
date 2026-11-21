@@ -174,6 +174,7 @@ ${opts.n} வினாக்கள் உருவாக்கவும் (ப�
       chunk_id: c.id,
       chapter_id: ch?.id ?? null,
       origin: "ai",
+      status: "unchecked", // shown only after the answer-key check passes (scripts/audit_questions.ts)
       style: q.style ?? null,
       difficulty: q.difficulty,
       hash: qHash(q.stem, q.options),

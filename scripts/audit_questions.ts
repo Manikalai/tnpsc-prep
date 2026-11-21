@@ -19,7 +19,7 @@ const MINUTES = Number(process.env.AUDIT_MINUTES ?? 170);
 const until = Date.now() + MINUTES * 60_000;
 const ORIGINS = (process.env.AUDIT_ORIGINS || "ai,pyq").split(",").map((s) => s.trim());
 
-type Q = { id: string; stem: string; options: string[]; answer_index: number; explanation: string | null; chapter_id: number | null; origin: string; style: string | null };
+type Q = { id: string; status: string; stem: string; options: string[]; answer_index: number; explanation: string | null; chapter_id: number | null; origin: string; style: string | null };
 type State = { done: Record<string, "ok" | "flag">; made: string };
 
 const state: State = await admin.storage.from("meta").download("audit.json")
@@ -36,8 +36,8 @@ async function save() {
 // all active questions of the chosen origins not audited yet
 const all: Q[] = [];
 for (let f = 0; ; f += 1000) {
-  const { data, error } = await admin.from("questions").select("id,stem,options,answer_index,explanation,chapter_id,origin,style")
-    .eq("status", "active").in("origin", ORIGINS).order("created_at").range(f, f + 999);
+  const { data, error } = await admin.from("questions").select("id,status,stem,options,answer_index,explanation,chapter_id,origin,style")
+    .in("status", ["active", "unchecked"]).in("origin", ORIGINS).order("created_at").range(f, f + 999);
   if (error) throw error;
   all.push(...((data ?? []) as Q[]));
   if (!data || data.length < 1000) break;
@@ -46,6 +46,10 @@ const todo = all.filter((q) => !state.done[q.id] && Array.isArray(q.options) && 
 console.log(`active ${all.length} · already audited ${Object.keys(state.done).length} · this run ${todo.length}`);
 
 let flagged = 0, okCount = 0, calls = 0, fails = 0;
+const passed: string[] = []; // unchecked questions that passed: made visible in batches
+async function release() {
+  while (passed.length) { const ids = passed.splice(0, 200); await admin.from("questions").update({ status: "active" }).in("id", ids).eq("status", "unchecked"); }
+}
 const flagList: string[] = [];
 
 async function flag(q: Q, note: string) {
@@ -104,7 +108,7 @@ for (let b = 0; b < rest.length && !stop; b += 10) {
   if (!blind) { stop = true; break; }
   for (const [i, q] of batch.entries()) {
     const a = (blind.answers ?? []).find((x) => Number(x.id) === i);
-    if (!a || Number(a.answer) === q.answer_index || !a.sure) { state.done[q.id] = "ok"; okCount++; continue; }
+    if (!a || Number(a.answer) === q.answer_index || !a.sure) { state.done[q.id] = "ok"; okCount++; passed.push(q.id); continue; }
     // disagreement: judge it carefully, with the lesson text when the question came from a lesson
     const text = q.chapter_id ? await lesson(q.chapter_id) : "";
     const v = await ai<{ key_correct: boolean; correct_index: number | null; reason: string }>({
@@ -117,12 +121,13 @@ for (let b = 0; b < rest.length && !stop; b += 10) {
     if (v.key_correct === false) {
       const ci = typeof v.correct_index === "number" && v.correct_index >= 0 && v.correct_index < 4 ? v.correct_index : null;
       await flag(q, `${ci != null ? `சரியான விடை (${L[ci]}) ${q.options[ci]} ஆக இருக்கலாம். ` : "இரண்டு விடைகள் / தெளிவில்லை. "}${v.reason ?? ""}`);
-    } else { state.done[q.id] = "ok"; okCount++; }
+    } else { state.done[q.id] = "ok"; okCount++; passed.push(q.id); }
     await sleep(2000);
   }
-  if ((b / 10) % 5 === 4) await save();
+  if ((b / 10) % 5 === 4) { await release(); await save(); }
   await sleep(Number(process.env.AUDIT_SLEEP_MS ?? 4000));
 }
+await release();
 await save();
 const left = all.filter((q) => !state.done[q.id]).length;
 await admin.from("job_runs").insert({ job: "audit_questions", ok: true, detail: { checked: okCount + flagged, flagged, ok: okCount, calls, left, sample: flagList.slice(0, 30) } });
