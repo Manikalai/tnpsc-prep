@@ -36,11 +36,32 @@ console.log("lesson subjects:", [...new Set(chapters.map((c) => c.subject))].joi
 
 const maxStd = Object.fromEntries(EXAMS.map((e) => [e.code, e.maxStd]));
 const out: { exams: Record<string, Record<string, number[]>>; lessons: Record<number, [number, string, number, string]>; made: string } = { exams: {}, lessons: {}, made: new Date().toISOString() };
-const BATCH = Number(process.env.MAP_BATCH ?? 40);
+const BATCH = Number(process.env.MAP_BATCH ?? 15);
+const ONLY = (process.env.MAP_EXAMS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+
+// keep what earlier runs already linked (only re-do the exams asked for)
+const prev = await admin.storage.from("meta").download("topic-lessons.json").then(async (r) => (r.data ? (JSON.parse(await r.data.text()) as typeof out) : null)).catch(() => null);
+if (prev?.exams) for (const [k, v] of Object.entries(prev.exams)) if (ONLY.length && !ONLY.includes(k)) out.exams[k] = v;
+
+async function save() {
+  out.lessons = {};
+  for (const ids of Object.values(out.exams).flatMap((m) => Object.values(m))) for (const id of ids) {
+    const c = chapters.find((x) => x.id === id);
+    if (c) out.lessons[id] = [c.std, c.subject, c.chapter_no, c.title_ta];
+  }
+  const body = new Blob([JSON.stringify(out)], { type: "application/json" });
+  let up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
+  if (up.error) {
+    await admin.storage.createBucket("meta", { public: true });
+    up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
+  }
+  if (up.error) throw up.error;
+}
 let calls = 0, fails = 0;
 
-for (const exam of Object.keys(maxStd)) {
+for (const exam of Object.keys(maxStd).filter((e) => !ONLY.length || ONLY.includes(e))) {
   const map: Record<string, number[]> = {};
+  out.exams[exam] = map; // saved even if the run stops partway
   const exUnits = units.filter((u) => u.exam_code === exam && u.subject !== "current" && u.subject !== "aptitude" && u.subject !== "reasoning");
   for (const g of ["social", "science", "tamil"]) {
     const gUnits = exUnits.filter((u) => (u.source_subjects ?? []).includes(g));
@@ -53,17 +74,20 @@ for (const exam of Object.keys(maxStd)) {
       const batch = lessons.slice(b, b + BATCH);
       const lessonList = batch.map((c) => `L${c.id}: ${c.std}ஆம் வகுப்பு ${c.subject} · ${c.title_ta}${summaries.get(c.id) ? ` — ${summaries.get(c.id)}` : ""}`).join("\n");
       try {
-        const { data } = await generateJSON<{ map: { lesson: string | number; topics: (string | number)[] }[] }>({
+        type Row = { lesson: string | number; topics: (string | number)[] };
+        const { data } = await generateJSON<{ map: Row[] } | Row[]>({
           system: `You match Tamil Nadu school textbook lessons to TNPSC syllabus topics. For each lesson, list the topics it substantially TEACHES (a main subject of the lesson, not a passing mention). A lesson may teach 0–3 topics. Be strict: if unsure, leave it out. Return JSON {"map":[{"lesson":"L123","topics":["T4","T9"]}]} — include only lessons with at least one topic.`,
           user: `=== TOPICS (${exam}) ===\n${topicList}\n\n=== LESSONS ===\n${lessonList}`,
           temperature: 0,
           maxTokens: 4096,
         });
         calls++; fails = 0;
-        for (const m of data.map ?? []) {
+        const rows: Row[] = Array.isArray(data) ? data : Array.isArray(data?.map) ? data.map : [];
+        for (const m of rows) {
+          if (!m || typeof m !== "object") continue;
           const lid = Number(String(m.lesson).replace(/\D/g, ""));
           if (!batch.some((c) => c.id === lid)) continue;
-          for (const t of m.topics ?? []) {
+          for (const t of Array.isArray(m.topics) ? m.topics : []) {
             const ti = Number(String(t).replace(/\D/g, ""));
             const topic = gTopics[ti];
             if (!topic) continue;
@@ -74,28 +98,17 @@ for (const exam of Object.keys(maxStd)) {
       } catch (e) {
         fails++;
         console.log(`${exam} · ${g} · lessons ${b + 1}–${b + batch.length}: failed (${String(e).slice(0, 140)})`);
-        if (fails >= 4) throw new Error("AI kept failing — run again later");
-        await sleep(20000); b -= BATCH; continue; // retry this batch
+        if (fails >= 6) { await save(); throw new Error("AI kept failing — saved what was done; run again later"); }
+        await sleep(45000); b -= BATCH; continue; // wait out the per-minute limit, retry this batch
       }
-      await sleep(Number(process.env.MAP_SLEEP_MS ?? 4000));
+      await sleep(Number(process.env.MAP_SLEEP_MS ?? 12000));
     }
   }
   for (const ids of Object.values(map)) ids.sort((a, b) => (chapters.find((c) => c.id === a)?.std ?? 0) - (chapters.find((c) => c.id === b)?.std ?? 0));
   out.exams[exam] = map;
+  await save();
   console.log(`${exam}: ${Object.keys(map).length}/${topics.filter((t) => exUnits.some((u) => u.id === t.unit_id)).length} topics have lessons`);
 }
-for (const ids of Object.values(out.exams).flatMap((m) => Object.values(m))) for (const id of ids) {
-  const c = chapters.find((x) => x.id === id)!;
-  out.lessons[id] = [c.std, c.subject, c.chapter_no, c.title_ta];
-}
-
-// save to Storage (public bucket "meta")
-const body = new Blob([JSON.stringify(out)], { type: "application/json" });
-let up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
-if (up.error) {
-  await admin.storage.createBucket("meta", { public: true });
-  up = await admin.storage.from("meta").upload("topic-lessons.json", body, { upsert: true, contentType: "application/json", cacheControl: "300" });
-}
-if (up.error) throw up.error;
+await save();
 await admin.from("job_runs").insert({ job: "map_topics", ok: true, detail: { calls, exams: Object.fromEntries(Object.entries(out.exams).map(([k, v]) => [k, Object.keys(v).length])), lessons: Object.keys(out.lessons).length } });
 console.log(`DONE · ${calls} AI calls · ${Object.keys(out.lessons).length} lessons linked`);

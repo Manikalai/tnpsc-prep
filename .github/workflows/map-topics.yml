@@ -3,10 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       providers: { description: "AI order", default: "groq,gemini" }
+      exams: { description: "Which exams (e.g. G4 or G4,G2,G1); empty = all", default: "G4" }
+      exams: { description: "Which exams (e.g. G4 or G4,G2,G1); empty = all", default: "G4" }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,6 +17,8 @@ jobs:
       - run: npx tsx scripts/map_topics.ts
         env:
           AI_PROVIDERS: ${{ github.event.inputs.providers || 'groq,gemini' }}
+          MAP_EXAMS: ${{ github.event.inputs.exams }}
+          MAP_EXAMS: ${{ github.event.inputs.exams }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
